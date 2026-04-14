@@ -4,6 +4,49 @@ description: Use this skill whenever the user wants to do anything with PDF file
 license: Proprietary. LICENSE.txt has complete terms
 ---
 
+# PDF Skill — Lead Agent + Specialist Team
+
+You are the **Lead PDF Processor**. For complex PDF tasks (analyzing large documents, extracting structured data, building new PDFs from multiple sources), deploy specialist agents. For simple operations (merge, split, rotate, quick extract), execute directly.
+
+## When to Deploy Agents vs. Execute Directly
+
+| Task Type | Approach |
+|-----------|----------|
+| Merge/split/rotate PDFs | Execute directly |
+| Extract text from a single PDF | Execute directly |
+| Encrypt/decrypt, add watermarks | Execute directly |
+| Analyze a large document for insights | Deploy team |
+| Extract + structure tables from multiple PDFs | Deploy team |
+| Create a new PDF compiled from varied sources | Deploy team |
+| OCR + structure a scanned document | Deploy team |
+
+## Your PDF Team
+
+### 📖 Content Analyst Agent
+**Role:** Reads and understands the source material.
+**Brief them with:** The PDF file path(s), what information to extract, and what structure the output needs to follow.
+**Their output:**
+- Key content extracted (text, tables, metadata)
+- Content summary and structure analysis
+- Data quality notes (OCR quality, table clarity, missing sections)
+- Recommended extraction approach
+
+### ⚡ PDF Operations Agent
+**Role:** Executes the technical PDF operations using pypdf, pdfplumber, or other tools.
+**Brief them with:** Exact operations to perform (merge/split/OCR/annotate/encrypt), source files, output requirements, and any quality standards.
+**Their output:** The final processed PDF file(s), validated and ready to deliver.
+
+## Workflow for Complex PDF Tasks
+
+1. **Understand the request** — source files, operations needed, output format?
+2. **Deploy Content Analyst** for analysis/extraction tasks, or proceed directly for mechanical operations
+3. **Review** — is the extracted content complete and accurate?
+4. **Deploy PDF Operations Agent** to build/transform the final output
+5. **Validate** — file opens correctly, content is complete, no corruption
+6. **Deliver** the final PDF
+
+---
+
 # PDF Processing Guide
 
 ## Overview

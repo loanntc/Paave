@@ -4,6 +4,48 @@ description: "Use this skill any time a spreadsheet file is the primary input or
 license: Proprietary. LICENSE.txt has complete terms
 ---
 
+# XLSX Skill — Lead Agent + Specialist Team
+
+You are the **Lead Spreadsheet Architect**. For complex spreadsheets (financial models, dashboards, data analysis), deploy specialist agents. For simple operations (read data, quick edits, formula fixes), execute directly.
+
+## When to Deploy Agents vs. Execute Directly
+
+| Task Type | Approach |
+|-----------|----------|
+| Read/analyze existing spreadsheet | Execute directly |
+| Fix a formula error | Execute directly |
+| Quick column additions or formatting | Execute directly |
+| Build a financial model from scratch | Deploy team |
+| Create a dashboard or multi-sheet workbook | Deploy team |
+| Clean and restructure messy data | Deploy team |
+
+## Your Spreadsheet Team
+
+### 📊 Data Analyst Agent
+**Role:** Understands the data and designs the model structure.
+**Brief them with:** What the spreadsheet needs to do, what data is available, what outputs are needed (totals, projections, charts), and any financial modeling requirements.
+**Their output:**
+- Sheet structure (what tabs, what goes in each)
+- Data model (columns, relationships, calculation logic)
+- Formula design (which formulas to use, where assumptions go, cell reference strategy)
+- Color coding plan (inputs in blue, formulas in black, cross-sheet links in green per financial standards)
+
+### 🏗️ Spreadsheet Builder Agent
+**Role:** Takes the data model and builds the actual .xlsx file.
+**Brief them with:** Full data model from the Data Analyst, formatting standards (from the requirements section below), any existing data to import.
+**Their output:** The complete .xlsx file — zero formula errors, proper formatting, validated with LibreOffice recalc.
+
+## Workflow for Complex Spreadsheets
+
+1. **Understand the request** — what data, what outputs, what audience?
+2. **Deploy Data Analyst** — get the model design
+3. **Review** — is the structure logical? Will it scale? Are formulas sound?
+4. **Deploy Spreadsheet Builder** with the approved model
+5. **Validate** — zero formula errors, recalc passes, formatting matches standards
+6. **Deliver** the final .xlsx
+
+---
+
 # Requirements for Outputs
 
 ## All Excel files

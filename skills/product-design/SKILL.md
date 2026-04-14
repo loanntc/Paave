@@ -7,7 +7,7 @@ The clarification workshop is **mandatory BEFORE design** to prevent requirement
 
 ---
 
-# 🧠 1. DESIGN PRINCIPLE (NON-NEGOTIABLE)
+# 🧠 DESIGN PRINCIPLE (NON-NEGOTIABLE)
 
 > No UI is created until business + logic + UX are aligned.
 
@@ -19,268 +19,263 @@ If skipped → leads to:
 
 ---
 
-# 🔄 2. END-TO-END DESIGN PROCESS (AI MUST FOLLOW)
+# 👥 TEAM STRUCTURE
 
-## Phase 0 — Clarification Workshop (MANDATORY)
-
-### Objective
-
-Align:
-
-* Business goal (PO)
-* Functional logic (BA)
-* UX direction (Designer)
-
-### Output (REQUIRED)
-
-```
-[Business Goal]
-[Functional Flow]
-[Rules]
-[Edge Cases]
-[UX Direction]
-[Scope: V1 vs V2]
-```
-
-👉 If this is incomplete → STOP. Do not design.
+This skill operates as a **multi-agent design team** led by the Lead Product Designer.
 
 ---
 
-## Phase 1 — UX Definition
+## 🎯 Lead Product Designer (Main Agent)
 
-### 1.1 Define User
+**Role:** Orchestrator, reviewer, and final validator.
 
-```
-User: 
-Goal: 
-Pain points:
-```
+**Responsibilities:**
+- Runs the full process and enforces phase gates
+- Enforces the no-UI-before-alignment rule — no specialist proceeds until the prior phase is approved
+- Reviews all specialist outputs before advancing
+- Synthesizes the final design package
 
-### 1.2 Define User Flow
-
-```
-1.
-2.
-3.
-```
-
-### 1.3 Validate Flow
-
-* Can steps be reduced?
-* Any confusion points?
+**Final Validation Questions (must all be YES before delivery):**
+- Can dev build without asking?
+- Can QA test without guessing?
+- Does it solve the business goal?
 
 ---
 
-## Phase 2 — Wireframe (Structure Only)
+## 🤝 Specialist Agent 1 — Requirements Clarifier (PO × BA Role)
 
-### Output
+**Deployed in:** Phase 0 (MANDATORY, BLOCKING)
 
-* Layout structure
-* Component placement
-* No colors
-
-### Example
+**Runs the clarification workshop. Extracts:**
 
 ```
-Header: Title
-Main: Upload area
-Side: Instructions
-Footer: Action buttons
+[Business Goal]     — What problem are we solving and why?
+[KPI]               — How do we measure success?
+[Scope]             — What is V1 vs V2?
+[Functional Flow]   — Step-by-step user journey from entry to completion
+[Business Rules]    — Logic conditions, constraints, validation rules
+[Validations]       — Input requirements, format checks, required fields
+[Edge Cases]        — Unusual but valid scenarios
+[Failure Scenarios] — What happens when something goes wrong?
 ```
 
----
+**Output:** Alignment Doc
 
-## Phase 3 — UI Design (Visual Layer)
-
-### Define
-
-* Typography
-* Spacing
-* Colors
-* Component states
+**Gate rule:** If output is incomplete → STOP. Do not proceed to design.
 
 ---
 
-## Phase 4 — Interaction & States
+## 🗺️ Specialist Agent 2 — UX Architect
 
-### MUST INCLUDE
+**Deployed in:** Phase 1
 
-* Default
-* Hover
-* Loading
-* Success
-* Error
-* Empty
+**Takes:** Alignment Doc from Requirements Clarifier
 
----
-
-## Phase 5 — Dev & QA Handoff
-
-### MUST PROVIDE
-
-* Spacing (px)
-* Typography (size, weight)
-* Component behavior
-* Edge case handling
-
----
-
-# 🤝 3. CLARIFICATION WORKSHOP (DETAILED)
-
-## Step 1 — PO (Business)
-
-* Problem
-* KPI
-* Scope
-
-## Step 2 — BA (Logic)
-
-* Flow
-* Rules
-* Validations
-
-## Step 3 — Designer (UX)
-
-* Simplify flow
-* Identify risks
-
-## Step 4 — ALL
-
-* Edge cases
-* Failure scenarios
-
-## Step 5 — PO Decision
-
-* V1 vs V2
-
----
-
-# 🧩 4. DESIGN OUTPUT STRUCTURE (STRICT)
-
-## 4.1 Screen Overview
+**Produces:**
 
 ```
-Screen:
-User:
-Goal:
+[User Definition]
+  User:
+  Goal:
+  Pain points:
+
+[User Flow]
+  1.
+  2.
+  3.
+  (numbered steps from entry to completion)
+
+[Flow Validation]
+  - Can steps be reduced?
+  - Any confusion points?
+
+[Information Architecture]
+  - What screens exist
+  - How screens connect to each other
+
+[Wireframe Structure]
+  - Layout per screen
+  - Component placement
+  - No colors — structure only
+  Example:
+    Header: Title
+    Main: Upload area
+    Side: Instructions
+    Footer: Action buttons
 ```
 
 ---
 
-## 4.2 Layout
+## 🎨 Specialist Agent 3 — Visual Designer
+
+**Deployed in:** Phase 3
+
+**Takes:** Wireframe structure from UX Architect (after Lead review)
+
+**Produces:**
 
 ```
-- Header
-- Main
-- Actions
-```
+[Typography Spec]
+  - Font sizes (px)
+  - Font weights
+  - Font family
 
----
+[Color Tokens]
+  - Background: #hex
+  - Surface: #hex
+  - Primary: #hex
+  - Accent: #hex
+  - Error: #hex
+  - Success: #hex
 
-## 4.3 Components
+[Spacing System]
+  - Base unit (px)
+  - Scale values used
 
-* List all UI elements
+[Component States — EVERY interactive element must include ALL of:]
+  - Default
+  - Hover
+  - Loading
+  - Success
+  - Error
+  - Empty
+  - Disabled
 
----
-
-## 4.4 Interaction Rules
-
-```
-Action → System response
-```
-
----
-
-## 4.5 States
-
-* Default
-* Loading
-* Error
-* Success
-
----
-
-## 4.6 Edge Case UI Handling
-
-* What user sees when errors happen
-
----
-
-# 🔧 5. DESIGN FOR DEV (HANDOFF RULES)
-
-## MUST DEFINE
-
-* Spacing (px)
-* Font size
-* Button states
-* Disabled logic
-
-### Example
-
-```
-Button disabled when no file selected
+[Design Decisions with Rationale]
+  - Why each major decision was made
 ```
 
 ---
 
-# 🧪 6. DESIGN FOR QA (TESTABLE UI)
+## 🔧 Specialist Agent 4 — Dev & QA Spec Writer
 
-## MUST DEFINE TESTS
+**Deployed in:** Phase 4
 
-* Button disabled state
-* Error message display
-* Loading indicator appears
+**Takes:** Full visual spec from Visual Designer
 
----
+**Produces:**
 
-# ⚠️ 7. ANTI-MISMATCH RULES
+```
+[Pixel-Perfect Spacing]
+  - All margins and paddings in px for every component
 
-## AI MUST ENSURE
+[Typography Per Element]
+  - Font size + weight for every text element on every screen
 
-* Design matches BRD (business goal)
-* Design matches FRD (flow)
-* Design respects SRD (rules)
+[Button States with Exact Trigger Conditions]
+  Example: "Button disabled when no input is present"
+  Example: "Loading state triggered on form submit, until API responds"
 
----
+[Edge Case UI Handling]
+  - What the user sees for each failure scenario
+  - Error message copy
+  - Empty state layout
 
-## ❌ Common Failure
-
-* Design ignores edge cases
-* Flow differs from requirement
-* Missing states
-
----
-
-# 🤖 8. AI BEHAVIOR MODEL
-
-## Step-by-step
-
-1. Run clarification workshop
-2. Validate alignment
-3. Generate UX flow
-4. Generate wireframe
-5. Generate UI spec
-6. Add dev + QA details
+[QA Test Scenarios]
+  - Testable assertions (not vague descriptions)
+  Example: "GIVEN no file selected WHEN user clicks Submit THEN button is disabled"
+  Example: "GIVEN API returns 500 WHEN upload completes THEN error banner appears with retry CTA"
+```
 
 ---
 
-## Validation Questions
+# 🔄 WORKFLOW (AI MUST FOLLOW IN ORDER)
 
-* Can dev build without asking?
-* Can QA test without guessing?
-* Does it solve business goal?
+## Phase 0 — Requirements Clarification (MANDATORY, BLOCKING)
+
+Deploy: **Requirements Clarifier**
+
+Run the clarification workshop. Extract all 8 outputs.
+
+**Gate check by Lead:** Is the Alignment Doc complete?
+- YES → proceed to Phase 1
+- NO → STOP. Return to user for missing information. Do not design.
 
 ---
 
-# 🎁 9. FINAL DELIVERY CHECKLIST
+## Phase 1 — UX Architecture
 
-* [ ] Clarification completed
-* [ ] UX flow defined
-* [ ] UI structured
-* [ ] States included
-* [ ] Edge cases handled
-* [ ] Dev-ready specs
-* [ ] QA-ready tests
+Deploy: **UX Architect** with the Alignment Doc
+
+Produce User Definition, User Flow, Flow Validation, Information Architecture, and Wireframe Structure.
+
+---
+
+## Phase 2 — Lead Designer Reviews UX Output
+
+Lead Product Designer reviews UX Architect output:
+
+- Can the flow be simplified further?
+- Are there any confusion points in the user journey?
+- Does the wireframe structure match the functional flow from the Alignment Doc?
+
+Approve or send back for revision before proceeding.
+
+---
+
+## Phase 3 — Visual Design
+
+Deploy: **Visual Designer** with the approved wireframe
+
+Produce Typography Spec, Color Tokens, Spacing System, Component States, and Design Decisions.
+
+---
+
+## Phase 4 — Dev & QA Spec
+
+Deploy: **Dev & QA Spec Writer** with the full visual spec
+
+Produce Pixel-Perfect Spacing, Typography Per Element, Button States, Edge Case UI Handling, and QA Test Scenarios.
+
+---
+
+## Phase 5 — Final Synthesis
+
+**Lead Product Designer** synthesizes and delivers the complete Design Package.
+
+Run the Final Delivery Checklist. If any box is unchecked → resolve before delivery.
+
+---
+
+# 🎁 FINAL DELIVERY STRUCTURE
+
+```
+[Alignment Doc]          — from Requirements Clarifier
+[UX Flow + Wireframe]    — from UX Architect
+[Visual Spec]            — from Visual Designer
+[Dev Handoff + QA Tests] — from Dev & QA Spec Writer
+[Final Delivery Checklist] — Lead validates all boxes are checked
+```
+
+---
+
+# ✅ FINAL DELIVERY CHECKLIST
+
+* [ ] Clarification completed — Alignment Doc signed off
+* [ ] UX flow defined — numbered steps, validated, no confusion points
+* [ ] UI structured — wireframe approved before visual layer applied
+* [ ] States included — all interactive elements have all 7 states
+* [ ] Edge cases handled — every failure scenario has a defined UI response
+* [ ] Dev-ready specs — px values, font specs, trigger conditions documented
+* [ ] QA-ready tests — testable assertions written for every critical path
+
+---
+
+# ⚠️ ANTI-MISMATCH RULES
+
+## Lead Must Ensure
+
+* Design matches BRD (business goal is solved)
+* Design matches FRD (functional flow is reflected accurately)
+* Design respects SRD (all rules, validations, and constraints are enforced in the UI)
+
+## Common Failures to Guard Against
+
+* Design ignores edge cases documented in the Alignment Doc
+* User flow in wireframe differs from the functional flow requirement
+* Missing component states (especially loading, error, empty, disabled)
+* Dev handoff lacks exact px values or trigger conditions
+* QA scenarios are vague ("button works") instead of testable assertions
 
 ---
 

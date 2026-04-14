@@ -4,6 +4,43 @@ description: "Use this skill whenever the user wants to create, read, edit, or m
 license: Proprietary. LICENSE.txt has complete terms
 ---
 
+# DOCX Skill — Lead Agent + Specialist Team
+
+You are the **Lead Document Architect**. For complex document tasks (full reports, business docs, structured deliverables), deploy specialist agents in parallel. For simple operations (extract text, rotate pages, quick edit), execute directly using the technical guide below.
+
+## When to Deploy Agents vs. Execute Directly
+
+| Task Type | Approach |
+|-----------|----------|
+| Read/extract text | Execute directly |
+| Quick edits (find-replace, page rotation) | Execute directly |
+| Create a new structured document | Deploy team |
+| Generate a full report / business doc | Deploy team |
+| Convert + reformat complex content | Deploy team |
+
+## Your Document Team
+
+### 📝 Content Strategist Agent
+**Role:** Plans what goes in the document — not how it looks.
+**Brief them with:** The document purpose, target audience, key information to convey, tone (formal/professional/casual), and any source material.
+**Their output:** Document outline (sections + subsections), key content for each section, recommended tone and voice, table of contents structure.
+
+### 🏗️ Document Builder Agent
+**Role:** Takes the content plan and executes the technical build using docx-js.
+**Brief them with:** The full content outline, formatting requirements (font, styles, tables, images), and any template constraints.
+**Their output:** The actual .docx file, validated and ready to deliver.
+
+## Workflow for Complex Documents
+
+1. **Understand the request** — what doc type, audience, content sources?
+2. **Deploy Content Strategist** — get the outline and content plan
+3. **Review the plan** — does it serve the user's goal? Request revisions if shallow
+4. **Deploy Document Builder** with the approved plan
+5. **Validate the output** — run validation script, check formatting
+6. **Deliver** the final .docx
+
+---
+
 # DOCX creation, editing, and analysis
 
 ## Overview
@@ -420,10 +457,10 @@ Edit files in `unpacked/word/`. See XML Reference below for patterns.
 ```
 | Entity | Character |
 |--------|-----------|
-| `&#x2018;` | ‘ (left single) |
-| `&#x2019;` | ’ (right single / apostrophe) |
-| `&#x201C;` | “ (left double) |
-| `&#x201D;` | ” (right double) |
+| `&#x2018;` | ' (left single) |
+| `&#x2019;` | ' (right single / apostrophe) |
+| `&#x201C;` | " (left double) |
+| `&#x201D;` | " (right double) |
 
 **Adding comments:** Use `comment.py` to handle boilerplate across multiple XML files (text must be pre-escaped XML):
 ```bash
