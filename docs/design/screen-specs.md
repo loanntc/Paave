@@ -1596,6 +1596,908 @@ Language change:
 
 ---
 
+## Screen 10 — Paper Trading Order (Buy/Sell)
+
+### Screen Overview
+```
+Screen: Paper Trading Order
+User:   User placing a virtual buy or sell order
+Goal:   Execute simulated market or limit order with pre-trade AI context
+Trigger: "Mua" / "Bán" button from Stock Detail
+```
+
+### Layout
+```
+Header:     Navigation bar (back + "Lệnh mua VCB" or "Lệnh bán VCB")
+Main:       Scrollable — order form
+Bottom:     Sticky confirm button
+```
+
+### Header / Navigation Bar
+```
+Height:     56px + safe-area-inset-top
+Background: bg-primary
+Left:       Back arrow (arrow-left 20px), text-secondary, 44×44px touch
+Center:     "Lệnh mua VCB" — text-title-md (18px, weight 700), text-primary
+            Buy mode: positive (#10B981) text; Sell mode: negative (#EF4444) text
+```
+
+### Virtual Funds Banner (Mandatory — FR-PT-06)
+```
+Position:   Below header, full width, sticky
+Height:     32px
+Background: warning-subtle (rgba(245,158,11,0.15))
+Border:     warning (#F59E0B) 1px bottom
+Text:       "Tiền ảo / 가상 자금 / Virtual Funds" — text-caption (12px, weight 600), warning
+Align:      center
+Non-dismissible
+```
+
+### Main Content
+
+**Section 1 — Stock Summary**
+```
+mx: 16px, mt: 16px
+
+Row:
+  Logo:     40×40px, radius-full
+  Right:
+    Ticker: "VCB" — text-title-sm (16px, weight 700), text-primary
+    Name:   "Vietcombank" — text-body-sm (13px), text-secondary
+  Far right:
+    Price:  "₫88.000" — text-title-sm (16px, weight 700), tabular-nums
+    Change: "+2,15%" — text-body-sm (13px), positive/negative
+```
+
+**Section 2 — Pre-Trade AI Card (FR-AI-04, collapsible)**
+```
+mx: 16px, mt: 16px
+
+Card:
+  Background: accent-primary-subtle
+  Border:     accent-primary 1px
+  Radius:     radius-md (12px)
+  Padding:    16px
+
+  Header row:
+    Left:   "🤖 Phân tích AI" — text-body-sm (13px, weight 600), accent-primary
+    Right:  Collapse chevron icon 16px
+
+  Content (when expanded):
+    Risk score:     "Rủi ro: 6/10" — text-body-md (14px, weight 600), warning
+    Position size:  "Đề xuất: 8% danh mục" — text-body-sm (13px), text-primary
+    3 bullets:      "3 điều cần biết:" — text-caption-bold (12px), text-secondary
+                    • "Lợi nhuận quý vượt kỳ vọng 12%"
+                    • "P/E hiện tại cao hơn trung bình ngành"
+                    • "Khối lượng giao dịch tăng 40% tuần qua"
+                    text-body-sm (13px), text-primary
+
+  Footer:   Disclaimer (FR-LEGAL-02) — text-caption (11px), text-tertiary
+            "Nội dung AI chỉ mang tính giáo dục. Không phải lời khuyên đầu tư."
+
+  Loading:  Skeleton card, 2s timeout → "Phân tích bị bỏ qua — tiếp tục đặt lệnh."
+```
+
+**Section 3 — Order Type Toggle**
+```
+mx: 16px, mt: 24px
+
+Label:  "Loại lệnh" — text-body-sm (13px, weight 500), text-secondary, mb: 8px
+
+Toggle row:
+  2 options, width: (343-8)/2 each, height: 44px
+  Left:  "Thị trường" (Market) — selected by default
+  Right: "Giới hạn" (Limit)
+  Selected: accent-primary bg, #FFFFFF text, radius-md
+  Unselected: bg-card, text-secondary, border: border, radius-md
+```
+
+**Section 4 — Quantity Input**
+```
+mx: 16px, mt: 24px
+
+Label:    "Số lượng (CP)" — text-body-sm (13px, weight 500), text-secondary, mb: 8px
+
+Input:
+  Height:   64px
+  Background: bg-secondary (#161B22)
+  Border:   border 1px, radius-md (12px)
+  Focus:    border-focus 2px
+  Padding:  horizontal 16px
+  Value:    numeric, text-display-md (24px, weight 700), tabular-nums, text-primary
+  Placeholder: "0"
+  Keyboard: numeric
+
+Quick quantity chips (below input, mt: 8px):
+  "10 CP" | "50 CP" | "100 CP" | "Tối đa"
+  Chip: height 28px, radius-full, bg-card, border, text-body-sm
+  Tap fills quantity input with value
+```
+
+**Section 5 — Limit Price (visible only when Limit order selected)**
+```
+mx: 16px, mt: 16px
+
+Label:    "Giá giới hạn" — text-body-sm, text-secondary, mb: 8px
+
+Input:
+  Same style as Quantity Input
+  Currency prefix: "₫"
+  Placeholder: current price
+```
+
+**Section 6 — Order Summary**
+```
+mx: 16px, mt: 24px, pb: 120px
+
+Card:
+  Background: bg-card
+  Border:     border 1px
+  Radius:     radius-md (12px)
+  Padding:    16px
+
+  Rows (label: value pairs):
+    "Giá thị trường"  / "₫88.000"       — text-body-sm / text-body-sm weight 600
+    "Số lượng"         / "10 CP"
+    "Phí giao dịch"   / "₫880" (0,1%)
+    Divider: border 1px, my: 12px
+    "Tổng cộng"       / "₫880.880"      — text-title-sm weight 700 / text-title-sm weight 700, text-primary
+
+  Available balance:
+    "Số dư khả dụng: ₫499.119.120" — text-caption (12px), text-secondary, mt: 8px
+```
+
+### Sticky Confirm Button (Bottom)
+```
+Position:   fixed bottom
+Height:     80px + safe-area-inset-bottom
+Background: bg-card, top border: border 1px
+Padding:    horizontal 16px, vertical 14px
+
+Button:
+  Width:    343px
+  Height:   52px
+  Radius:   radius-lg (16px)
+  Buy:      Background positive (#10B981), text #FFFFFF, "Xác nhận mua 10 VCB"
+  Sell:     Background negative (#EF4444), text #FFFFFF, "Xác nhận bán 10 VCB"
+  Disabled: bg-card, text-tertiary (when qty = 0 or insufficient balance)
+  Shadow:   0 0 16px rgba(16,185,129,0.25) for buy / rgba(239,68,68,0.25) for sell
+```
+
+### Interaction Rules
+```
+Order type toggle    → Switch between market/limit, show/hide limit price field
+Quantity chip tap    → Fill quantity field with value
+"Tối đa" chip       → Calculate max affordable quantity from balance
+Confirm tap          → Show confirmation bottom sheet → execute order
+AI card collapse     → Toggle expanded/collapsed state
+Back button          → Cancel order, return to Stock Detail
+```
+
+### States
+```
+Default:      Market order selected, quantity empty, confirm disabled
+AI loading:   Skeleton AI card, 2s timeout
+AI loaded:    Card expanded with risk score + bullets
+Input filled: Order summary visible, confirm enabled (if balance sufficient)
+Insufficient: Red text "Số dư không đủ", confirm disabled
+Loading:      Confirm button shows spinner, disabled
+Success:      Bottom sheet → "Lệnh đã được thực hiện!" + post-trade AI card
+Error:        Toast "Không thể thực hiện lệnh, thử lại"
+```
+
+### Dev Handoff Specs
+```
+Virtual funds banner: Always visible, never dismissible (FR-PT-06, BR-18)
+AI card timeout:      2000ms → graceful skip (FR-AI-04)
+Max quantity:         Math.floor(availableBalance / (price * 1.001))
+Order execution:      POST /paper-trades { ticker, side, type, quantity, limitPrice? }
+Fee calculation:      0.1% of (price × quantity) — display only, deducted from virtual balance
+Confirmation sheet:   BottomSheet snapPoints ['40%'], swipe to dismiss = cancel
+```
+
+### QA Tests
+```
+[ ] Virtual Funds banner visible and non-dismissible
+[ ] AI card loads within 2s or shows skip message
+[ ] AI card collapsible
+[ ] Market/Limit toggle works correctly
+[ ] Limit price field only visible for Limit orders
+[ ] Quantity chips fill input correctly
+[ ] "Tối đa" calculates max affordable quantity
+[ ] Order summary updates in real-time as inputs change
+[ ] Confirm disabled when quantity is 0
+[ ] Confirm disabled when balance insufficient
+[ ] Success: bottom sheet with confirmation
+[ ] Post-trade AI explanation appears after success
+[ ] Disclaimer visible on AI card
+```
+
+---
+
+## Screen 11 — Post-Trade Explanation (Bottom Sheet)
+
+### Screen Overview
+```
+Screen: Post-Trade Explanation (Bottom Sheet)
+User:   User who just completed a paper trade
+Goal:   Educate user on what happened, why, and what to watch next
+Trigger: Auto-appears after trade fills (FR-AI-01)
+```
+
+### Layout
+```
+Type:       Bottom sheet (75% screen height)
+Background: bg-card
+Radius:     radius-xl (24px) top corners
+Handle:     4×32px pill, bg-border, centered, mt: 12px
+```
+
+### Content
+```
+Header:
+  "📊 Phân tích giao dịch" — text-title-lg (20px, weight 700), text-primary
+  Close × icon top-right, 44×44px
+
+Trade reference (mt: 16px):
+  "Đã mua 10 VCB @ ₫88.000" — text-body-md (14px, weight 600), positive
+  Timestamp — text-caption (12px), text-secondary
+
+Section 1 — "Chuyện gì đã xảy ra?" (mt: 24px):
+  Icon: 📈 info 16px
+  Title: text-title-sm (16px, weight 600), text-primary
+  Body:  text-body-md (14px), text-primary, line-height 1.6
+         "VCB đang giao dịch gần mức cao nhất 52 tuần. Khối lượng giao dịch
+          hôm nay tăng 35% so với trung bình 20 ngày."
+
+Section 2 — "Vì sao?" (mt: 20px):
+  Icon: 💡
+  Title: text-title-sm
+  Body:  "Báo cáo lợi nhuận Q1/2026 vượt kỳ vọng 12%. ROE đạt 18,5%,
+          cao nhất ngành ngân hàng."
+
+Section 3 — "Cần theo dõi gì?" (mt: 20px):
+  Icon: 👀
+  Title: text-title-sm
+  Body:  "Theo dõi phiên họp NHNN ngày 20/04 về lãi suất. Nếu lãi suất
+          giữ nguyên, cổ phiếu ngân hàng có thể tiếp tục xu hướng tăng."
+
+Rating row (mt: 24px):
+  "Phân tích này hữu ích không?" — text-body-sm (13px), text-secondary
+  👍 / 👎 buttons, 44×44px each, bg-card, border, radius-full
+
+Disclaimer (mt: 16px, mb: 32px):
+  text-caption (11px), text-tertiary
+  "Nội dung AI chỉ mang tính giáo dục. Không phải lời khuyên đầu tư."
+```
+
+### States
+```
+Default:   Sections loaded, expanded
+Loading:   Skeleton text blocks (3 sections)
+Error:     "Phân tích tạm thời không khả dụng. Kiểm tra lại sau."
+Dismissed: Sheet closes, not shown again for this trade
+```
+
+---
+
+## Screen 12 — Order History & Open Orders
+
+### Screen Overview
+```
+Screen: Order History (Tab within Portfolio)
+User:   User reviewing past trades and pending orders
+Goal:   View all paper trade history and manage open limit orders
+```
+
+### Layout
+```
+Header:     "Lịch sử lệnh" — screen title
+Tabs:       "Đã thực hiện" | "Đang chờ" (2 tabs)
+Main:       Scrollable list of orders
+Bottom:     Persistent nav bar
+```
+
+### Tab 1 — Executed Orders ("Đã thực hiện")
+```
+Order row (each):
+  Height:     72px
+  Background: none (divider between rows)
+  Padding:    horizontal 16px
+
+  Left:
+    Type icon:  Buy = arrow-up-circle, positive bg-subtle, 36×36px
+                Sell = arrow-down-circle, negative bg-subtle, 36×36px
+    Right of icon (ml: 12px):
+      "Mua VCB" — text-title-sm (16px, weight 600), text-primary
+      "14/04/2026 · 09:30 · Thị trường" — text-caption (12px), text-secondary
+
+  Right:
+    "+10 CP" or "-10 CP" — text-body-sm (13px, weight 600), positive/negative
+    "₫880.000" — text-caption (12px), text-secondary
+    
+  Divider: border 1px
+
+  Pre-reset entries: "[Pre-Reset]" tag, text-caption, warning-subtle bg, warning text
+
+Sort: Reverse chronological
+Pagination: Load 20, infinite scroll
+```
+
+### Tab 2 — Open Orders ("Đang chờ")
+```
+Order row (each):
+  Height:     80px
+  Background: bg-card, radius-md
+  Margin:     horizontal 16px, bottom 8px
+  Padding:    16px
+
+  Left:
+    "Mua VCB" — text-title-sm (16px, weight 600), text-primary
+    "Giới hạn ≤ ₫85.000" — text-body-sm (13px), text-secondary
+    "Hết hạn: 14/05/2026 (28 ngày)" — text-caption (12px), text-secondary
+
+  Right:
+    "10 CP" — text-body-sm (13px, weight 600), text-primary
+    "Hủy" button — text-body-sm (13px), negative, touchable, 44×44px min
+
+  Tap "Hủy" → Confirmation alert → cancel order → remove from list
+  Empty state: "Không có lệnh đang chờ"
+```
+
+### States
+```
+Default:   Orders loaded
+Loading:   Skeleton rows (5 rows)
+Empty (executed): "Chưa có giao dịch nào" + "Bắt đầu giao dịch →" CTA
+Empty (open):     "Không có lệnh đang chờ"
+Error:     "Không thể tải lịch sử" + retry
+```
+
+---
+
+## Screen 13 — AI Chat Interface
+
+### Screen Overview
+```
+Screen: AI Chat (Natural Language Stock Query)
+User:   User asking questions about stocks in VN/KR/EN
+Goal:   Get AI-powered educational answers about stocks (FR-AI-02)
+Trigger: AI icon in tab bar or dedicated entry point
+```
+
+### Layout
+```
+Header:     "Hỏi Paave AI" — screen title + info icon
+Main:       Chat message list (scrollable)
+Bottom:     Text input bar (sticky)
+```
+
+### Header
+```
+Height:     56px + safe-area-inset-top
+Left:       Back arrow or close ×
+Center:     "🤖 Paave AI" — text-title-md (18px, weight 700), text-primary
+Right:      Info icon (24px) → shows AI disclaimer modal
+```
+
+### Chat Messages
+```
+AI welcome message (first visit):
+  "Xin chào! Tôi có thể giúp bạn tìm hiểu về cổ phiếu trên sàn HOSE,
+   HNX (Việt Nam) và KOSPI, KOSDAQ (Hàn Quốc). Hãy hỏi bất cứ điều gì!"
+  
+User message bubble:
+  Align:      right
+  Background: accent-primary
+  Text:       #FFFFFF, text-body-md (14px)
+  Radius:     16px (top-left, top-right, bottom-left), 4px (bottom-right)
+  Max-width:  280px
+  Padding:    12px 16px
+
+AI response bubble:
+  Align:      left
+  Background: bg-card (#1F2937)
+  Text:       text-primary, text-body-md (14px), line-height: 1.6
+  Radius:     16px (top-left, top-right, bottom-right), 4px (bottom-left)
+  Max-width:  310px
+  Padding:    12px 16px
+
+  Source attribution (below bubble, mt: 4px):
+    "Nguồn: Dữ liệu HOSE ngày 15/04/2026" — text-caption (11px), text-tertiary
+
+  Disclaimer (below source):
+    "AI · Giáo dục, không phải tư vấn" — text-caption (10px), text-tertiary
+
+AI typing indicator:
+  3 animated dots in bg-card bubble, bounce animation
+
+Stock mention in response:
+  "$VCB" rendered as accent-primary text, touchable → Stock Detail
+```
+
+### Input Bar
+```
+Position:   fixed bottom, above keyboard when active
+Height:     56px + safe-area-inset-bottom
+Background: bg-card, top border: border 1px
+Padding:    horizontal 12px, vertical 8px
+
+Input field:
+  Height:   40px
+  Background: bg-secondary
+  Border:   border 1px, radius-full
+  Padding:  horizontal 16px
+  Placeholder: "Hỏi về cổ phiếu..." — text-tertiary, 14px
+  Text:     text-primary, 14px
+
+Send button:
+  Right of input, 40×40px, radius-full
+  Default: bg-card, arrow-up icon, text-tertiary (disabled when empty)
+  Active:  accent-primary bg, #FFFFFF arrow icon
+```
+
+### Interaction Rules
+```
+Send tap / Enter     → Send message, AI typing indicator shows
+AI response          → Bubble appears with typing animation
+$TICKER in response  → Tappable, navigates to Stock Detail
+Out-of-scope query   → "Tôi chỉ có thể trả lời về cổ phiếu VN và KR."
+AI timeout (>10s)    → "Đang mất nhiều thời gian hơn bình thường. Thử lại?"
+Close/back           → Conversation cleared (10-turn max in session)
+```
+
+### States
+```
+Default:    Welcome message + empty input
+Typing:     AI typing indicator visible
+Loaded:     Messages in conversation
+Error:      Error bubble from AI with retry link
+Empty:      Welcome state with suggested questions
+```
+
+### Suggested Questions (Empty State)
+```
+Below welcome message, mt: 16px
+
+Chips (2 per row, 2 rows):
+  "VCB có đáng mua không?"
+  "So sánh FPT và VNM"
+  "P/E của HPG là bao nhiêu?"
+  "Ngành ngân hàng VN ra sao?"
+
+Chip style: bg-card, border, radius-lg, px: 12px, py: 8px, text-body-sm
+Tap → fills input and sends
+```
+
+---
+
+## Screen 14 — Community Feed (Per-Ticker)
+
+### Screen Overview
+```
+Screen: Community Feed (Tab within Stock Detail)
+User:   User reading community opinions about a stock
+Goal:   View Bull/Bear/Neutral posts from other users (FR-SOC-02)
+```
+
+### Layout
+```
+Tab:        "Cộng đồng" tab within Stock Detail (alongside Chart, Stats)
+Main:       Scrollable post list
+Bottom:     Floating "Viết bài" FAB button
+```
+
+### Sentiment Summary Bar
+```
+Height:     44px
+mx: 16px, mt: 12px
+Background: bg-card, radius-md
+Padding:    horizontal 12px
+
+Content:    Horizontal bar showing Bull/Bear/Neutral ratio
+  Green segment (Bull %) | Red segment (Bear %) | Gray segment (Neutral %)
+  Height: 6px, radius-full
+  Below bar: "62% Bull · 28% Bear · 10% Neutral" — text-caption (11px), text-secondary
+  Requires ≥5 posts in 24h; otherwise "Chưa đủ bài viết để hiển thị tâm lý"
+```
+
+### Post Card (Each)
+```
+Width:      343px
+Background: bg-card
+Border:     border 1px
+Radius:     radius-md (12px)
+Padding:    16px
+Margin:     horizontal 16px, bottom 8px
+
+Row 1 — Author:
+  Avatar:   28×28px, radius-full, bg-accent with initials
+  Right (ml: 8px):
+    Pseudonym: "trader_minh" — text-body-sm (13px, weight 600), text-primary
+    Badge:     "Lv.3 Trader" — text-caption (11px), accent-primary-subtle bg, accent-primary text, radius-sm
+  Far right:
+    Timestamp: "2h trước" — text-caption (11px), text-secondary
+
+Row 2 — Sentiment tag (mt: 8px):
+  Bull:    "🟢 Bull" — positive-subtle bg, positive text, radius-full, px: 8px, py: 2px
+  Bear:    "🔴 Bear" — negative-subtle bg, negative text
+  Neutral: "⚪ Neutral" — bg-card, border, text-secondary
+
+Row 3 — Post text (mt: 8px):
+  Max 280 characters, text-body-md (14px), text-primary, line-height: 1.5
+  $TICKER cashtags rendered as accent-primary text, touchable
+
+Row 4 — Engagement (mt: 12px):
+  "👍 12" | "💬 3" — text-caption (12px), text-secondary, gap: 16px
+```
+
+### Floating Action Button
+```
+Position:   bottom-right, 16px from edges, above bottom bar
+Size:       56×56px
+Background: accent-primary
+Icon:       pencil/edit 24px, #FFFFFF
+Shadow:     shadow-card-raised
+Radius:     radius-full
+Tap → Post Creation (Screen 15)
+```
+
+### States
+```
+Default:    Posts loaded (newest 20)
+Loading:    Skeleton post cards (3)
+Empty:      "Hãy là người đầu tiên viết về $VCB" + "Viết bài →" CTA
+Infinite:   Spinner at bottom, load 20 more
+Error:      "Không thể tải bài viết" + retry
+```
+
+---
+
+## Screen 15 — Post Creation
+
+### Screen Overview
+```
+Screen: Post Creation (Bottom Sheet or Push Screen)
+User:   User writing a community post
+Goal:   Publish opinion with $TICKER tag and sentiment (FR-SOC-03)
+```
+
+### Layout
+```
+Type:       Full-screen push or 90% bottom sheet
+Header:     "Viết bài" + Close × + character count
+Main:       Text area + ticker + sentiment selector
+Bottom:     Publish button
+```
+
+### Content
+```
+Header:
+  Left:   × Close, 44×44px
+  Center: "Viết bài" — text-title-md (18px, weight 700)
+  Right:  "247/280" character counter — text-caption (12px), text-secondary
+          Turns negative (#EF4444) at >280
+
+Ticker tag row (mt: 16px, mx: 16px):
+  Label: "Cổ phiếu" — text-body-sm (13px, weight 500), text-secondary
+  Tag:   "$VCB" — accent-primary-subtle bg, accent-primary text, radius-full, px: 10px, height: 28px
+  "+" button to add more tickers (max 5)
+  
+Sentiment selector (mt: 16px, mx: 16px):
+  Label: "Quan điểm của bạn" — text-body-sm, text-secondary, mb: 8px
+  3 options horizontal:
+    "🟢 Bull"    — positive-subtle bg when selected, positive border 2px
+    "🔴 Bear"    — negative-subtle bg when selected, negative border 2px
+    "⚪ Trung lập" — bg-card when selected, border 2px
+  Each: height 40px, radius-full, px: 16px
+  Required before publish
+
+Text area (mt: 16px, mx: 16px):
+  Height:   200px (min), auto-expand
+  Background: bg-secondary
+  Border:   border 1px, radius-md
+  Focus:    border-focus 2px
+  Padding:  16px
+  Placeholder: "Chia sẻ quan điểm của bạn về $VCB..." — text-tertiary, 14px
+  Font:     text-body-md (14px), text-primary
+
+Publish button (bottom, mx: 16px, mb: 32px + safe-area):
+  Width:    343px
+  Height:   52px
+  Radius:   radius-lg (16px)
+  Enabled:  accent-primary bg, #FFFFFF text, "Đăng bài (60s hủy)"
+  Disabled: bg-card, text-tertiary (when no sentiment or no text)
+
+Post-publish countdown:
+  After tap: button changes to "Hủy đăng (58s)" with countdown
+  Background: bg-card, border: border
+  Text: text-primary, countdown in accent-primary
+  60-second cancel window per FR-SOC-03
+```
+
+### States
+```
+Default:    Empty form, $TICKER pre-filled from Stock Detail
+Typing:     Character count updates live
+Ready:      All fields filled, Publish enabled
+Publishing: 60s countdown, cancel available
+Published:  Toast "Bài viết đã được đăng!" → return to Community Feed
+Cancelled:  Toast "Đã hủy bài viết" → stay on creation screen
+Error:      Toast "Không thể đăng, thử lại"
+Flagged:    "Bài viết đang được xem xét" (moderation hold)
+```
+
+---
+
+## Screen 16 — Social Profile
+
+### Screen Overview
+```
+Screen: Social Profile (Public)
+User:   Viewing own or another user's public profile
+Goal:   See pseudonym, Trader Tier, post history, follow/unfollow (FR-SOC-05)
+```
+
+### Layout
+```
+Header:     Back + username
+Main:       Scrollable — profile card + stats + post list
+Bottom:     (no nav bar — push screen)
+```
+
+### Profile Card
+```
+mx: 16px, mt: 16px
+
+Card:
+  Background: bg-card
+  Radius:     radius-xl (24px)
+  Padding:    24px
+  Align:      center
+
+  Avatar:     64×64px, radius-full, accent-primary bg, initials text (24px Bold)
+  Name:       "trader_minh" — text-title-lg (20px, weight 700), text-primary, mt: 12px
+  Badge:      "🏆 Silver Trader · Lv.3" — text-body-sm (13px), accent-primary, mt: 4px
+  Joined:     "Thành viên từ 03/2026" — text-caption (12px), text-secondary, mt: 4px
+
+Stats row (mt: 16px):
+  3 columns, equal width:
+    "Bài viết" / "42"     — text-caption label / text-title-sm value
+    "Người theo dõi" / "128"
+    "Đang theo dõi" / "67"
+  Dividers: vertical 1px between columns
+
+Follow button (mt: 16px, visible if viewing other user):
+  Not following: accent-primary bg, #FFFFFF text, "Theo dõi", width 200px, height 40px
+  Following:     accent-primary-subtle bg, accent-primary text, "Đang theo dõi"
+```
+
+### Post List
+```
+mt: 24px
+Label: "Bài viết gần đây" — text-title-sm, text-primary, mx: 16px, mb: 12px
+
+Posts: Same design as Community Feed post cards (Screen 14)
+Paginated: 20 per load, infinite scroll
+```
+
+### States
+```
+Default:    Profile + posts loaded
+Loading:    Skeleton avatar + stats + 3 skeleton posts
+No posts:   "Chưa có bài viết nào"
+Error:      "Không thể tải hồ sơ" + retry
+```
+
+---
+
+## Screen 17 — Portfolio Health Check
+
+### Screen Overview
+```
+Screen: Portfolio Health Check (Weekly Report)
+User:   User viewing AI-generated portfolio analysis
+Goal:   See letter grade + 5-dimension radar chart + actionable insights (FR-AI-05)
+Trigger: Push notification Monday 8AM or Profile → Notification History
+```
+
+### Layout
+```
+Header:     Back + "Kiểm tra sức khỏe danh mục"
+Main:       Scrollable — grade card + radar chart + dimension cards
+```
+
+### Grade Hero Card
+```
+mx: 16px, mt: 16px
+
+Card:
+  Height:     160px
+  Background: gradient-hero
+  Radius:     radius-xl (24px)
+  Padding:    24px
+
+  Left:
+    "Điểm tổng thể" — text-caption (12px), text-secondary
+    Letter grade: "B+" — text-display-xl (48px, weight 800), accent-primary
+    "Khá tốt — vài điểm cần cải thiện" — text-body-sm (13px), text-secondary
+
+  Right:
+    Date: "Tuần 15/04/2026" — text-caption (12px), text-secondary
+```
+
+### Radar Chart
+```
+mx: 16px, mt: 24px
+
+Size:       280×280px, centered
+Type:       5-axis radar/spider chart
+Axes:       Đa dạng hóa | Tập trung | Biến động | Phân bổ địa lý | Thanh khoản
+Fill:       accent-primary, opacity 0.2
+Stroke:     accent-primary, 2px
+Grid:       3 concentric pentagons, border-subtle, 1px
+Labels:     text-caption (11px), text-secondary, positioned outside axes
+```
+
+### Dimension Cards (5 total)
+```
+mt: 24px, mx: 16px, gap: 8px
+
+Each card:
+  Height:     auto
+  Background: bg-card
+  Border:     border 1px
+  Radius:     radius-md (12px)
+  Padding:    16px
+
+  Row 1:
+    Left:  Dimension icon (16px) + name "Đa dạng hóa" — text-body-md (14px, weight 600)
+    Right: Grade "A" — text-title-sm (16px, weight 700), positive/warning/negative based on grade
+
+  Row 2 (mt: 8px):
+    Explanation: "Danh mục phân bổ tốt qua 4 ngành. Không có ngành nào chiếm quá 30%."
+    text-body-sm (13px), text-secondary
+
+  Row 3 (mt: 8px):
+    "Tìm hiểu thêm →" — text-body-sm (13px), accent-primary, touchable
+    Tap → opens AI Chat scoped to this dimension
+
+Grade colors:
+  A/A+: positive (#10B981)
+  B/B+: accent-primary (#3B82F6)
+  C/C+: warning (#F59E0B)
+  D/F:  negative (#EF4444)
+```
+
+### Disclaimer
+```
+mt: 16px, mx: 16px, mb: 32px
+text-caption (11px), text-tertiary
+"Nội dung AI chỉ mang tính giáo dục. Không phải lời khuyên đầu tư."
+```
+
+---
+
+## Screen 18 — Notification Inbox
+
+### Screen Overview
+```
+Screen: Notification Inbox
+User:   User checking notification history
+Goal:   View all past 30 days of notifications (FR-47)
+Trigger: Bell icon on Home header or Profile → Thông báo
+```
+
+### Layout
+```
+Header:     "Thông báo" — screen title
+Main:       Scrollable notification list
+Bottom:     Persistent nav bar (if accessed from tab) or back button
+```
+
+### Notification Row
+```
+Each row:
+  Height:     72px
+  Padding:    horizontal 16px
+  Background: bg-primary (read) / bg-card (unread)
+  Border-bottom: border-subtle 1px
+
+  Left:
+    Icon circle: 36×36px
+      Price alert:     bell icon, warning bg-subtle
+      Market open:     sunrise icon, positive bg-subtle
+      Market close:    sunset icon, accent-primary bg-subtle
+      Watchlist move:  trending-up icon, positive/negative bg-subtle
+      AI coaching:     brain icon, accent-primary bg-subtle
+      Health check:    heart icon, accent-primary bg-subtle
+
+  Center (ml: 12px):
+    Title: "VCB Alert Triggered" — text-body-md (14px, weight 600), text-primary
+           Unread: weight 700
+    Body:  "Vietcombank đang ở ₫90.200 (+2,5%)" — text-body-sm (13px), text-secondary
+           1 line max, truncate
+
+  Right:
+    Time: "2h" / "Hôm qua" / "15/04" — text-caption (11px), text-secondary
+    Unread dot: 8px, accent-primary (only for unread)
+
+Tap → marks read + navigates to relevant screen
+```
+
+### States
+```
+Default:   Notifications loaded, unread highlighted
+Loading:   Skeleton rows (5)
+Empty:     "Chưa có thông báo nào" illustration + subtitle
+Error:     "Không thể tải thông báo" + retry
+```
+
+---
+
+## Screen 19 — Notification Settings
+
+### Screen Overview
+```
+Screen: Notification Settings
+User:   User configuring which notifications to receive
+Goal:   Toggle individual notification types on/off (FR-52)
+Trigger: Profile → Cài đặt → Thông báo
+```
+
+### Layout
+```
+Header:     Back + "Cài đặt thông báo"
+Main:       Settings toggle list
+```
+
+### Content
+```
+Section 1 — "Cảnh báo giá" (mt: 16px):
+  Row: "Cảnh báo giá"
+    Description: "Thông báo khi cổ phiếu đạt mức giá mục tiêu"
+    Toggle: on/off, accent-primary when on
+
+Section 2 — "Thị trường" (mt: 24px):
+  Row: "Mở cửa thị trường"
+    Description: "Thông báo khi sàn mở cửa giao dịch"
+    Toggle: on/off
+
+  Row: "Đóng cửa thị trường"
+    Description: "Tóm tắt chỉ số cuối ngày"
+    Toggle: on/off
+
+Section 3 — "Danh sách theo dõi" (mt: 24px):
+  Row: "Biến động cổ phiếu"
+    Description: "Thông báo khi CP theo dõi tăng/giảm ≥5%"
+    Toggle: on/off
+
+Section 4 — "AI & Học tập" (mt: 24px):
+  Row: "Kiểm tra sức khỏe danh mục"
+    Description: "Báo cáo tuần vào thứ Hai 8:00 sáng"
+    Toggle: on/off
+
+  Row: "Gợi ý hành vi"
+    Description: "Nhắc nhở khi phát hiện FOMO, bán hoảng loạn"
+    Toggle: on/off
+
+Row style:
+  Height:     72px
+  Padding:    horizontal 16px
+  Label:      text-body-md (14px, weight 500), text-primary
+  Description: text-caption (12px), text-secondary, mt: 2px
+  Toggle:     Native switch, 51×31px, accent-primary when on
+  Divider:    border-subtle 1px between rows
+
+OS disabled state:
+  All toggles grayed out
+  Banner at top: "Thông báo bị tắt ở cấp hệ thống. Mở Cài đặt thiết bị để bật."
+  text-body-sm (13px), warning, bg: warning-subtle, px: 16px, py: 12px, radius-md
+```
+
+---
+
 ## Component Library Summary (Quick Reference)
 
 | Component | File | Variants |
