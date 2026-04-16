@@ -1,11 +1,11 @@
 # FRD — Functional Requirement Document
 ## Paave — Gen Z Fintech Investing App (V2)
 
-**Document version:** 2.0
-**Date:** 2026-04-14
+**Document version:** 2.1
+**Date:** 2026-04-16
 **Author:** Business Analysis Team
 **Status:** Approved for Development
-**Linked BRD:** BRD.md v2.0
+**Linked BRD:** BRD.md v2.1
 **Previous version:** FRD v1.0
 
 ---
@@ -24,14 +24,15 @@
    - [FR-48 to FR-53: User Account](#user-account)
 3. [Module A: Age Gate (FR-AGE-01 to FR-AGE-04)](#module-a-age-gate)
 4. [Module B: Paper Trading Engine (FR-PT-01 to FR-PT-06)](#module-b-paper-trading-engine)
-5. [Module C: Gamification (FR-GAME-01 to FR-GAME-05)](#module-c-gamification)
+5. [Module C: Gamification (FR-GAME-01 to FR-GAME-07)](#module-c-gamification)
 6. [Module D: AI System P0 (FR-AI-01 to FR-AI-03)](#module-d-ai-system-p0)
 7. [Module E: AI System P1 (FR-AI-04 to FR-AI-07)](#module-e-ai-system-p1)
-8. [Module F: Social Features P1 (FR-SOC-01 to FR-SOC-05)](#module-f-social-features-p1)
-9. [Module G: Language System (FR-LANG-01 to FR-LANG-02)](#module-g-language-system)
-10. [Module H: Legal / Disclaimers (FR-LEGAL-01 to FR-LEGAL-03)](#module-h-legal--disclaimers)
-11. [Business Rules](#business-rules)
-12. [Traceability Matrix](#traceability-matrix)
+8. [Module E2: Education System (FR-EDU-01)](#module-e2-education-system)
+9. [Module F: Social Features P1 (FR-SOC-01 to FR-SOC-05)](#module-f-social-features-p1)
+10. [Module G: Language System (FR-LANG-01 to FR-LANG-02)](#module-g-language-system)
+11. [Module H: Legal / Disclaimers (FR-LEGAL-01 to FR-LEGAL-03)](#module-h-legal--disclaimers)
+12. [Business Rules](#business-rules)
+13. [Traceability Matrix](#traceability-matrix)
 
 ---
 
@@ -63,6 +64,10 @@
 | Social Features P1 | Registered User | Social proof on stocks, per-ticker feed, post creation, follow system |
 | Language System | Registered User | VN/KR/EN language selection with locale-appropriate financial terminology |
 | Legal / Disclaimers | Registered User | Investment disclaimers, AI disclaimers, and data consent |
+| Biometric Auth | Returning User | Authenticate via Face ID / fingerprint without password |
+| Milestone Celebrations | Registered User | Celebrate portfolio achievements with animations and shareable cards |
+| Portfolio Goal Setting | Registered User | Set and track virtual portfolio value targets |
+| Inline Tooltips | Registered User | Tap any financial term for instant plain-language explanation |
 
 ---
 
@@ -109,7 +114,9 @@
 - **Acceptance Criteria:**
   - Given device locale `vi` → Vietnam pre-selected on Market Preference screen.
   - Given device locale `en-US` → Global pre-selected.
-- **Edge Cases:** No locale set (custom ROMs) → defaults to Global.
+- **Edge Cases:**
+  - No locale set (custom ROMs) → defaults to Global.
+  - Given VN user → Discover feed defaults to Vietnam filter; trending stocks section shows VN stocks first. *(traces to BO-05)*
 - **Priority:** P0
 
 ---
@@ -168,6 +175,30 @@
   - Given valid credentials → Home screen, valid session.
   - Given 5th failed attempt → account locked 15 minutes.
 - **Edge Cases:** `PENDING_VERIFICATION` account → "Please verify your email to continue."
+- **Priority:** P0
+
+---
+
+#### FR-07B — Biometric Authentication
+
+- **Actor:** Returning User
+- **Description:** After first successful login, user is prompted to enable biometric authentication (Face ID on iOS, fingerprint on Android). When enabled, subsequent app opens authenticate via biometric instead of email/password. Biometric data is stored in device secure enclave (iOS Keychain / Android Keystore) — never transmitted to servers.
+- **Key Rules:**
+  - First login always requires email/password (biometric cannot be the initial auth)
+  - Biometric enrollment is opt-in; prompted once after first login. If declined, user can enable later in Settings.
+  - 3 consecutive biometric failures → automatic fallback to email/password login
+  - Biometric status stored server-side as boolean flag (biometric_enabled) — actual biometric data never leaves device
+  - Device change → biometric re-enrollment required
+  - Logout invalidates biometric session (user must re-authenticate with email/password on next login)
+- **Acceptance Criteria:**
+  - Given first login → biometric enrollment prompt shown after reaching Home; "Enable" stores biometric; "Not now" dismisses.
+  - Given biometric enabled + app reopened → Face ID / fingerprint prompt shown; successful auth → Home screen.
+  - Given 3 failed biometric attempts → email/password login screen shown with message "Biometric failed. Please log in with your password."
+  - Given user logs out → next app open requires email/password regardless of biometric setting.
+- **Edge Cases:**
+  - Device has no biometric hardware → enrollment prompt not shown; biometric option hidden in Settings.
+  - User changes device biometric (e.g., adds new fingerprint) → biometric session invalidated; re-enrollment required.
+  - OS biometric permission revoked → graceful fallback to email/password; toast "Biometric access was removed. Log in with your password."
 - **Priority:** P0
 
 ---
@@ -502,7 +533,7 @@
 #### FR-35 — P&L Color Coding
 
 - **Actor:** Registered User
-- **Description:** P&L values color-coded: positive → green (#00C853); negative → red (#D50000); zero → gray (#9E9E9E). "+" prefix for positive, "−" for negative.
+- **Description:** P&L values color-coded: positive → green (#10B981); negative → red (#EF4444); zero → gray (#9CA3AF). "+" prefix for positive, "−" for negative.
 - **V2 Note:** Retained and applied to paper trading P&L throughout app.
 - **Key Rules:** Applied to all P&L values across paper portfolio, leaderboard, and profile.
 - **Acceptance Criteria:**
@@ -534,6 +565,7 @@
   - Given 10:30 AM ICT weekday → live VN-Index, 5 gainers, 5 losers, 5 most active shown; data ≤30s old.
   - Given 4:00 PM ICT → "Market Closed" badge; next open time shown.
 - **Edge Cases:** Feed outage → cached data with banner; VN-Index null → "—" with error banner.
+- **VN Data Latency Monitoring:** VN market data latency is monitored server-side. If latency exceeds 15 seconds for > 5 consecutive ticks, a degraded data banner is shown to users: "Live data may be delayed. We're working on it." *(traces to BO-06)*
 - **Priority:** P0
 
 ---
@@ -962,9 +994,9 @@
   | Tier | EN | VN | KR | Min Score |
   |------|----|----|-----|-----------|
   | 1 | Seedling | Mầm non | 새싹 | 0 |
-  | 2 | Apprentice | Học việc | 견습생 | 500 |
-  | 3 | Analyst | Chuyên viên | 분석가 | 1,500 |
-  | 4 | Portfolio Manager | Quản lý quỹ | 포트폴리오 매니저 | 3,500 |
+  | 2 | Learner | Người học | 입문자 | 500 |
+  | 3 | Investor | Nhà đầu tư | 투자자 | 1,500 |
+  | 4 | Trader | Trader | 트레이더 | 3,500 |
   | 5 | Expert | Chuyên gia | 전문가 | 7,500 |
   | 6 | Legend | Huyền thoại | 레전드 | 15,000 |
 
@@ -974,9 +1006,9 @@
   - Tier is re-evaluated weekly after Trader Score update (FR-GAME-03).
   - Tier can only increase, never decrease.
 - **Acceptance Criteria:**
-  - Given user reaches 1,500 cumulative score → tier badge updates to "Analyst / Chuyên viên / 분석가."
+  - Given user reaches 1,500 cumulative score → tier badge updates to "Investor / Nhà đầu tư / 투자자."
   - Given posts in community feed → tier badge shown next to author pseudonym.
-- **Edge Cases:** Score threshold boundary (exactly 500) → upgrade to Apprentice.
+- **Edge Cases:** Score threshold boundary (exactly 500) → upgrade to Learner.
 - **Priority:** P1
 
 ---
@@ -984,16 +1016,19 @@
 #### FR-GAME-03 — Trader Score
 
 - **Actor:** Registered User
-- **Description:** Composite weekly score computed on Sundays. Formula:
-  - Return (40%): paper portfolio weekly return vs. benchmark
-  - Consistency (30%): % of days with at least one meaningful action (trade or lesson)
-  - Risk Discipline (20%): absence of flagged behaviors (FOMO, panic sell, overtrading per FR-AI-07)
-  - Activity (10%): raw trade + lesson count for the week
+- **Description:** Composite weekly score computed on Sundays. Score range: 0–100 per week. Formula:
+  - Return (40%): paper portfolio weekly return vs. benchmark (scaled 0–40)
+  - Consistency (30%): % of days with at least one meaningful action (scaled 0–30)
+  - Risk Discipline (20%): absence of flagged behaviors (scaled 0–20)
+  - Activity (10%): raw trade + lesson count (scaled 0–10)
+
+  Weekly scores are **additive** to a cumulative Trader Score. Cumulative score determines Trader Tier (FR-GAME-02). Tiers can only increase, never decrease.
 - **Key Rules:**
   - Score computed every Sunday at midnight UTC.
   - Score displayed on public profile and leaderboard (deferred V2 feature).
-  - Weekly score is additive to cumulative score for tier progression.
-  - Behavioral deductions: each FR-AI-07 flag in the week reduces Risk Discipline component by 10 points (max 4 flags = 0 Risk Discipline score for that week).
+  - Weekly score range: 0–100. Weekly scores are additive to a cumulative Trader Score.
+  - Cumulative score determines Trader Tier (FR-GAME-02). Tiers can only increase, never decrease.
+  - Behavioral deductions: each FR-AI-07 flag in the week reduces Risk Discipline component by 5 points (max 4 flags = 0 Risk Discipline score for that week).
 - **Acceptance Criteria:**
   - Given user had 5% weekly portfolio return with consistent activity and no flags → high score computed and added to profile.
   - Given Sunday midnight passes → score badge on profile updates.
@@ -1039,6 +1074,59 @@
 
 ---
 
+#### FR-GAME-06 — Milestone Celebrations
+
+- **Actor:** Registered User
+- **Description:** Animated celebration overlay triggered at key portfolio milestones:
+  - First paper trade executed
+  - First profitable trading day (virtual P&L > 0)
+  - Each new Trader Tier reached
+  - Portfolio value milestones: +10M VND, +50M VND, +100M VND virtual profit
+  - Portfolio goal reached (FR-GAME-07)
+  - 7-day learning streak
+  - 30-day learning streak
+  Celebration consists of: confetti particle animation (1200ms), haptic feedback (medium impact), achievement card (9:16 format). Achievement card is shareable to external apps (Zalo, KakaoTalk, Instagram Stories) via native share sheet.
+- **Key Rules:**
+  - Each milestone fires once per user lifetime (except portfolio goal which fires per goal set).
+  - Celebration overlay is dismissible (tap anywhere or swipe down).
+  - Achievement card contains: milestone name, date achieved, Trader Tier badge, anonymized portfolio stat (% return, not absolute VND amount — per BR-SOC-01).
+  - Share action opens native OS share sheet with pre-rendered 9:16 image.
+  - Celebration animation respects `prefers-reduced-motion` — reduces to a subtle scale-up + haptic only.
+- **Acceptance Criteria:**
+  - Given first paper trade fills → confetti overlay shown within 2 seconds; dismissible; achievement card available to share.
+  - Given user reaches Tier 3 → tier-up celebration shown; card includes new tier badge.
+  - Given same milestone triggered twice → celebration not shown second time.
+  - Given reduced motion enabled → no confetti particles; only opacity fade + haptic.
+- **Edge Cases:**
+  - Multiple milestones triggered simultaneously (e.g., first trade + first profit) → queue; show most significant first; second shown after first dismissed (max 2 queued; others logged silently).
+  - User is offline when milestone triggers → celebration shown on next app open.
+  - Share fails (no share-compatible app installed) → toast "Unable to share. Screenshot saved to gallery."
+- **Priority:** P1
+
+---
+
+#### FR-GAME-07 — Portfolio Goal Setting
+
+- **Actor:** Registered User
+- **Description:** User sets a virtual portfolio value target from Portfolio settings. Goal displayed as a progress bar on Portfolio tab header. Progress updates in real-time with portfolio value. Goal completion triggers FR-GAME-06 milestone celebration.
+- **Key Rules:**
+  - One active goal at a time per user. Setting a new goal replaces the previous one.
+  - Goal must be > current portfolio value.
+  - Goal has no deadline (open-ended) unless user sets optional target date.
+  - Progress bar shows: current value, target value, % progress.
+  - Goal can be cancelled at any time from Portfolio settings.
+- **Acceptance Criteria:**
+  - Given user sets goal of 600M VND (current: 520M VND) → progress bar shows 40% complete.
+  - Given portfolio reaches 600M VND → milestone celebration fires; goal marked "Achieved"; progress bar at 100%.
+  - Given goal cancelled → progress bar removed; no celebration.
+- **Edge Cases:**
+  - Portfolio value decreases below starting value → progress bar shows negative territory with different color (neutral).
+  - Portfolio reset (FR-PT-05) while goal is active → goal auto-cancelled; user notified.
+  - Goal value equal to current value → error "Goal must be higher than your current portfolio value."
+- **Priority:** P1
+
+---
+
 ## Module D: AI System P0
 
 > **Purpose:** Core AI features required at launch. Educational and explanatory only. Never provides buy/sell recommendations.
@@ -1050,8 +1138,8 @@
 - **Actor:** Registered User (after paper trade fills)
 - **Description:** After every paper trade fills, a non-blocking AI card auto-appears in the portfolio screen or as a bottom sheet. Dismissible at any time. Three sections:
   1. **What happened** — plain language description of recent price action for this stock.
-  2. **Why** — top 1–2 causal factors (e.g., "sector rotation," "earnings surprise").
-  3. **What to watch** — one forward-looking signal (e.g., "next earnings date," "sector catalyst").
+  2. **Why** — up to 3 causal factors from news/fundamentals (e.g., "sector rotation," "earnings surprise," "policy change").
+  3. **What to watch** — 1–2 forward-looking signals (e.g., "next earnings date," "sector catalyst").
 - **Key Rules:**
   - Card is non-blocking: user can dismiss at any time without completing read.
   - Language matches user's active language setting (FR-LANG-01).
@@ -1073,7 +1161,7 @@
 - **Actor:** Registered User
 - **Description:** Chat interface (bottom sheet or dedicated screen) where user types questions in VN/KR/EN. AI responds in the same language. Restricted to VN (HOSE/HNX) and KR (KOSPI/KOSDAQ) stocks at launch. Every response includes: source attribution, disclaimer (FR-LEGAL-02). AI never recommends buy/sell.
 - **Key Rules:**
-  - AI detects input language automatically (not dependent on app language setting).
+  - AI response language always matches the user's app language setting (FR-LANG-01), regardless of the input language used in the query. This is consistent with BR-AI-03.
   - Scope restricted: queries about stocks outside VN/KR → "I can only answer questions about Vietnam (HOSE/HNX) and Korea (KOSPI/KOSDAQ) stocks right now."
   - Source attribution: cite data sources used (e.g., "Based on HOSE data as of [date]").
   - Buy/sell language filtered: if response would contain recommendation, it is replaced with educational framing.
@@ -1204,6 +1292,34 @@
 
 ---
 
+## Module E2: Education System
+
+> **Purpose:** Contextual financial education delivered inline, without requiring navigation to separate learning sections.
+
+---
+
+#### FR-EDU-01 — Inline Financial Terminology Tooltips
+
+- **Actor:** Registered User
+- **Description:** Every financial term displayed in the app (P/E, EPS, market cap, dividend yield, CASA ratio, RSI, volume, 52-week high/low, etc.) has a one-tap inline explainer tooltip. Tapping a term label renders a tooltip overlay with a 2-3 sentence plain-language explanation in the user's active language. Tooltip appears at the point of display (no navigation to a separate screen). Tooltip is dismissible by tapping outside.
+- **Key Rules:**
+  - Tooltip content managed server-side in a financial glossary table (updatable without app release).
+  - Tooltips localized per FR-LANG-02 using market-standard terminology.
+  - Tooltip render time: ≤ 200ms (cached client-side on first load).
+  - Terms without glossary entries display no tooltip tap affordance (no broken interaction).
+  - Tooltip includes "Learn more" link to relevant micro-lesson (FR-AI-06) if available.
+- **Acceptance Criteria:**
+  - Given VN user taps "P/E" on Stock Detail → tooltip shows "Chi so P/E (Price to Earnings)..." in Vietnamese within 200ms.
+  - Given KR user taps "시가총액" → tooltip shows Korean explanation.
+  - Given term not in glossary → no tap indicator shown; label renders as plain text.
+- **Edge Cases:**
+  - Tooltip content exceeds viewport → tooltip scrollable within its container (max 4 lines visible).
+  - Multiple terms close together → only one tooltip open at a time; opening new closes previous.
+  - Offline → cached tooltip content shown; if never cached → no tooltip (graceful degradation).
+- **Priority:** P0
+
+---
+
 ## Module F: Social Features P1
 
 > **Purpose:** Community layer to build trust, learning, and engagement. Pseudonymous. No real identity revealed. Deferred social features (copy trading, portfolio sharing, full following feed, Morning Call) remain V3+.
@@ -1251,19 +1367,20 @@
 #### FR-SOC-03 — Post Creation
 
 - **Actor:** Registered User
-- **Description:** User writes a post (max 280 characters). Must attach ≥1 $TICKER cashtag (auto-suggested from stock being viewed). Must select sentiment: Bull / Bear / Neutral. 60-second delay before publish (allows user to cancel). Posts cannot contain direct buy/sell directives without analysis context.
+- **Description:** User writes a post (max 1,000 characters). Posts longer than 280 characters are truncated in feed view with a 'Read more' expander. Must attach ≥1 $TICKER cashtag (auto-suggested from stock being viewed). Must select sentiment: Bull / Bear / Neutral. 60-second delay before publish (allows user to cancel). Posts cannot contain direct buy/sell directives without analysis context.
 - **Key Rules:**
   - Minimum 1 $TICKER cashtag required; max 5 cashtags per post.
   - Cashtag auto-suggested from the stock detail screen the user is currently viewing.
   - Sentiment selection: required (no publish without selecting one).
   - 60-second pending window: countdown shown; "Cancel" button available during this period.
   - Content moderation: posts containing direct "buy this" / "sell this" language without analysis flagged for review and held pending.
+  - Server-side validation: if no $TICKER cashtag is detected in the post body after auto-extraction, the post is rejected with error "Post must include at least one $TICKER cashtag."
   - Post published to: per-ticker community feed (FR-SOC-02) and following feed of users who follow this author (FR-SOC-04).
 - **Acceptance Criteria:**
   - Given user writes post, selects Bull, and attaches $VIC → 60s countdown shown; post published after countdown if not cancelled.
   - Given user taps Cancel within 60s → post discarded.
   - Given user writes "BUY VIC NOW" without additional context → post flagged; held for moderation.
-- **Edge Cases:** Character count reaches 281 → input field rejects additional characters; counter shows "280/280" in red.
+- **Edge Cases:** Character count reaches 1,001 → input field rejects additional characters; counter shows "1,000/1,000" in red.
 - **Priority:** P1
 
 ---
@@ -1436,12 +1553,14 @@
 | BR-20 | Max 1 AI behavioral coaching nudge per user per calendar day (user's local timezone). |
 | BR-21 | All AI content must append the educational disclaimer defined in FR-LEGAL-02 in the user's active language. |
 | BR-22 | Data consent (FR-LEGAL-03) checkboxes must not be pre-checked. Consent timestamp and ToS version stored on user record. |
-| BR-23 | Social posts require minimum 1 $TICKER cashtag and 1 sentiment selection before publish. 60-second cancel window enforced. |
+| BR-23 | Social posts limited to 1,000 characters, require minimum 1 $TICKER cashtag and 1 sentiment selection before publish. Posts longer than 280 characters are truncated in feed view with a 'Read more' expander. 60-second cancel window enforced. |
 | BR-24 | Real name never shown on public social profile unless user explicitly opts in via Settings. Default is pseudonym only. |
 | BR-25 | Trader Tier can only increase, never decrease, regardless of score changes. |
 | BR-26 | Investment disclaimer (FR-LEGAL-01) shown on first view of each screen type per session. Cannot be permanently dismissed. |
 | BR-27 | Behavioral coaching flags (FR-AI-07) are logged to the user's Risk Discipline score component for the weekly Trader Score. |
 | BR-28 | Age verified at registration via DOB. Minimum age to register: 16 (or 13 with parental consent, deferred to V3). Under 13: registration blocked entirely. |
+| BR-29 | Each primary screen must have one primary action and one primary data display. Competing primary CTAs on a single screen are a P1 UX bug. |
+| BR-30 | All financial terminology must have inline contextual tooltips (one-tap explainer). Separate education sections are not acceptable alternatives. |
 
 ---
 
@@ -1451,16 +1570,18 @@ This matrix links each functional requirement to the BRD business objectives it 
 
 | BRD Objective | Description | Linked FRs |
 |---------------|-------------|------------|
-| BO-01 | Acquire Gen Z users in VN and KR through a low-barrier, mobile-first onboarding | FR-01, FR-02, FR-03, FR-04, FR-05, FR-06, FR-07, FR-08, FR-AGE-01, FR-AGE-03, FR-LEGAL-03, FR-LANG-01 |
-| BO-02 | Drive daily active usage through market data and personalized home screen | FR-09, FR-10, FR-11, FR-12, FR-13, FR-14, FR-36, FR-37, FR-38, FR-39, FR-40, FR-41 |
-| BO-03 | Build investing confidence via safe, gamified paper trading simulation | FR-PT-01, FR-PT-02, FR-PT-03, FR-PT-04, FR-PT-05, FR-PT-06, FR-GAME-01, FR-GAME-02, FR-GAME-03, FR-GAME-04, FR-GAME-05, FR-35 |
-| BO-04 | Deliver AI-powered financial education contextually and without intimidation | FR-AI-01, FR-AI-02, FR-AI-03, FR-AI-04, FR-AI-05, FR-AI-06, FR-AI-07, FR-LANG-02 |
-| BO-05 | Grow a Gen Z investing community through social features and social proof | FR-SOC-01, FR-SOC-02, FR-SOC-03, FR-SOC-04, FR-SOC-05, FR-16, FR-GAME-02 |
-| BO-06 | Serve both VN and KR markets with locale-appropriate content and data | FR-03, FR-04, FR-37, FR-38, FR-LANG-01, FR-LANG-02, FR-AI-03, FR-PT-01 |
-| BO-07 | Maintain regulatory compliance and user trust through transparent legal practices | FR-LEGAL-01, FR-LEGAL-02, FR-LEGAL-03, FR-AGE-01, FR-AGE-02, FR-AGE-03, FR-PT-06, BR-19, BR-21, BR-22 |
-| BO-08 | Retain users through personalized notifications, alerts, and weekly engagement hooks | FR-42, FR-43, FR-44, FR-45, FR-46, FR-47, FR-52, FR-AI-05, FR-AI-07, FR-GAME-04, FR-GAME-05 |
-| BO-09 | Support age-appropriate feature access and protect underage users | FR-AGE-01, FR-AGE-02, FR-AGE-03, FR-AGE-04, BR-16, BR-28 |
-| BO-10 | Enable stock discovery and research within a curated, editorial-driven feed | FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, FR-27, FR-28 |
+| BO-01 | Acquire 50K MAU within 6 months | FR-01, FR-02, FR-03, FR-04, FR-05, FR-06, FR-07, FR-07B, FR-08, FR-AGE-01, FR-AGE-03, FR-LEGAL-03, FR-LANG-01, FR-SOC-01, FR-GAME-01, FR-GAME-06 |
+| BO-02 | D7 retention >= 35% | FR-09, FR-10, FR-11, FR-12, FR-13, FR-14, FR-42, FR-43, FR-44, FR-45, FR-46, FR-47, FR-52, FR-GAME-04, FR-GAME-05, FR-GAME-07 |
+| BO-03 | Watchlist adoption >= 60% | FR-12, FR-20, FR-27, FR-28, FR-46, FR-SOC-01 |
+| BO-04 | Discover as primary acquisition channel >= 40% | FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-SOC-01, FR-EDU-01 |
+| BO-05 | VN as lead market >= 70% MAU | FR-03, FR-04, FR-37, FR-LANG-01, FR-LANG-02, FR-PT-01 |
+| BO-06 | VN data latency <= 15s | FR-37, FR-10, FR-PT-02 |
+| BO-07 | Onboarding completion >= 75% | FR-01, FR-02, FR-03, FR-04, FR-05, FR-06, FR-08, FR-AGE-01, FR-LEGAL-03, FR-LANG-01 |
+| BO-08 | Paper trade activation >= 50% | FR-PT-01, FR-PT-02, FR-PT-03, FR-PT-04, FR-PT-05, FR-PT-06, FR-09, FR-23, FR-AI-01, FR-AI-04, FR-GAME-06 |
+| BO-09 | Gamification Tier 2 >= 40% | FR-GAME-01, FR-GAME-02, FR-GAME-03, FR-GAME-04, FR-GAME-05, FR-GAME-06, FR-GAME-07, FR-AI-06, FR-EDU-01 |
+| BO-10 | AI card read-through >= 65% | FR-AI-01, FR-AI-02, FR-AI-03, FR-AI-04, FR-AI-05, FR-AI-06, FR-AI-07, FR-LANG-02, FR-LEGAL-02, FR-EDU-01 |
+| BO-11 | Community feed engagement >= 35% | FR-SOC-01, FR-SOC-02, FR-SOC-03, FR-SOC-04, FR-SOC-05, FR-16, FR-GAME-02 |
+| BO-12 | Age 16-17 compliance, zero violations | FR-AGE-01, FR-AGE-02, FR-AGE-03, FR-AGE-04, FR-LEGAL-01, FR-LEGAL-02, FR-LEGAL-03, FR-PT-06 |
 
 ---
 

@@ -1,7 +1,7 @@
 # Paave Design System
 ## Tokens, Typography, Spacing, Shadows, Animations
 
-> Version: 1.0 | Date: 2026-04-14 | Status: V1 Production-Ready
+> Version: 2.0 | Date: 2026-04-16 | Status: V2 Production-Ready
 
 ---
 
@@ -13,6 +13,9 @@ Paave follows **Toss-inspired radical simplicity**:
 - Large bold numerals for financial trust
 - Bento grid cards for structured data density
 - Pretendard font for full CJK + Latin + Vietnamese diacritic support
+- Professional fintech terminology — locale-specific (VN: HOSE/HNX, KR: KOSPI/KOSDAQ, EN: NYSE/NASDAQ)
+- Inline contextual education — every financial term has a one-tap tooltip
+- One primary action per screen — BR-UX-01 enforced across all flows
 
 Benchmark: Toss (KR) — but with Paave's own electric blue/cyan accent identity.
 
@@ -85,6 +88,52 @@ Benchmark: Toss (KR) — but with Paave's own electric blue/cyan accent identity
 | `gradient-positive` | `linear-gradient(135deg, rgba(16,185,129,0.2) 0%, transparent 100%)` | Positive P&L card tint |
 | `gradient-negative` | `linear-gradient(135deg, rgba(239,68,68,0.2) 0%, transparent 100%)` | Negative P&L card tint |
 
+### 2.7 Virtual Funds Banner
+
+| Token | Value | Usage |
+|---|---|---|
+| `banner-virtual-bg` | `rgba(245,158,11,0.15)` | Virtual Funds banner background |
+| `banner-virtual-border` | `#F59E0B` | Virtual Funds banner border |
+| `banner-virtual-text` | `#F59E0B` | Virtual Funds banner text |
+
+### 2.8 Gamification
+
+| Token | Value | Usage |
+|---|---|---|
+| `tier-1-color` | `#10B981` | Seedling tier badge |
+| `tier-2-color` | `#3B82F6` | Learner tier badge |
+| `tier-3-color` | `#06B6D4` | Investor tier badge |
+| `tier-4-color` | `#F59E0B` | Trader tier badge |
+| `tier-5-color` | `#8B5CF6` | Expert tier badge |
+| `tier-6-color` | `#EF4444` | Legend tier badge |
+| `xp-bar-fill` | `#3B82F6` | XP progress bar fill |
+| `xp-bar-track` | `#1F2937` | XP progress bar background |
+| `streak-active` | `#F59E0B` | Active streak flame icon |
+| `streak-frozen` | `#06B6D4` | Frozen streak snowflake |
+
+### 2.9 AI Chat
+
+| Token | Value | Usage |
+|---|---|---|
+| `chat-user-bg` | `#3B82F6` | User message bubble background |
+| `chat-user-text` | `#FFFFFF` | User message text |
+| `chat-ai-bg` | `#1F2937` | AI response bubble background |
+| `chat-ai-text` | `#F9FAFB` | AI response text |
+| `chat-disclaimer-bg` | `rgba(107,114,128,0.1)` | Disclaimer footer background |
+| `chat-source-text` | `#9CA3AF` | Source citation text |
+
+### 2.10 Social / Sentiment
+
+| Token | Value | Usage |
+|---|---|---|
+| `sentiment-bull` | `#10B981` | Bull sentiment tag |
+| `sentiment-bear` | `#EF4444` | Bear sentiment tag |
+| `sentiment-neutral` | `#9CA3AF` | Neutral sentiment tag |
+| `sentiment-bull-bg` | `rgba(16,185,129,0.15)` | Bull tag background |
+| `sentiment-bear-bg` | `rgba(239,68,68,0.15)` | Bear tag background |
+| `sentiment-neutral-bg` | `rgba(156,163,175,0.15)` | Neutral tag background |
+| `cashtag-text` | `#3B82F6` | $TICKER cashtag link color |
+
 ---
 
 ## 3. Typography
@@ -116,6 +165,7 @@ Fallback: system-ui, sans-serif
 | `text-body-lg` | 16px | 400 | 1.5 | 0px | Body text, descriptions |
 | `text-body-md` | 14px | 400 | 1.5 | 0px | Card body, supporting text |
 | `text-body-sm` | 13px | 400 | 1.5 | 0px | Secondary labels |
+| `text-label-md` | 13px | 500 | 1.5 | 0px | Form labels, field titles |
 | `text-caption` | 12px | 400 | 1.4 | 0.2px | Timestamps, tags, micro labels |
 | `text-caption-bold` | 12px | 600 | 1.4 | 0.2px | Tags, chip labels |
 | `text-label` | 11px | 500 | 1.3 | 0.5px | Nav labels, tab labels |
@@ -299,6 +349,29 @@ Return:   back to default | 600ms | ease-standard
 Enter:  translateY -100%→0, opacity 0→1 | 300ms | ease-decelerate
 Exit:   translateY 0→-100%, opacity 1→0 | 250ms | ease-accelerate
 Auto-dismiss: 3000ms delay before exit
+```
+
+#### Milestone Celebration
+```
+Confetti burst:
+  Trigger:    Milestone event received
+  Particles:  40 confetti pieces (accent-primary, positive, warning, accent-secondary colors)
+  Spread:     Full screen, gravity-affected fall
+  Duration:   1200ms
+  Easing:     Physics-based (spring gravity with damping)
+
+Achievement card reveal:
+  Trigger:    200ms after confetti starts
+  Entry:      scale 0.8→1, opacity 0→1
+  Duration:   400ms
+  Easing:     ease-spring
+  
+Haptic:       Medium impact feedback at t=0ms
+
+Reduced motion variant:
+  No confetti particles
+  Card: opacity 0→1 only (300ms, ease-standard)
+  Haptic: preserved
 ```
 
 ---

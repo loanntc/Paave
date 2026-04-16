@@ -1,11 +1,11 @@
 # BRD — Business Requirements Document
 ## Paave — Gen Z Fintech Investing App
 
-**Document version:** 2.0
-**Date:** 2026-04-14
+**Document version:** 2.1
+**Date:** 2026-04-16
 **Author:** Business Analysis Team
 **Status:** Approved for Development
-**Supersedes:** BRD v1.0 (2026-04-14)
+**Supersedes:** BRD v2.0 (2026-04-14)
 
 ---
 
@@ -196,7 +196,7 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 |---|---|
 | Portfolio hero widget | 18+ only: total paper portfolio value, unrealized P&L. Hidden for 16–17. |
 | Market snapshot | VN-Index and KOSPI index values with change % and direction arrow. |
-| Trending stocks section | Top 5 trending stocks by volume/social activity. |
+| Trending stocks section | Top 5 trending stocks by Paave community engagement (watchlist adds + social post volume + view counts). Refreshed every 15 minutes. Each card shows: ticker, company name, price, daily % change, social proof counter. |
 | Personalized watchlist | User's followed stocks with real-time price data. |
 
 #### 5.1.4 Discover / Trending Feed
@@ -204,10 +204,26 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | Feature | Description |
 |---|---|
 | Curated stock cards | Each card shows: ticker, price, % change, volume, editorial "why it's hot" hook (1–2 lines). |
-| Social proof counter | "X users watching" per stock card. |
+| Social proof counter | "X users watching" per stock card (refreshed every 15 minutes). |
 | Sentiment badge | Bull / Bear / Neutral aggregate sentiment per stock. |
 | Trending label | "Trending in VN" or "Trending in KR" badge on eligible cards. |
-| Theme filters | AI, K-pop, Vietnam Growth, Energy, Tech, etc. User-selectable. |
+| Theme filters | User-selectable theme filters with market-specific and global coverage. Themes and priorities below: |
+
+| Priority | Theme (EN) | Theme (VI) | Theme (KR) | Example Stocks |
+|----------|-----------|-----------|-----------|---------------|
+| ★★★★★ | AI & Technology | Co phieu AI | AI 주식 | FPT, NVIDIA, SK Hynix, Palantir, Kakao, Amazon |
+| ★★★★☆ | Digital Banking | Ngan hang so | 디지털 뱅킹 | TCB, MBB, VPB, Kakao Bank |
+| ★★★★☆ | K-pop & Entertainment | K-pop & Giai tri | K팝 & 엔터 | HYBE, SM Entertainment, Krafton, Pearl Abyss |
+| ★★★★☆ | Semiconductors | Chip & Ban dan | 반도체 | Samsung, SK Hynix, TSMC |
+| ★★★☆☆ | Green Energy & ESG | Nang luong xanh | 친환경 에너지 | GEX, REE, PC1, LG Energy |
+| ★★★☆☆ | Vietnam Market Upgrade | Vietnam nang hang | — | VN blue chips (VIC, VCB, FPT, HPG, VHM, MWG, PNJ) |
+| ★★★☆☆ | Narrative & Momentum | Meme & Trend | 밈주식 | Tesla, Palantir, Meta, trending names |
+| ★★★☆☆ | Crypto-Proxy Equities | Co phieu lien quan Crypto | 크립토 연계주 | Coinbase, MicroStrategy, Marathon |
+| ★★★☆☆ | Financial Independence | Tự do tài chính | 재무 자유 | Cross-sector portfolio milestone stocks, goal-oriented collections |
+
+| Feature | Description |
+|---------|-------------|
+| Market-specific editorial curation | Discover feed features market-specific lead stocks based on Gen Z engagement data. VN users: lead with FPT, TCB (highest Gen Z signal strength per market research). KR users: lead with Samsung Electronics, HYBE. Global users: lead with NVIDIA, Apple. Lead stocks are editorial-curated (not algorithmic) and reviewed weekly by the Editorial team. |
 
 #### 5.1.5 Paper Trading (Core Feature — "Learn & Play" Mini-App)
 
@@ -227,7 +243,7 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 
 | Feature | Description |
 |---|---|
-| Trader Score formula | Return (40%) + Consistency (30%) + Risk Discipline (20%) + Activity (10%). Score range: 0–1000. |
+| Trader Score formula | Return (40%) + Consistency (30%) + Risk Discipline (20%) + Activity (10%). Weekly score range: 0–100. Weekly scores are additive to a cumulative Trader Score. Tier thresholds based on cumulative score: Tier 1 (0), Tier 2 (500), Tier 3 (1,500), Tier 4 (3,500), Tier 5 (7,500), Tier 6 (15,000). |
 | Trader Tiers (VN) | Tier 1: Mầm non, Tier 2: Người học, Tier 3: Nhà đầu tư, Tier 4: Trader, Tier 5: Chuyên gia, Tier 6: Huyền thoại |
 | Trader Tiers (KR) | Tier 1: 새싹, Tier 2: 입문자, Tier 3: 투자자, Tier 4: 트레이더, Tier 5: 전문가, Tier 6: 레전드 |
 | Trader Tiers (EN) | Tier 1: Seedling, Tier 2: Learner, Tier 3: Investor, Tier 4: Trader, Tier 5: Expert, Tier 6: Legend |
@@ -235,6 +251,8 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | Weekly challenges | New challenge issued every Monday at 00:00 UTC+7. Challenge examples: "Make 3 limit orders this week", "Research 5 stocks using the AI query". |
 | Learning streaks | Daily streak counter for completing ≥ 1 micro-lesson per day. Streak broken if no lesson completed by 23:59 UTC+7. |
 | Tier badge display | Trader Tier badge displayed on user profile and on all community posts. |
+| Milestone celebrations | Users receive animated celebration moments (confetti, haptic feedback, shareable achievement card) upon reaching key milestones: first paper trade, first profitable day, reaching each Trader Tier, portfolio value milestones (e.g., first 10M VND virtual profit). Achievement cards are 9:16 format, shareable to social media / messaging apps (Zalo, KakaoTalk, Instagram Stories). |
+| Portfolio goal-setting | Users can set a virtual portfolio target (e.g., "Reach 600M VND by end of month"). Progress bar displayed on Portfolio tab. Goal completion triggers milestone celebration. |
 
 #### 5.1.7 Stock Detail Page
 
@@ -268,7 +286,7 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | Bull/Bear/Neutral sentiment tags | Every post must be tagged with one sentiment tag. Tag is required before submission. |
 | 60-second submission delay | All posts enter a 60-second review buffer before appearing publicly. System auto-flags content matching moderation keyword list. |
 | Trader Score on posts | Poster's current Trader Tier badge is always displayed alongside their post. |
-| Post character limit | 280 characters per post. No inline images in V1. |
+| Post character limit | 1,000 characters per post. Posts longer than 280 characters are truncated in feed view with a 'Read more' expander. No inline images in V1. |
 
 #### 5.1.10 AI System — P0 Features (V1 Launch)
 
@@ -302,7 +320,8 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | Feature | Description |
 |---|---|
 | Registration | Email + password. DOB required. Market preference. Language preference. |
-| Login | Email/password. Social login (Google, Apple) planned for V1.1. |
+| Biometric authentication | Face ID (iOS) and fingerprint (Android) as primary login method after first login. Biometric auth bypasses email/password for returning users. Opt-in during first login. Fallback to email/password if biometric fails (see BR-AUTH-01, BR-AUTH-02). |
+| Login | Email/password (first login). Biometric (Face ID / fingerprint) for returning users. Social login (Google, Apple) planned for V1.1. |
 | Profile | Avatar, Trader Tier badge, Trader Score, paper portfolio summary (% return only — no VND/KRW absolute amounts shown publicly). |
 | Language switcher | Available in settings. All three languages available at all times. |
 | Notification preferences | Granular controls per notification type. |
@@ -322,7 +341,7 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | Market sentiment AI (NLP on VN/KR news) | V2+ | P2 AI feature |
 | TradingView chart integration | V2 | V1 uses native candlestick chart |
 | Brokerage account linking | V2 | Phase 2 feature |
-| Crypto trading or data | Out of roadmap | Out of product focus |
+| Crypto trading or data | Out of roadmap | Direct cryptocurrency trading, wallet integration, or crypto price data. Crypto-proxy equities (e.g., publicly traded companies with significant crypto exposure) ARE in scope as Discover feed theme stocks. BTC/ETH reference prices as contextual market widgets are deferred to V1.1 pending legal review of data display obligations. |
 | Multi-language UI beyond VN/KR/EN | Post-launch | Phase 3 |
 | In-app portfolio tax reporting | Out of roadmap | Out of scope |
 | Web application (WTS) | V2 | Platform roadmap |
@@ -346,12 +365,19 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 |---|---|---|
 | BR-AGE-01 | Registration requires date of birth (day/month/year) as a mandatory field. A checkbox asserting age is not sufficient. | Registration form cannot be submitted without a valid DOB. DOB field validates day/month/year format. |
 | BR-AGE-02 | Users aged 16–17 at registration are routed to Learn Mode. Learn Mode hides all real portfolio tracking features (portfolio hero widget, real P&L, real holdings). These features must be hidden in the data layer, not just via UI toggle. | A test account with DOB = 16 years and 364 days must not receive real portfolio data from any API endpoint. |
-| BR-AGE-03 | Users under 16 at registration see a parental consent screen. Access to the app is blocked until parental consent is completed. Parental consent flow: parent email entry → confirmation email → parent approval link valid for 72 hours. | A test account with DOB < 16 must not reach the Home screen without parental consent. Consent links expire after 72 hours. |
+| BR-AGE-03 | Users under 16 at registration see a parental consent screen. Access to the app is blocked until parental consent is completed. Parental consent flow: parent email entry → confirmation email → parent approval link valid for 24 hours. | A test account with DOB < 16 must not reach the Home screen without parental consent. Consent links expire after 24 hours. |
 | BR-AGE-04 | When a Learn Mode user (16–17) turns 18, the app must detect this at next login and prompt upgrade to Full Access. User must explicitly confirm to upgrade. | A test account with DOB that crosses 18 must trigger the upgrade prompt on next login after the birthday date. |
 | BR-AGE-05 | Learn Mode users (16–17) can access all paper trading, gamification, market data, and education features. SSC regulations on securities trading do NOT apply to paper trading (no real transactions). | Learn Mode users can execute paper trades. Learn Mode users cannot access real portfolio tracking. |
 | BR-AGE-06 | Legal basis for DOB collection and age gating: Vietnam Civil Code 2015 (Articles 20–21 on legal capacity of minors) and Decree 13/2023/ND-CP on personal data protection. DOB is classified as personal data and must be stored encrypted. | DOB field in the database must be encrypted at rest. Privacy policy must reference both legal instruments. |
 
-### 6.2 Paper Trading Rules
+### 6.2 Authentication Rules
+
+| Rule ID | Rule | Testable Condition |
+|---|---|---|
+| BR-AUTH-01 | Biometric authentication (Face ID / fingerprint) must be available as a login option for returning users. First login always requires email/password. Biometric is opt-in during first login. | First login: biometric option not available. After first login: user prompted to enable biometric. Returning user with biometric enabled: can log in via Face ID / fingerprint without email/password. |
+| BR-AUTH-02 | If biometric authentication fails 3 times consecutively, the app must fall back to email/password login. | Test: trigger 3 failed biometric attempts — app must present email/password login form automatically after the 3rd failure. |
+
+### 6.3 Paper Trading Rules
 
 | Rule ID | Rule | Testable Condition |
 |---|---|---|
@@ -362,7 +388,7 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | BR-PT-05 | Portfolio reset is always available. Resetting: (a) restores balance to VND 500,000,000; (b) clears all holdings and transaction history; (c) resets Trader Score to baseline for that portfolio session; (d) does NOT reset XP or Trader Tier. | Post-reset state: balance = 500,000,000, holdings = 0, history = empty. XP and Tier badge unchanged. |
 | BR-PT-06 | Paper trading is clearly separated from any future real portfolio tracking. No mixing of real and virtual data in any view. | Test account with both paper trades and real holdings (V2+): paper and real sections must render in separate, clearly labeled sections. |
 
-### 6.3 AI Rules
+### 6.4 AI Rules
 
 | Rule ID | Rule | Testable Condition |
 |---|---|---|
@@ -373,7 +399,7 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | BR-AI-05 | Behavioral coaching nudges must use non-judgmental, peer-tone language. Nudges must be dismissible. No nudge should use words that imply criticism (e.g., "mistake", "wrong", "bad"). | Copy review: all nudge templates must be reviewed and approved by UX Writing team. Nudge dismiss button must be visible without scrolling. |
 | BR-AI-06 | AI-generated content is not cached and re-served if the underlying market data has changed. Post-trade explanations are generated fresh per trade. | Cache test: two identical trade types in different market conditions must produce different AI explanations. |
 
-### 6.4 Disclaimer Requirements
+### 6.5 Disclaimer Requirements
 
 All disclaimers must be displayed in the user's current language setting. All three language variants must be present in the codebase.
 
@@ -403,7 +429,7 @@ Displayed on the Learn Mode home screen and paper trading onboarding. Replaces (
 
 - **VI:** "Tính năng này chỉ mang tính chất giáo dục và mô phỏng. Thông tin trên ứng dụng không phải là tư vấn đầu tư."
 
-### 6.5 Social Rules
+### 6.6 Social Rules
 
 | Rule ID | Rule | Testable Condition |
 |---|---|---|
@@ -414,7 +440,7 @@ Displayed on the Learn Mode home screen and paper trading onboarding. Replaces (
 | BR-SOC-05 | Sentiment tag (Bull/Bear/Neutral) is mandatory on every post. Post cannot be submitted without selecting a tag. | UI test: submit button is disabled until a sentiment tag is selected. |
 | BR-SOC-06 | Per-ticker community feeds are NOT real-time chat rooms. Posts are threaded, non-ephemeral, and feed-ranked. No "last seen" indicators. | Architecture test: community feed endpoint returns paginated posts, not a live WebSocket stream. |
 
-### 6.6 Language Rules
+### 6.7 Language Rules
 
 | Rule ID | Rule | Testable Condition |
 |---|---|---|
@@ -423,7 +449,7 @@ Displayed on the Learn Mode home screen and paper trading onboarding. Replaces (
 | BR-LANG-03 | Financial terminology must be culturally adapted, not just translated. VN: HOSE/HNX terminology, Gen Z casual register. KR: KOSPI/KOSDAQ terminology, Korean financial terms. EN: NYSE/NASDAQ global context. | Terminology review: approved financial glossary per language must be maintained. Term deviations are copy bugs. |
 | BR-LANG-04 | Language change in settings takes effect immediately without requiring app restart. | Test: change language from Korean to Vietnamese mid-session — all visible strings change immediately. |
 
-### 6.7 Data Privacy Rules
+### 6.8 Data Privacy Rules
 
 | Rule ID | Rule | Testable Condition |
 |---|---|---|
@@ -431,6 +457,14 @@ Displayed on the Learn Mode home screen and paper trading onboarding. Replaces (
 | BR-PRIV-02 | User data must not be stored on servers outside Vietnam for VN users, per Decree 13/2023/ND-CP data localization requirements. | Infrastructure audit: VN user data (PII) must reside in Vietnam-region cloud infrastructure. |
 | BR-PRIV-03 | User financial data (paper trading history, portfolio) must comply with Korea's PIPA for KR users. | PIPA compliance checklist: data retention limits, deletion rights, consent records. |
 | BR-PRIV-04 | Users must be able to request deletion of their account and all associated personal data within 30 days of request. | Test: submit data deletion request — verify all PII removed from database and backups within 30 days. |
+
+### 6.9 UX Rules
+
+| Rule ID | Rule | Testable Condition |
+|---|---|---|
+| BR-UX-01 | Each primary screen must have one primary action and one primary data display. Competing primary actions on a single screen are a P1 UX bug. | UI audit: each screen has exactly one primary CTA button and one hero data element. |
+| BR-UX-02 | Radical simplicity: information hierarchy must be ruthless — the most important number on each screen must be 2–3× larger than supporting text. | Visual audit: hero number size ≥ 2× body text size on all financial data screens. |
+| BR-UX-03 | All financial terminology displayed in the app (P/E, EPS, market cap, dividend yield, CASA ratio, etc.) must have a one-tap inline explainer tooltip. Tooltips render contextually at point of display. Navigation to a separate education section is not an acceptable alternative. | QA test: tap any financial term label on Stock Detail — tooltip appears inline within 200ms. |
 
 ---
 
@@ -461,11 +495,12 @@ Displayed on the Learn Mode home screen and paper trading onboarding. Replaces (
 - All KR user data must comply with Korea's PIPA (Personal Information Protection Act).
 - App must function on devices running iOS 15+ and Android 10+.
 - Maximum acceptable API response time for market data: 3 seconds for 95th percentile of requests under normal load.
+- Time to first meaningful content render on mobile client: ≤ 1.5 seconds on target devices (iPhone 14, Samsung Galaxy S23). All data-dependent views must display skeleton screens within 200ms of screen mount.
 - Maximum acceptable AI response time for post-trade explanation generation: 8 seconds from trade confirmation to card display.
 - Paper trading order fill time: ≤ 5 seconds for VN stocks (next price snapshot within 15s delay window); KR best-effort.
 - All disclaimers (BR-DISC-01 through BR-DISC-04) are non-negotiable — they cannot be removed, minimized below specified font sizes, or made dismissible without explicit legal counsel approval.
 - Paave must not use any language anywhere in the product that implies brokerage services, investment advisory services, or the ability to execute real trades.
-- Design system is fixed for V1: dark navy base #0D1117, Paave Blue #3B82F6, Cyan accent #06B6D4, font Pretendard (supports Korean, Latin, and Vietnamese diacritics), dark-mode-native. No design system changes in V1 scope.
+- Design system is fixed for V1: dark navy base #0D1117 (aligned with design system implementation; research reference #0B1120 adjusted for optimal contrast), Paave Blue #3B82F6, Cyan accent #06B6D4, font Pretendard (supports Korean, Latin, and Vietnamese diacritics), dark-mode-native. No design system changes in V1 scope.
 
 ---
 
@@ -541,7 +576,7 @@ Displayed on the Learn Mode home screen and paper trading onboarding. Replaces (
 | 5 | Produce FRD (Functional Requirements Document) decomposing each BRD feature into user stories, acceptance criteria, and API contracts | BA Team | Technical Design Phase |
 | 6 | Produce SRD (System Requirements Document) for paper trading simulation engine, AI RAG architecture, and real-time data pipeline | Engineering Lead + AI/Data Science Team | Technical Design Phase |
 | 7 | Finalize localization glossary for all three languages (VN/KR/EN financial terminology) and establish translation review process | UX Writing + Legal Counsel | Before content production |
-| 8 | Design and validate parental consent flow with legal counsel; confirm 72-hour link expiry is compliant with Decree 13/2023/ND-CP | Legal Counsel VN + UX/UI Designer | Technical Design Phase |
+| 8 | Design and validate parental consent flow with legal counsel; confirm 24-hour link expiry is compliant with Decree 13/2023/ND-CP | Legal Counsel VN + UX/UI Designer | Technical Design Phase |
 | 9 | Establish content moderation keyword list v1.0 and Operations moderation SLA (response time for flagged posts) | Operations Team + Legal Counsel VN | Before social feature development |
 | 10 | Confirm AI model API rate limits and uptime SLAs from OpenAI/Anthropic; design graceful degradation plan (closes RISK-07) | AI/Data Science Team + Engineering Lead | Technical Design Phase |
 

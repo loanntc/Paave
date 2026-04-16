@@ -1,12 +1,12 @@
 # SRD — System Requirement Document
 ## Paave — Gen Z Fintech Investing App (V1)
 
-**Document version:** 2.0
-**Date:** 2026-04-14
+**Document version:** 2.1
+**Date:** 2026-04-16
 **Author:** Business Analysis Team
 **Status:** Approved for Development
-**Linked FRD:** FRD.md v1.0
-**Linked BRD:** BRD.md v1.0
+**Linked FRD:** FRD.md v2.1
+**Linked BRD:** BRD.md v2.1
 
 ---
 
@@ -248,7 +248,7 @@
 4. User tries to access app before consent:
    - API returns feature_tier = PENDING_CONSENT on all requests
    - Mobile app shows "Waiting for parent approval" screen; no app features accessible
-5. Resend parental consent email: POST /api/v1/auth/resend-parental-consent — rate-limited to 1 per hour per user
+5. Resend parental consent email: POST /api/v1/auth/resend-parental-consent — rate-limited to max 3 requests per 24 hours per user
 ```
 
 ### 2.11 Paper Trading Order Execution Flow
@@ -271,9 +271,16 @@
    h. Fire XP event: TRADE_PLACED = 10 XP
 5. LIMIT order:
    a. Insert order record with status = PENDING, limit_price set
-   b. Subscribe to price events for the ticker
-   c. When price crosses limit_price: fill order (same steps as MARKET d–h above)
-   d. If order not filled after market close: status remains PENDING (Good Till Cancelled semantics)
+   b. On LIMIT BUY order placement: reserved_cash += (quantity × limit_price)
+   c. Subscribe to price events for the ticker
+   d. When price crosses limit_price: fill order (same steps as MARKET d–h above); reserved_cash -= (quantity × limit_price)
+   e. If order not filled after market close: status remains PENDING (Good Till Cancelled semantics)
+   f. On cancel: reserved_cash -= (quantity × limit_price)
+   g. Daily cron job at 00:00 UTC checks all PENDING limit orders:
+      - If order age > 30 calendar days from placement → set status = EXPIRED
+      - Release reserved virtual cash back to user's available balance: reserved_cash -= (quantity × limit_price)
+      - Send push notification: "[TICKER] limit order expired after 30 days"
+      - Insert record into notification_inbox
 6. Return order response immediately after insertion (async fill for both order types)
 ```
 
@@ -301,15 +308,19 @@
    c. Atomically increments user's total_xp in Redis and PostgreSQL
    d. Checks tier threshold table; if XP crosses tier boundary → update user tier, send push notification
 
-2. Trader Score computation (weekly cron, every Monday 00:00 UTC):
-   a. For each active user with ≥1 trade in past 30 days:
-      - Return component: (portfolio_value - 500,000,000) / 500,000,000 × 40
-      - Consistency component: Sharpe-equivalent ratio over 30 days × 30
-      - Risk discipline component: 20 − penalty_for_concentration_over_25pct − penalty_for_overtrading_over_5_per_day
-      - Activity component: normalize(trades + lessons + logins in past 30 days) × 10
-      - Total Trader Score = sum of four components (clamped to 0–100)
-   b. Persist score in `trader_scores` table with computed_at timestamp
-   c. Refresh leaderboard materialized views (VN, KR, Global, per-network)
+2. Trader Score computation (weekly cron, every Sunday 00:00 UTC):
+   a. For each active user with ≥1 trade in past 7 days:
+      - Return component (40%): (weekly_portfolio_return / benchmark_return) × 40, clamped to 0–40
+      - Consistency component (30%): (days_with_activity / 7) × 30, clamped to 0–30
+      - Risk Discipline component (20%): 20 − (coaching_flags_this_week × 5), clamped to 0–20
+      - Activity component (10%): min(trades + lessons + logins, 20) / 20 × 10, clamped to 0–10
+      - Weekly Score = sum of four components (range: 0–100)
+   b. Add weekly_score to user's cumulative_trader_score in `trader_scores` table
+   c. Check tier thresholds: 0/500/1500/3500/7500/15000
+      - If cumulative score crosses tier boundary upward → update user tier (tiers never decrease)
+      - Send tier-up push notification and trigger milestone celebration event
+   d. Persist weekly_score and cumulative_trader_score with computed_at timestamp
+   e. Refresh leaderboard materialized views
 
 3. Challenge evaluation:
    a. Daily cron checks challenges table for active challenges (start_date ≤ today ≤ end_date)
@@ -472,6 +483,93 @@
    e. Mark deletion_request status = COMPLETED
 ```
 
+### 2.24 Biometric Authentication Flow
+
+```
+1. First successful login (email/password):
+   a. Auth Service checks device capabilities via mobile app report (has_biometric_hardware: true/false)
+   b. If has_biometric_hardware = true AND user.biometric_enabled = false:
+      - Return biometric_enrollment_prompt = true in login response
+   c. Mobile app shows enrollment prompt: "Enable Face ID / Fingerprint for faster login?"
+   d. If user accepts:
+      - Mobile app stores auth credential in device secure enclave (iOS Keychain / Android Keystore)
+      - Mobile app sends PATCH /api/v1/user/biometric with {enabled: true, device_id: "<device_id>"}
+      - Auth Service stores biometric_enabled = true and device_id in user_sessions table
+   e. If user declines: biometric_enrollment_prompt not shown again until user opens Settings
+
+2. Subsequent app opens (biometric auth):
+   a. Mobile app checks: biometric_enabled = true AND valid refresh_token exists
+   b. If both true: trigger device biometric prompt (Face ID / fingerprint)
+   c. On biometric success:
+      - Mobile app sends POST /api/v1/auth/biometric-login with {refresh_token, device_id, biometric_verified: true}
+      - Auth Service validates refresh_token + device_id match
+      - Returns new access_token (1-hour expiry)
+   d. On biometric failure (attempt 1-2): re-prompt biometric
+   e. On 3rd consecutive failure:
+      - Mobile app redirects to email/password login
+      - Toast: "Biometric failed. Please log in with your password."
+      - biometric_consecutive_failures counter reset on next successful login
+
+3. Logout:
+   a. Biometric credential remains on device but session is invalidated server-side
+   b. Next app open: biometric prompt still shown (if enabled) but server rejects the expired refresh_token → falls back to email/password
+```
+
+### 2.25 Milestone Celebration Flow
+
+```
+1. Trigger events (evaluated after relevant actions):
+   - FIRST_TRADE: after first paper order fills (Paper Trading Engine event)
+   - FIRST_PROFIT: daily cron checks if user's virtual P&L > 0 for first time
+   - TIER_UP: after weekly Trader Score computation crosses tier threshold
+   - PORTFOLIO_MILESTONE: after each trade fill, check if total_unrealized_pnl crosses 10M/50M/100M thresholds
+   - GOAL_REACHED: after each portfolio value update, check if value >= active goal target
+   - STREAK_7: after daily streak counter reaches 7
+   - STREAK_30: after daily streak counter reaches 30
+
+2. Gamification Service:
+   a. On trigger event, check milestone_log table for {user_id, milestone_type}
+      - If record exists → skip (milestone already achieved; no duplicate celebration)
+      - If no record → proceed
+   b. Insert record into milestone_log: {user_id, milestone_type, achieved_at, metadata}
+   c. Generate achievement card:
+      - Pre-render 9:16 PNG image server-side with: milestone name (localized), date, tier badge, % return stat
+      - Store in CDN with URL; URL returned to client
+   d. Send push notification: "🎉 Achievement unlocked: [milestone name]!"
+   e. Return milestone event to mobile app via WebSocket or next API poll
+
+3. Mobile app on milestone event:
+   a. Queue celebration overlay (max 2 in queue)
+   b. Display: confetti animation (1200ms) + haptic (medium) + achievement card
+   c. User actions: dismiss (tap anywhere), share (opens native share sheet with pre-rendered card URL)
+   d. If prefers-reduced-motion: skip confetti, show card with fade-in only + haptic
+```
+
+### 2.26 AI Natural Language Query Flow
+
+```
+1. Mobile app: User submits query via chat interface
+2. Mobile app: Sends POST /api/v1/ai/query with {query, language}
+3. AI Service (target: respond within 5 seconds):
+   a. Detect query scope: extract ticker references from query text
+   b. Validate scope: only VN (HOSE/HNX) and KR (KOSPI/KOSDAQ) stocks supported in V1
+      - If out-of-scope ticker detected → return scope restriction message
+   c. Fetch user's language from user_locale table (override input language detection)
+   d. Query Pinecone vector DB: embed query, retrieve top-3 relevant context chunks
+   e. Construct prompt using language-specific system_prompt_template; inject RAG chunks
+   f. Call Claude API (primary); exponential backoff on 5xx (1s, 2s, 4s); fallback to GPT-4o
+   g. Post-process response:
+      - Filter for buy/sell recommendation language → replace with educational framing
+      - Append language-specific disclaimer
+      - Include source attribution citations
+   h. Store in ai_requests table (type = QUERY, prompt_hash, response_hash)
+   i. Return response to mobile app
+4. On timeout (> 5 seconds):
+   a. Return partial response if available, or
+   b. Return error: "Taking longer than usual. Please try again."
+5. Session: last 10 conversation turns retained in Redis (TTL = 30 minutes, keyed by user_id + session_id)
+```
+
 ---
 
 ## 3. Data Handling Rules
@@ -618,11 +716,13 @@
 | BUY: sufficient balance | — | quantity × current_price ≤ virtual balance | "Insufficient virtual balance" |
 | SELL: sufficient quantity | — | quantity ≤ current position size for ticker | "Insufficient virtual shares to sell" |
 
+**Note:** Limit orders auto-expire after 30 calendar days from placement.
+
 ### 4.10 Social Post Validation
 
 | Field | Type | Rules | Error Message |
 |-------|------|-------|---------------|
-| body | string | Required; 1–500 characters; no null bytes | "Post must be 1–500 characters" |
+| body | string | Required; 1–1,000 characters; no null bytes | "Post must be 1–1,000 characters" |
 | sentiment | enum | Required; one of: `BULL`, `BEAR`, `NEUTRAL` | "Please select a sentiment" |
 
 ### 4.11 Parental Consent Validation
@@ -865,6 +965,59 @@
   "error_code": "E-1010",
   "message": "Please wait before resending.",
   "retry_after_seconds": 3600
+}
+```
+
+---
+
+#### PATCH /api/v1/user/biometric
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Request:**
+```json
+{
+  "enabled": true,
+  "device_id": "dev_iphone14_abc123"
+}
+```
+
+**Response 200 OK:**
+```json
+{
+  "biometric_enabled": true,
+  "device_id": "dev_iphone14_abc123",
+  "enrolled_at": "2026-04-16T12:00:00Z"
+}
+```
+
+---
+
+#### POST /api/v1/auth/biometric-login
+
+**Request:**
+```json
+{
+  "refresh_token": "<opaque_token>",
+  "device_id": "dev_iphone14_abc123",
+  "biometric_verified": true
+}
+```
+
+**Response 200 OK:**
+```json
+{
+  "access_token": "<new_jwt>",
+  "expires_in": 3600,
+  "feature_tier": "FULL_ACCESS"
+}
+```
+
+**Response 401 — Invalid session:**
+```json
+{
+  "error_code": "E-7002",
+  "message": "Biometric session invalid. Please log in with your password."
 }
 ```
 
@@ -1493,7 +1646,7 @@
   "feature_tier": "FULL_ACCESS",
   "notifications_enabled": true,
   "trader_score": 72.4,
-  "tier_name": "Rising Trader",
+  "tier_name": "Investor",
   "total_xp": 4250,
   "created_at": "2026-04-01T08:00:00Z"
 }
@@ -1640,7 +1793,7 @@
 **Request:**
 ```json
 {
-  "ticker": "VIC",
+  "ticker": "FPT",
   "exchange": "HOSE",
   "order_type": "MARKET",
   "side": "BUY",
@@ -1652,69 +1805,39 @@
 **Response 201 Created:**
 ```json
 {
-  "order_id": "ord_01HX1111AAAA",
-  "ticker": "VIC",
+  "order_id": "ord_01HX5678EFGH",
+  "ticker": "FPT",
   "exchange": "HOSE",
   "order_type": "MARKET",
   "side": "BUY",
   "quantity": 100,
   "status": "PENDING",
-  "created_at": "2026-04-14T09:30:00Z"
+  "created_at": "2026-04-16T09:30:00Z",
+  "estimated_fill_within_seconds": 15
 }
 ```
 
-**Response 422 — Insufficient balance:**
+**Response 400 — Insufficient Balance:**
 ```json
 {
   "error_code": "E-6001",
-  "message": "Insufficient virtual balance",
-  "required": 5500000.00,
-  "available": 3000000.00
+  "message": "Insufficient virtual balance. Available: ₫45,000,000. Required: ₫92,400,000."
 }
 ```
 
-**Response 422 — Insufficient shares:**
+**Response 400 — Insufficient Holdings:**
 ```json
 {
   "error_code": "E-6002",
-  "message": "Insufficient virtual shares to sell",
-  "requested": 100,
-  "available": 50
+  "message": "Insufficient virtual shares. You hold 50 shares of FPT but attempted to sell 100."
 }
 ```
 
----
-
-#### GET /api/v1/paper-trading/orders
-
-**Headers:** `Authorization: Bearer <access_token>`
-
-**Query Parameters:**
-- `status`: `PENDING` | `FILLED` | `CANCELLED` | `ALL` (optional; default: `ALL`)
-- `page`: integer ≥ 1 (default: 1)
-- `page_size`: integer, max 50 (default: 20)
-
-**Response 200 OK:**
+**Response 400 — Ticker Not Found:**
 ```json
 {
-  "page": 1,
-  "page_size": 20,
-  "has_more": false,
-  "orders": [
-    {
-      "order_id": "ord_01HX1111AAAA",
-      "ticker": "VIC",
-      "exchange": "HOSE",
-      "order_type": "MARKET",
-      "side": "BUY",
-      "quantity": 100,
-      "limit_price": null,
-      "status": "FILLED",
-      "fill_price": 55000.00,
-      "fill_timestamp": "2026-04-14T09:30:12Z",
-      "pre_reset": false
-    }
-  ]
+  "error_code": "E-6003",
+  "message": "Ticker not found in active feed"
 }
 ```
 
@@ -1727,22 +1850,41 @@
 **Response 200 OK:**
 ```json
 {
-  "balance_vnd": 450000000.00,
+  "portfolio_id": "ptf_01HX1234ABCD",
+  "total_value": 523450000.00,
+  "available_cash": 407050000.00,
+  "reserved_cash": 0.00,
+  "total_invested": 116400000.00,
+  "total_unrealized_pnl": 6400000.00,
+  "total_unrealized_pnl_pct": 5.50,
+  "total_realized_pnl": 2100000.00,
+  "virtual_label": "Tiền ảo",
+  "currency": "VND",
   "last_reset_at": null,
-  "portfolio_value": 5500000.00,
-  "total_value": 455500000.00,
-  "unrealized_pnl": 500000.00,
-  "unrealized_pnl_pct": 0.10,
-  "positions": [
+  "holdings": [
     {
-      "ticker": "VIC",
+      "ticker": "FPT",
       "exchange": "HOSE",
       "quantity": 100,
-      "avg_buy_price": 50000.00,
-      "current_price": 55000.00,
-      "current_value": 5500000.00,
-      "unrealized_pnl": 500000.00,
-      "realized_pnl": 0.00
+      "avg_buy_price": 91000.00,
+      "current_price": 92400.00,
+      "current_value": 9240000.00,
+      "unrealized_pnl": 140000.00,
+      "unrealized_pnl_pct": 1.54,
+      "price_status": "LIVE"
+    }
+  ],
+  "open_orders": [
+    {
+      "order_id": "ord_01HX9999IJKL",
+      "ticker": "TCB",
+      "order_type": "LIMIT",
+      "side": "BUY",
+      "quantity": 200,
+      "limit_price": 24500.00,
+      "status": "PENDING",
+      "created_at": "2026-04-15T10:00:00Z",
+      "expires_at": "2026-05-15T10:00:00Z"
     }
   ]
 }
@@ -1754,12 +1896,52 @@
 
 **Headers:** `Authorization: Bearer <access_token>`
 
+**Request:** (empty body)
+
 **Response 200 OK:**
 ```json
 {
-  "message": "Portfolio reset successfully",
-  "new_balance_vnd": 500000000.00,
-  "reset_at": "2026-04-14T09:30:00Z"
+  "portfolio_id": "ptf_01HX1234ABCD",
+  "balance_vnd": 500000000.00,
+  "holdings_count": 0,
+  "open_orders_count": 0,
+  "reset_at": "2026-04-16T12:00:00Z",
+  "message": "Portfolio reset to ₫500,000,000. Trade history retained with [Pre-Reset] labels."
+}
+```
+
+---
+
+#### GET /api/v1/paper-trading/orders
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Query Parameters:** `status=FILLED|PENDING|EXPIRED|CANCELLED`, `page=1`, `page_size=20`
+
+**Response 200 OK:**
+```json
+{
+  "orders": [
+    {
+      "order_id": "ord_01HX5678EFGH",
+      "ticker": "FPT",
+      "exchange": "HOSE",
+      "order_type": "MARKET",
+      "side": "BUY",
+      "quantity": 100,
+      "fill_price": 92400.00,
+      "status": "FILLED",
+      "created_at": "2026-04-16T09:30:00Z",
+      "filled_at": "2026-04-16T09:30:12Z",
+      "pre_reset": false
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 20,
+    "total_count": 1,
+    "has_next": false
+  }
 }
 ```
 
@@ -1776,14 +1958,15 @@
 {
   "user_id": "usr_01HX1234ABCD",
   "total_xp": 4250,
-  "trader_score": 72.4,
+  "weekly_score": 72.4,
+  "cumulative_score": 1850,
   "tier": {
     "tier_id": 3,
-    "name_en": "Rising Trader",
-    "name_vn": "Nhà Đầu Tư Tiềm Năng",
-    "name_kr": "성장하는 트레이더",
-    "min_score": 60,
-    "max_score": 79
+    "name_en": "Investor",
+    "name_vi": "Nhà đầu tư",
+    "name_kr": "투자자",
+    "min_score": 1500,
+    "max_score": 3499
   },
   "score_components": {
     "return": 18.2,
@@ -1903,7 +2086,7 @@
 **Response 404 — No report yet:**
 ```json
 {
-  "error_code": "E-7001",
+  "error_code": "E-2503",
   "message": "No portfolio health report available yet. Check back next Monday."
 }
 ```
@@ -1928,6 +2111,51 @@
 ```json
 {
   "message": "Feedback recorded. Thank you."
+}
+```
+
+---
+
+#### POST /api/v1/ai/query
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Request:**
+```json
+{
+  "query": "FPT có đang tốt không?",
+  "session_id": "sess_01HX1234ABCD"
+}
+```
+
+**Response 200 OK:**
+```json
+{
+  "response": "FPT đang có xu hướng tích cực...",
+  "sources": [
+    {"title": "HOSE data as of 2026-04-16", "type": "market_data"}
+  ],
+  "disclaimer": "Đây là nội dung giáo dục, không phải tư vấn đầu tư.",
+  "language": "vi",
+  "session_id": "sess_01HX1234ABCD",
+  "turn_number": 1
+}
+```
+
+**Response 400 — Out of scope:**
+```json
+{
+  "error_code": "E-2501",
+  "message": "I can only answer questions about Vietnam (HOSE/HNX) and Korea (KOSPI/KOSDAQ) stocks right now."
+}
+```
+
+**Response 503 — AI unavailable:**
+```json
+{
+  "error_code": "E-2502",
+  "message": "AI analysis temporarily unavailable. Please try again later.",
+  "retry_after_seconds": 30
 }
 ```
 
@@ -1962,7 +2190,7 @@
 ```json
 {
   "error_code": "VALIDATION_ERROR",
-  "message": "Post must be 1–500 characters"
+  "message": "Post must be 1–1,000 characters"
 }
 ```
 
@@ -1999,6 +2227,54 @@
       "created_at": "2026-04-14T09:30:00Z"
     }
   ]
+}
+```
+
+---
+
+#### GET /api/v1/social/posts
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Query Parameters:** `ticker` (required), `page` (default 1), `page_size` (default 20)
+
+**Response 200 OK:**
+```json
+{
+  "ticker": "FPT",
+  "posts": [
+    {
+      "post_id": "pst_01HX1234ABCD",
+      "author": {
+        "user_id": "usr_01HX5678EFGH",
+        "pseudonym": "TraderMihn",
+        "tier": 3,
+        "tier_name_en": "Investor",
+        "tier_name_vi": "Nhà đầu tư",
+        "tier_name_kr": "투자자",
+        "tier_at_post": 3
+      },
+      "body": "$FPT đang có momentum tốt sau khi công bố kết quả Q1. AI services revenue tăng 35% YoY.",
+      "sentiment": "BULL",
+      "tickers": ["FPT"],
+      "created_at": "2026-04-16T10:30:00Z",
+      "status": "PUBLISHED"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "page_size": 20,
+    "total_count": 45,
+    "has_next": true
+  }
+}
+```
+
+**Response 400 — Missing ticker:**
+```json
+{
+  "error_code": "VALIDATION_ERROR",
+  "message": "ticker parameter is required"
 }
 ```
 
@@ -2127,13 +2403,19 @@ All error responses follow this structure:
 | E-3003 | 503 | VN market feed DEGRADED | Show banner "Live data temporarily unavailable. Showing data as of [timestamp]." |
 | E-4001 | 409 | Duplicate portfolio holding | Show "You already have a holding for [TICKER]. Edit the existing holding to update it." |
 | E-5001 | 400 | Wrong current password on change | Show "Current password is incorrect" |
-| E-6001 | 422 | Insufficient virtual balance | Show "Insufficient virtual balance" with required vs available |
-| E-6002 | 422 | Insufficient virtual shares | Show "Insufficient virtual shares to sell" |
-| E-6003 | 400 | Ticker not in active price feed | Show "Ticker not available for paper trading" |
-| E-7001 | 404 | No AI portfolio health report yet | Show "No portfolio health report available yet." |
-| E-7002 | 503 | AI service unavailable | Show "AI analysis temporarily unavailable. Please try again later." |
-| E-8001 | 403 | Feature blocked by feature_tier | Show "This feature requires full access. You'll unlock it when you turn 18." |
+| E-6001 | 400 | Insufficient virtual balance | Show "Insufficient virtual balance" with required vs available |
+| E-6002 | 400 | Insufficient virtual holdings | Show "Insufficient virtual shares" with current vs requested |
+| E-6003 | 400 | Ticker not found in active feed | Show "Ticker not found in active feed" |
+| E-6004 | — (async notification) | Limit order expired | Send push: "[TICKER] limit order expired after 30 days" |
+| E-7001 | 400 | Biometric not available on device | Show "Biometric authentication is not available on this device" |
+| E-7002 | 401 | Biometric session invalid | Redirect to email/password login |
+| E-8001 | 400 | Goal must exceed current portfolio value | Show "Goal must exceed current portfolio value" |
+| E-8002 | 400 | Post must include at least one $TICKER cashtag | Show "Post must include at least one $TICKER cashtag" |
 | VALIDATION_ERROR | 400 | Any field validation failure | Show inline errors on specific fields |
+| E-2501 | 400 | AI query out of scope (unsupported market/ticker) | Show scope restriction message |
+| E-2502 | 503 | AI service unavailable | Show "AI analysis temporarily unavailable. Please try again later." |
+| E-2503 | 404 | No AI portfolio health report yet | Show "No portfolio health report available yet." |
+| E-8501 | 403 | Feature blocked by feature_tier | Show "This feature requires full access. You'll unlock it when you turn 18." |
 | E-9000 | 500 | Unexpected server error | Show "Something went wrong. Please try again." with retry option |
 | E-9001 | 503 | Service temporarily unavailable | Show "Service temporarily unavailable. Please try again in a moment." |
 
@@ -2210,7 +2492,7 @@ If DOB decryption fails (key rotation or corruption):
 Parental consent token expired:
   1. Token TTL = 24h; after expiry, token is invalid
   2. Parent receives "link expired" page; user must re-trigger from app
-  3. Re-trigger rate-limited to 1 per hour per user
+  3. Re-trigger rate-limited to max 3 requests per 24 hours per user
 ```
 
 ---
@@ -2253,7 +2535,7 @@ Parental consent token expired:
 | POST /auth/login | 5 requests per email | 15 minutes |
 | POST /auth/verify-otp | 5 attempts per user | 15 minutes |
 | POST /auth/resend-otp | 1 request per user | 60 seconds |
-| POST /auth/resend-parental-consent | 1 request per user | 1 hour |
+| POST /auth/resend-parental-consent | 3 requests per user | 24 hours |
 | GET /market/* | 120 requests per user | 1 minute |
 | POST /paper-trading/orders | 20 orders per user | 1 day (enforced also by OVERTRADE behavioral rule) |
 | POST /social/posts | 10 posts per user | 1 hour |
@@ -2278,7 +2560,7 @@ Parental consent token expired:
 | API response time (p95) | ≤ 3,000ms for all endpoints | Server-side APM |
 | API response time (p50) | ≤ 500ms for all endpoints | Server-side APM |
 | VN market data latency (exchange tick → Redis) | ≤ 15 seconds | Server-side monitoring |
-| KR market data latency (KRX tick → Redis) | ≤ 15 seconds | Server-side monitoring |
+| KR market data latency (KRX tick → Redis) | Best-effort; no SLA in V1. KR data sourced from web search / model knowledge per BRD. | Server-side monitoring |
 | Price alert trigger latency (threshold crossed → push sent) | ≤ 60 seconds | Alert event monitoring |
 | Paper trading MARKET order fill (order placed → fill) | ≤ 15 seconds (next price snapshot) | Order lifecycle monitoring |
 | Pre-trade AI response latency | ≤ 2,000ms; graceful skip on timeout | AI service APM |
@@ -2313,6 +2595,8 @@ Parental consent token expired:
 | feature_tier | VARCHAR(20) | NOT NULL | `PENDING_CONSENT`, `LEARN_MODE`, `FULL_ACCESS` |
 | status | VARCHAR(30) | NOT NULL | `PENDING_VERIFICATION`, `ACTIVE`, `LOCKED`, `DELETED` |
 | notifications_enabled | BOOLEAN | NOT NULL, DEFAULT true | Overall notification switch |
+| cumulative_trader_score | INTEGER | NOT NULL, DEFAULT 0 | Cumulative trader score across all weeks |
+| current_tier | INTEGER | NOT NULL, DEFAULT 1 | Current gamification tier (1-6); tiers never decrease |
 | created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
 | updated_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
 
@@ -2450,6 +2734,8 @@ Parental consent token expired:
 |--------|------|-------------|-------|
 | user_id | VARCHAR(26) | PK, FK → users | One row per user |
 | balance_vnd | DECIMAL(18, 2) | NOT NULL, DEFAULT 500000000.00 | Starting balance: 500,000,000 VND |
+| reserved_cash | DECIMAL(18, 2) | NOT NULL, DEFAULT 0.00 | Cash reserved for pending limit buy orders |
+| available_cash | — | Computed: balance_vnd - reserved_cash | Not a physical column; computed in queries or as a generated column |
 | last_reset_at | TIMESTAMPTZ | NULLABLE | Null if never reset |
 | updated_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
 
@@ -2481,7 +2767,7 @@ Parental consent token expired:
 | side | VARCHAR(4) | NOT NULL | `BUY`, `SELL` |
 | quantity | INTEGER | NOT NULL, > 0 | |
 | limit_price | DECIMAL(18, 4) | NULLABLE | Required for LIMIT orders |
-| status | VARCHAR(15) | NOT NULL | `PENDING`, `FILLED`, `CANCELLED` |
+| status | VARCHAR(15) | NOT NULL | `PENDING`, `FILLED`, `CANCELLED`, `EXPIRED` |
 | fill_price | DECIMAL(18, 4) | NULLABLE | Set on FILLED |
 | fill_timestamp | TIMESTAMPTZ | NULLABLE | Set on FILLED |
 | pre_reset | BOOLEAN | NOT NULL, DEFAULT false | True if placed before last portfolio reset |
@@ -2577,7 +2863,7 @@ Parental consent token expired:
 |--------|------|-------------|-------|
 | post_id | VARCHAR(26) | PK | ULID |
 | user_id | VARCHAR(26) | FK → users | |
-| body | VARCHAR(500) | NOT NULL | |
+| body | VARCHAR(1000) | NOT NULL | |
 | sentiment | VARCHAR(10) | NOT NULL | `BULL`, `BEAR`, `NEUTRAL` |
 | tickers | VARCHAR(20)[] | NOT NULL, DEFAULT '{}' | Extracted $cashtag tickers |
 | trader_score_at_post | DECIMAL(6, 2) | NOT NULL | Snapshot of author's score at post time |
@@ -2629,4 +2915,4 @@ Parental consent token expired:
 
 ---
 
-*Document end — v2.0. Full traceability: BRD Business Objectives → FRD Functional Requirements → SRD System Flows and API Contracts.*
+*Document end — v2.1. Full traceability: BRD Business Objectives → FRD Functional Requirements → SRD System Flows and API Contracts.*
