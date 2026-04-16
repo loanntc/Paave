@@ -29,10 +29,11 @@ Tab 5: Profile    — Icon: user         — Label: "Tôi" / "내 정보" / "Pro
 ```
 App Root
 ├── Splash Screen (no nav)
-├── Welcome Screen (no nav) — "Create Account" / "Log In"
+├── Welcome Screen (no nav) — "Create Account" / "Log In" / Social Login (Screen 35)
 ├── Login Flow (no nav)
 │   ├── Email + Password
-│   └── Biometric Prompt (Face ID / Fingerprint)
+│   ├── Biometric Prompt (Face ID / Fingerprint)
+│   └── 2FA OTP Verification (Screen 36, per FR-07D)
 ├── Registration Flow (no nav, step indicator visible per FR-08)
 │   ├── Step 1: Data Consent (ToS + Privacy + Marketing opt-in)
 │   ├── Step 2: Nationality Detection + Market Preference
@@ -113,6 +114,9 @@ Profile      → [AI Chat CTA]      → AI Chat (bottom sheet or push)
 Any screen   → [Share button]      → Native share sheet (Zalo / KakaoTalk / Instagram)
 Any screen   → [Milestone trigger] → Celebration Overlay (modal, full-screen)
 Login        → [Biometric fail x3] → Email/Password Fallback (replace)
+Login        → [2FA required]      → 2FA OTP Verification (push, per FR-07D)
+Welcome      → [Social login tap]  → OAuth popup (native) → DOB / Home / Link Prompt
+Social OAuth → [Email conflict]    → Account Link Prompt (bottom sheet, half-height)
 Age Upgrade  → [On login at 18]    → Age Upgrade Modal (full-screen modal)
 ```
 
@@ -986,6 +990,209 @@ Step 5  → If user was 17 and birthday occurred between sessions:
 
 ---
 
+### Journey 16: Social Login — New User
+
+> Social login flow for a new user who authenticates via Google or Apple OAuth, completes abbreviated registration (DOB + consent), and reaches Home.
+
+```
+Step 1  → Welcome screen (per FR-02)
+            Primary CTAs: "Tao tai khoan" | "Dang nhap"
+            Social buttons visible below divider: "Tiep tuc voi Google" | "Tiep tuc voi Apple"
+            → User taps "Tiep tuc voi Google" (or "Tiep tuc voi Apple")
+
+Step 2  → Social button enters loading state (spinner replaces icon, text: "Dang xu ly...")
+            → Google/Apple OAuth native popup appears (OS-level)
+            → User authenticates with provider credentials
+
+Step 3  → OAuth success → id_token received
+            → API call: POST /auth/social { provider, id_token }
+            → API checks if email already registered
+
+--- Path A: New user (registration_required = true) ---
+Step 4a → Navigate to DOB entry screen (same as registration Journey 6, Step 6)
+            Date picker, no free-text, future dates disabled
+            Age validation applies same rules:
+              → age < 13 → Block screen (same as Journey 6)
+              → age 13–15 → Parental Consent (deferred V3)
+              → age 16–17 → LEARN_MODE
+              → age 18+ → FULL_ACCESS
+
+Step 5a → Navigate to Data Consent screen (per FR-LEGAL-03)
+            Three checkboxes (ToS + Privacy required, Marketing optional)
+            CTA: "Tiep theo" enabled when ToS + Privacy checked
+
+Step 6a → Account activated
+            Virtual portfolio created (500M VND, per FR-PT-01)
+            → Navigate to Biometric Enrollment Prompt (Screen 22)
+              "Bat" → enroll biometric → Home
+              "De sau" → skip → Home
+
+Step 7a → Home Dashboard (fade, replace navigation stack)
+            First-time state with portfolio hero + suggested stocks
+
+--- Path B: Existing user, same provider (registration_required = false) ---
+Step 4b → Session created directly
+            → Navigate to Home Dashboard (instant, same as returning login)
+
+--- Path C: Email already exists with different auth method ---
+Step 4c → API returns existing_account = true
+            → Account Link Prompt bottom sheet appears (Screen 35)
+            Title: "Tai khoan voi email nay da ton tai"
+            Body: masked email + link prompt
+
+Step 5c → User taps "Lien ket"
+            → API links social identity to existing account
+            → Session created → Navigate to Home Dashboard
+
+Step 5c (alt) → User taps "Huy"
+            → Bottom sheet dismisses → Navigate to Login screen
+            → User must log in with existing credentials
+```
+
+**Error paths:**
+```
+OAuth cancelled:           User dismisses native popup
+                           → Return to Welcome screen, buttons reset to default
+                           → No error toast (user-initiated cancel)
+
+Provider unavailable:      Google/Apple service down or unreachable
+                           → Toast: "Dich vu [Provider] tam thoi khong kha dung."
+                           → Buttons reset to default, user can retry or use email/password
+
+Network error:             No connectivity during OAuth or API call
+                           → Toast: "Khong co ket noi mang. Vui long thu lai."
+                           → Loading state reverts to default
+
+Email already exists:      Account Link Prompt bottom sheet
+                           → User chooses to link (merge accounts) or cancel (login manually)
+                           → If link fails (server error) → Toast: "Lien ket khong thanh cong. Thu lai."
+                           → If cancel → Login screen
+
+DOB validation fails:      Same rules as Journey 6
+                           → Under 13: blocked, no account created
+                           → 13–15: parental consent (V3 deferred)
+
+Consent declined:          User does not check ToS/Privacy → CTA disabled
+                           → User can back out to Welcome (no account created yet)
+```
+
+**Flow validation:**
+- Social login reduces registration steps from 4 (consent, market, account, verify) to 2 (DOB, consent) — email/password and OTP verification are skipped since provider handles identity verification.
+- Market preference is auto-detected from locale (same as Journey 1 Step 4); no manual selection screen for social login to minimize friction.
+- Account linking (Path C) resolves the common case where a user registered with email/password and later tries social login with the same email.
+- Biometric enrollment is still offered for social login users — biometric is independent of auth method.
+- Edge case: User uses Google on registration, later tries Apple with same email → link prompt triggered.
+
+---
+
+### Journey 17: Login with 2FA
+
+> Returning user with two-factor authentication enabled logs in with email/password, completes 2FA OTP verification, and reaches Home. Alternative biometric path bypasses 2FA.
+
+```
+--- Primary path: Email/Password + 2FA ---
+Step 1  → Login screen (per FR-07)
+            Fields: Email + Password
+            CTA: "Dang nhap"
+            → User enters credentials and taps "Dang nhap"
+
+Step 2  → API call: POST /auth/login { email, password }
+            → Response: { two_factor_required: true, partial_token: "..." }
+            → partial_token is a short-lived token (5 minute expiry)
+            → OTP sent to user's registered email
+
+Step 3  → Navigate to 2FA OTP Verification screen (Screen 36)
+            Slide left transition from Login
+            Shield icon + "Xac thuc hai buoc" title
+            Masked email shown: "lo***@gmail.com"
+            Timer starts at 5:00 (300s)
+
+Step 4  → OTP arrives in user's email
+            → User enters 6 digits into OTP boxes
+            → Auto-advance on each digit
+
+Step 5  → 6th digit entered → Auto-submit
+            → API call: POST /auth/2fa/verify { partial_token, otp }
+            → Loading state: spinner replaces OTP boxes
+
+Step 6  → Success: 2FA verified
+            → Shield-check animation (300ms ease-spring)
+            → "Xac thuc thanh cong!" text
+            → Auto-navigate to Home Dashboard after 1200ms
+            → Full session created (access_token + refresh_token)
+
+--- Alternative path: Biometric login (2FA bypassed) ---
+Step 1  → App open → biometric enabled detected (per FR-07B)
+            → Biometric prompt appears immediately (Face ID / fingerprint)
+
+Step 2  → Biometric success → authenticated directly
+            → Home Dashboard loaded (2FA bypassed entirely)
+            → Biometric auth is considered a strong second factor by design
+
+--- Alternative path: 2FA + Resend OTP ---
+Step 4 (alt) → User did not receive OTP or it expired in spam
+            → Waits for 60s cooldown on resend
+            → Taps "Gui lai ma" → new OTP sent
+            → Toast: "Ma moi da duoc gui"
+            → Timer resets to 5:00
+            → Previous OTP invalidated server-side
+
+--- Alternative path: 2FA Cancel ---
+Step 3 (alt) → User taps "Huy dang nhap" at bottom of Screen 36
+            → partial_token cleared from memory
+            → Navigate to Welcome screen (not Login — full reset)
+            → No confirmation dialog needed
+```
+
+**Error paths:**
+```
+Wrong OTP:                 Boxes flash red (border-error, 300ms)
+                           Shake animation (200ms)
+                           "Ma khong dung. Con {remaining} lan thu."
+                           Boxes cleared, focus returns to first box
+                           Attempt counter incremented
+
+5 failed attempts:         15-minute lockout
+                           "Qua nhieu lan thu. Vui long thu lai sau 15 phut."
+                           OTP input disabled, all boxes greyed
+                           partial_token invalidated server-side
+                           15-minute countdown displayed
+                           After lockout: user must restart login from Step 1
+
+Partial token expires:     Timer reaches 0:00 or 5 minutes elapsed
+(5 min)                    "Phien het han. Dang nhap lai."
+                           OTP input disabled
+                           Auto-navigate to Login screen after 3s delay
+                           User must re-enter email/password
+
+Resend OTP:                60s cooldown between resends
+                           During cooldown: "Gui lai ma" greyed, "trong Xs" countdown
+                           After cooldown: "Gui lai ma" tappable (accent-primary)
+                           New OTP sent, timer reset, previous OTP invalidated
+
+Network error on verify:   Toast: "Khong the xac nhan. Kiem tra ket noi."
+                           Input re-enabled, attempt count NOT incremented
+                           User can retry
+
+Network error on resend:   Toast: "Khong the gui ma. Thu lai sau."
+                           Resend button re-enabled after toast
+
+App killed during 2FA:     partial_token expires after 5min
+                           On next app open: no valid session
+                           User starts login from scratch
+```
+
+**Flow validation:**
+- 2FA adds exactly one screen (Screen 36) to the login flow — minimal friction for the security benefit.
+- 5-minute timer (vs 10-minute for registration OTP) reflects that 2FA is a real-time verification — user should have immediate access to email.
+- Biometric bypass is by design: biometric authentication (Face ID / fingerprint) is inherently a second factor (something you are), so additional OTP is redundant.
+- partial_token pattern ensures that password-verified state is short-lived and cannot be reused.
+- Cancel button navigates to Welcome (not Login) to prevent loop of re-entering credentials into a potentially expired flow.
+- Edge case: User enables 2FA, then loses access to email → must contact support. No backup codes in V2 (future consideration).
+- Edge case: Multiple active sessions — 2FA is per-login-attempt, not per-device. Each login requires fresh 2FA.
+
+---
+
 ## 3. Error / Offline Flows
 
 ### Offline State Flow
@@ -1064,6 +1271,16 @@ Empty Alerts (Profile > Alerts) →
 | Milestone Celebration | Dismiss | Fade out | — |
 | Milestone Celebration | Share Sheet | Native share sheet | — |
 | Age Upgrade Modal | Home (unlocked) | Fade (replace) | — |
+| Welcome | Social OAuth popup | Native OS modal | — |
+| Social OAuth (success) | DOB Entry (new user) | Slide left | Left → Right |
+| Social OAuth (success) | Home (existing user) | Fade (replace stack) | — |
+| Social OAuth (email conflict) | Account Link Prompt | Slide up (sheet) | Bottom → Top |
+| Account Link Prompt | Home (linked) | Fade (replace stack) | — |
+| Account Link Prompt | Login (cancelled) | Slide down + push | — |
+| Login | 2FA OTP (Screen 36) | Slide left | Left → Right |
+| 2FA OTP (success) | Home | Fade (replace stack) | — |
+| 2FA OTP (cancel) | Welcome | Fade (replace stack) | — |
+| 2FA OTP (expired) | Login | Fade (replace stack) | — |
 | Any sheet | Dismiss | Slide down | Top → Bottom |
 
 ---
@@ -1086,6 +1303,8 @@ paave://stock/{ticker}/community  → Stock Detail → Community tab
 paave://alert/{ticker}            → Price Alert setup for ticker
 paave://ai-chat                   → AI Chat screen
 paave://ai-chat?q={query}         → AI Chat with pre-filled query
+paave://auth/social/{provider}    → Social Login with provider (google/apple)
+paave://auth/2fa                  → 2FA OTP Verification screen
 paave://health-check              → Portfolio Health Check report
 paave://challenge                 → Current Weekly Challenge detail
 paave://milestone/{id}            → Milestone Achievement card

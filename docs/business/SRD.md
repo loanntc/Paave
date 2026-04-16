@@ -1,11 +1,11 @@
 # SRD — System Requirement Document
 ## Paave — Gen Z Fintech Investing App (V1)
 
-**Document version:** 2.1
+**Document version:** 2.2
 **Date:** 2026-04-16
 **Author:** Business Analysis Team
 **Status:** Approved for Development
-**Linked FRD:** FRD.md v2.1
+**Linked FRD:** FRD.md v2.2
 **Linked BRD:** BRD.md v2.1
 
 ---
@@ -570,6 +570,72 @@
 5. Session: last 10 conversation turns retained in Redis (TTL = 30 minutes, keyed by user_id + session_id)
 ```
 
+### 2.27 Social Login Flow (Google / Apple)
+
+```
+1. Mobile app: User taps "Continue with Google" or "Continue with Apple"
+2. Mobile app: Initiates OAuth 2.0 flow
+   - Google: GoogleSignIn SDK → authorization code
+   - Apple: ASAuthorizationAppleIDProvider → identity token + authorization code
+3. Mobile app: Sends POST /api/v1/auth/login/social with {socialToken, socialType, device_id}
+4. Auth Service:
+   a. Validate social token with provider (Google tokeninfo / Apple token verification)
+   b. Extract email and display name from social profile
+   c. Check if email exists in users table:
+      - Email not found → create new user with status = PENDING_REGISTRATION
+        - Return {user_id, registration_required: true, social_email, social_name}
+        - Mobile app proceeds to DOB + Consent flow (same as registration but email/password pre-filled/skipped)
+      - Email found, already linked to this social provider → authenticate
+        - Check if 2FA enabled → if yes: send OTP, return partial_token
+        - If no 2FA: generate JWT tokens, return full session
+      - Email found, NOT linked to this social provider → return {link_required: true, existing_email}
+        - Mobile app shows link confirmation prompt
+        - User confirms → POST /api/v1/auth/login/link-accounts with {socialToken, password}
+        - Auth Service validates password → links social identity → returns JWT tokens
+        - User declines → return to login screen
+5. For new social users (registration_required = true):
+   a. Mobile app collects DOB (FR-AGE-01) and Consent (FR-LEGAL-03)
+   b. Mobile app sends POST /api/v1/users/me/confirmation with {date_of_birth, consent data}
+   c. Auth Service: validates DOB, sets feature_tier, activates account
+   d. Returns JWT tokens
+```
+
+### 2.28 Two-Factor Authentication Flow
+
+```
+1. User initiates password login or social login
+2. Auth Service: After primary auth succeeds, checks user.two_factor_enabled
+   - If false → normal token issuance, login complete
+   - If true → proceed to 2FA:
+     a. Generate 6-digit OTP, store in Redis key `2fa_otp:{userId}` with TTL = 300s (5 min)
+     b. Send OTP to user's registered email
+     c. Return HTTP 200 with {partial_token, otp_id, two_factor_required: true}
+     d. Partial token is JWT with limited scope (only allows OTP verification), expiry = 5 min
+3. Mobile app: shows 2FA OTP screen (reuses OTP UI from FR-06)
+4. User enters OTP: POST /api/v1/auth/login/2fa/verify-otp with {partial_token, otpId, otpValue}
+5. Auth Service:
+   a. Validate partial_token (not expired, correct scope)
+   b. Check attempt counter `2fa_attempts:{userId}` in Redis
+      - Attempts >= 5 → return E-1003 (lockout 15 min)
+   c. Compare OTP → if match: issue full JWT tokens, clear OTP and attempts
+   d. If mismatch: increment counter, return E-1004 with remaining attempts
+6. Biometric login with 2FA enabled:
+   - Biometric auth succeeds → 2FA bypassed → full tokens issued immediately
+   - Rationale: biometric (something you are) + device (something you have) = two factors
+
+2FA Enable Flow:
+1. User opens Settings → Security → "Xac thuc hai buoc"
+2. POST /api/v1/auth/stepup with {password} → returns stepup_token
+3. PATCH /api/v1/users/me with {two_factor_enabled: true}, requires stepup_token
+4. Auth Service sends confirmation OTP → user verifies → 2FA activated
+5. Response: {two_factor_enabled: true, enabled_at: timestamp}
+
+2FA Disable Flow:
+1. Same step-up auth required (password verification)
+2. PATCH /api/v1/users/me with {two_factor_enabled: false}, requires stepup_token
+3. Immediate effect, no OTP needed to disable
+```
+
 ---
 
 ## 3. Data Handling Rules
@@ -737,6 +803,23 @@
 |-------|------|-------|---------------|
 | language | enum | Required; one of: `vi`, `ko`, `en` | "Please select a valid language" |
 | set_by | enum | Required; one of: `DEVICE`, `USER` | "Invalid locale source" |
+
+### 4.13 Social Login Validation
+
+| Field | Type | Rules | Error Message |
+|-------|------|-------|---------------|
+| socialToken | string | Required; non-empty | "Social authentication token is required" |
+| socialType | enum | Required; one of: `google`, `apple` | "Invalid social provider" |
+
+### 4.14 2FA OTP Validation
+
+| Rule | Detail |
+|------|--------|
+| Format | Exactly 6 digits |
+| Expiry | 5 minutes from generation |
+| Attempts | Max 5 incorrect before lockout |
+| Lockout | 15 minutes |
+| Partial token expiry | 5 minutes |
 
 ---
 
@@ -1018,6 +1101,86 @@
 {
   "error_code": "E-7002",
   "message": "Biometric session invalid. Please log in with your password."
+}
+```
+
+---
+
+#### POST /api/v1/auth/login/social
+
+**Auth:** Public
+
+**Request:**
+```json
+{
+  "socialToken": "google_oauth_token_or_apple_identity_token",
+  "socialType": "google|apple",
+  "device_id": "dev_iphone14_abc123",
+  "platform": "ios",
+  "appVersion": "1.0.0"
+}
+```
+
+**Response 200 — Existing user, no 2FA:**
+```json
+{
+  "access_token": "<jwt>",
+  "refresh_token": "<opaque>",
+  "expires_in": 3600,
+  "feature_tier": "FULL_ACCESS",
+  "two_factor_required": false
+}
+```
+
+**Response 200 — Existing user, 2FA enabled:**
+```json
+{
+  "partial_token": "<jwt_limited>",
+  "otp_id": "otp_2fa_abc123",
+  "two_factor_required": true,
+  "message": "OTP sent to registered email"
+}
+```
+
+**Response 200 — New user, registration required:**
+```json
+{
+  "user_id": "usr_01HX9999",
+  "registration_required": true,
+  "social_email": "user@gmail.com",
+  "social_name": "Nguyen Van A",
+  "social_type": "google"
+}
+```
+
+**Response 200 — Link required:**
+```json
+{
+  "link_required": true,
+  "existing_email_masked": "us***@gmail.com",
+  "social_type": "google"
+}
+```
+
+**Response 401 — Invalid social token:**
+```json
+{
+  "error_code": "E-1011",
+  "message": "Social authentication failed. Please try again."
+}
+```
+
+---
+
+#### POST /api/v1/auth/login/2fa/verify-otp
+
+**Note:** This endpoint already exists in the system flow (Section 2.28). Additional error code for partial token expiry:
+
+**Response 401 — Partial token expired:**
+```json
+{
+  "error_code": "E-1012",
+  "message": "Session expired. Please log in again."
 }
 ```
 
@@ -2418,6 +2581,9 @@ All error responses follow this structure:
 | E-8501 | 403 | Feature blocked by feature_tier | Show "This feature requires full access. You'll unlock it when you turn 18." |
 | E-9000 | 500 | Unexpected server error | Show "Something went wrong. Please try again." with retry option |
 | E-9001 | 503 | Service temporarily unavailable | Show "Service temporarily unavailable. Please try again in a moment." |
+| E-1011 | 401 | Social authentication failed | Show "Social authentication failed. Please try again." |
+| E-1012 | 401 | 2FA partial token expired | Show "Session expired. Please log in again." Navigate to Login screen. |
+| E-1013 | 400 | Account link declined | Return to login screen; no account linking performed |
 
 ### 6.3 Network Error Handling (Client-Side)
 
@@ -2597,6 +2763,8 @@ Parental consent token expired:
 | notifications_enabled | BOOLEAN | NOT NULL, DEFAULT true | Overall notification switch |
 | cumulative_trader_score | INTEGER | NOT NULL, DEFAULT 0 | Cumulative trader score across all weeks |
 | current_tier | INTEGER | NOT NULL, DEFAULT 1 | Current gamification tier (1-6); tiers never decrease |
+| two_factor_enabled | BOOLEAN | NOT NULL, DEFAULT false | Whether 2FA is enabled for this user |
+| two_factor_enabled_at | TIMESTAMPTZ | NULLABLE | Timestamp when 2FA was last enabled; null if never enabled |
 | created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
 | updated_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
 
@@ -2913,6 +3081,18 @@ Parental consent token expired:
 | scheduled_deletion_at | TIMESTAMPTZ | NOT NULL | requested_at + 30 days |
 | completed_at | TIMESTAMPTZ | NULLABLE | Set when anonymization completes |
 
+### 9.27 `social_identities` Table
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| id | VARCHAR(26) | PK | ULID |
+| user_id | VARCHAR(26) | FK → users | |
+| social_type | VARCHAR(10) | NOT NULL | `google`, `apple` |
+| social_id | VARCHAR(255) | NOT NULL | Provider's unique user ID |
+| social_email | VARCHAR(254) | NOT NULL | Email from social provider |
+| linked_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
+| UNIQUE(social_type, social_id) | | | One identity per provider per user |
+
 ---
 
-*Document end — v2.1. Full traceability: BRD Business Objectives → FRD Functional Requirements → SRD System Flows and API Contracts.*
+*Document end — v2.2. Full traceability: BRD Business Objectives → FRD Functional Requirements → SRD System Flows and API Contracts.*

@@ -1,11 +1,11 @@
 # FRD — Functional Requirement Document
 ## Paave — Gen Z Fintech Investing App (V2)
 
-**Document version:** 2.1
+**Document version:** 2.2
 **Date:** 2026-04-16
 **Author:** Business Analysis Team
 **Status:** Approved for Development
-**Linked BRD:** BRD.md v2.1
+**Linked BRD:** BRD.md v2.2
 **Previous version:** FRD v1.0
 
 ---
@@ -65,6 +65,8 @@
 | Language System | Registered User | VN/KR/EN language selection with locale-appropriate financial terminology |
 | Legal / Disclaimers | Registered User | Investment disclaimers, AI disclaimers, and data consent |
 | Biometric Auth | Returning User | Authenticate via Face ID / fingerprint without password |
+| Social Login | New User / Returning User | Register or log in via Google / Apple OAuth |
+| Two-Factor Authentication | Registered User | Optional OTP-based second factor for password and social logins |
 | Milestone Celebrations | Registered User | Celebrate portfolio achievements with animations and shareable cards |
 | Portfolio Goal Setting | Registered User | Set and track virtual portfolio value targets |
 | Inline Tooltips | Registered User | Tap any financial term for instant plain-language explanation |
@@ -200,6 +202,65 @@
   - User changes device biometric (e.g., adds new fingerprint) → biometric session invalidated; re-enrollment required.
   - OS biometric permission revoked → graceful fallback to email/password; toast "Biometric access was removed. Log in with your password."
 - **Priority:** P0
+
+---
+
+#### FR-07C — Social Login (Google / Apple)
+
+- **Actor:** New User / Returning User
+- **Description:** Users can register or log in using Google Sign-In (OAuth 2.0) or Apple Sign In. Social login creates a Paave account linked to the social identity. If an account with the same email already exists, the social identity is linked to the existing account (with user confirmation). Social login bypasses email/password entry but still requires DOB (FR-AGE-01) and consent (FR-LEGAL-03) for new registrations.
+- **Key Rules:**
+  - Supported providers: Google, Apple. Additional providers (Kakao, Zalo) planned for V2.
+  - New user via social login: account created with email from social provider; DOB and consent screens still required before account activation.
+  - Returning user via social login: direct authentication, no password needed.
+  - If social email matches an existing Paave email/password account: prompt user to link accounts. "Tai khoan voi email nay da ton tai. Lien ket voi [Google/Apple]?" User must confirm. On confirm, social identity linked; both login methods available.
+  - If user declines linking: social login fails; user directed to email/password login.
+  - Social token validated server-side; never stored on client beyond the session.
+  - Account created via social login can set a password later via Settings (FR-50) for email/password fallback.
+  - Social login available on both Welcome screen and Login screen.
+- **Acceptance Criteria:**
+  - Given new user taps "Continue with Google" → Google OAuth flow opens → on success → DOB + Consent screens shown → account created → Home.
+  - Given returning user with linked Google account taps "Continue with Google" → direct auth → Home (no DOB/consent screens).
+  - Given social email matches existing account → link prompt shown → user confirms → accounts linked → Home.
+  - Given social email matches but user declines → "Vui long dang nhap bang email va mat khau" message → Login screen.
+  - Given Apple Sign In with hidden email relay → account created with Apple relay email; display name from Apple profile.
+- **Edge Cases:**
+  - Google/Apple auth cancelled by user mid-flow → return to Welcome/Login screen, no partial state.
+  - Social provider unavailable (server error) → toast "Dang nhap [Google/Apple] khong kha dung. Thu lai sau." → fallback to email/password.
+  - Social token expired during registration flow (user was slow on DOB/consent) → re-trigger social auth silently; if fails → restart flow.
+  - User removes social link from Settings → social login disabled; must use email/password or biometric.
+  - Apple "Hide My Email" relay → email stored as relay address; profile shows display name only.
+- **Priority:** P1 (V1.1 — not launch but fast follow)
+
+---
+
+#### FR-07D — Two-Factor Authentication (2FA)
+
+- **Actor:** Registered User
+- **Description:** Optional 2FA adds a second verification step after password login. When enabled, after entering correct email/password, user receives a 6-digit OTP to their registered email. OTP must be verified before session is granted. 2FA is opt-in via Settings → Security. When 2FA is enabled, biometric login bypasses 2FA (biometric is already a second factor via device possession).
+- **Key Rules:**
+  - 2FA is opt-in. Default: disabled. Enabled via Settings → Security → "Xac thuc hai buoc".
+  - Enabling 2FA: user must re-enter password to confirm. OTP sent to registered email. On OTP verification, 2FA activated.
+  - Login with 2FA enabled: email/password → partial token → OTP sent → OTP verified → full session. Partial token valid for 5 minutes.
+  - Biometric login with 2FA enabled: biometric success → full session (no OTP required — biometric + device = two factors).
+  - Social login with 2FA enabled: social auth → OTP sent → OTP verified → full session.
+  - Disabling 2FA: user must re-enter password to confirm. Immediate effect.
+  - OTP for 2FA: 6 digits, 5-minute expiry, max 5 attempts, 15-minute lockout after 5 failures.
+  - 2FA OTP is separate from registration OTP — different otpId namespace.
+- **Acceptance Criteria:**
+  - Given 2FA disabled → password login goes directly to Home (no OTP step).
+  - Given 2FA enabled + password login → OTP sent to email → OTP screen shown → correct OTP → Home.
+  - Given 2FA enabled + biometric login → Home directly (no OTP).
+  - Given 2FA enabled + social login → OTP sent → OTP screen → correct OTP → Home.
+  - Given user enables 2FA in Settings → password re-entered → OTP sent → OTP verified → "Xac thuc hai buoc da bat" confirmation.
+  - Given 5 failed 2FA OTP attempts → 15-minute lockout → "Qua nhieu lan thu. Vui long thu lai sau 15 phut."
+- **Edge Cases:**
+  - 2FA OTP expires (5 min) → "Ma da het han. Gui lai ma moi." → resend link active.
+  - User loses email access → cannot complete 2FA → must contact support for account recovery. Help text: "Khong nhan duoc ma? Lien he support@paave.app"
+  - 2FA enabled but user switches to biometric → biometric bypasses 2FA (by design).
+  - Partial token expired (5 min) → "Phien dang nhap het han. Vui long dang nhap lai." → restart login.
+  - Device offline during OTP send → "Khong the gui ma. Kiem tra ket noi mang."
+- **Priority:** P1 (V1.1)
 
 ---
 
@@ -1561,6 +1622,8 @@
 | BR-28 | Age verified at registration via DOB. Minimum age to register: 16 (or 13 with parental consent, deferred to V3). Under 13: registration blocked entirely. |
 | BR-29 | Each primary screen must have one primary action and one primary data display. Competing primary CTAs on a single screen are a P1 UX bug. |
 | BR-30 | All financial terminology must have inline contextual tooltips (one-tap explainer). Separate education sections are not acceptable alternatives. |
+| BR-31 | Social login (Google/Apple) creates or links a Paave account. If social email matches an existing account, user must explicitly confirm the link. No automatic merging. |
+| BR-32 | 2FA is opt-in. When enabled, password and social logins require OTP verification. Biometric login bypasses 2FA. |
 
 ---
 
@@ -1570,18 +1633,19 @@ This matrix links each functional requirement to the BRD business objectives it 
 
 | BRD Objective | Description | Linked FRs |
 |---------------|-------------|------------|
-| BO-01 | Acquire 50K MAU within 6 months | FR-01, FR-02, FR-03, FR-04, FR-05, FR-06, FR-07, FR-07B, FR-08, FR-AGE-01, FR-AGE-03, FR-LEGAL-03, FR-LANG-01, FR-SOC-01, FR-GAME-01, FR-GAME-06 |
+| BO-01 | Acquire 50K MAU within 6 months | FR-01, FR-02, FR-03, FR-04, FR-05, FR-06, FR-07, FR-07B, FR-07C, FR-08, FR-AGE-01, FR-AGE-03, FR-LEGAL-03, FR-LANG-01, FR-SOC-01, FR-GAME-01, FR-GAME-06 |
 | BO-02 | D7 retention >= 35% | FR-09, FR-10, FR-11, FR-12, FR-13, FR-14, FR-42, FR-43, FR-44, FR-45, FR-46, FR-47, FR-52, FR-GAME-04, FR-GAME-05, FR-GAME-07 |
 | BO-03 | Watchlist adoption >= 60% | FR-12, FR-20, FR-27, FR-28, FR-46, FR-SOC-01 |
 | BO-04 | Discover as primary acquisition channel >= 40% | FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-SOC-01, FR-EDU-01 |
 | BO-05 | VN as lead market >= 70% MAU | FR-03, FR-04, FR-37, FR-LANG-01, FR-LANG-02, FR-PT-01 |
 | BO-06 | VN data latency <= 15s | FR-37, FR-10, FR-PT-02 |
-| BO-07 | Onboarding completion >= 75% | FR-01, FR-02, FR-03, FR-04, FR-05, FR-06, FR-08, FR-AGE-01, FR-LEGAL-03, FR-LANG-01 |
+| BO-07 | Onboarding completion >= 75% | FR-01, FR-02, FR-03, FR-04, FR-05, FR-06, FR-07C, FR-08, FR-AGE-01, FR-LEGAL-03, FR-LANG-01 |
 | BO-08 | Paper trade activation >= 50% | FR-PT-01, FR-PT-02, FR-PT-03, FR-PT-04, FR-PT-05, FR-PT-06, FR-09, FR-23, FR-AI-01, FR-AI-04, FR-GAME-06 |
 | BO-09 | Gamification Tier 2 >= 40% | FR-GAME-01, FR-GAME-02, FR-GAME-03, FR-GAME-04, FR-GAME-05, FR-GAME-06, FR-GAME-07, FR-AI-06, FR-EDU-01 |
 | BO-10 | AI card read-through >= 65% | FR-AI-01, FR-AI-02, FR-AI-03, FR-AI-04, FR-AI-05, FR-AI-06, FR-AI-07, FR-LANG-02, FR-LEGAL-02, FR-EDU-01 |
 | BO-11 | Community feed engagement >= 35% | FR-SOC-01, FR-SOC-02, FR-SOC-03, FR-SOC-04, FR-SOC-05, FR-16, FR-GAME-02 |
 | BO-12 | Age 16-17 compliance, zero violations | FR-AGE-01, FR-AGE-02, FR-AGE-03, FR-AGE-04, FR-LEGAL-01, FR-LEGAL-02, FR-LEGAL-03, FR-PT-06 |
+| BO-13 | Account security and fraud prevention | FR-07, FR-07B, FR-07C, FR-07D, FR-12 |
 
 ---
 

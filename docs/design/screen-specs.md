@@ -5591,6 +5591,409 @@ One-time check:
 
 ---
 
+## Screen 35 — Social Login Selection
+
+### Screen Overview
+```
+Screen: Social Login Selection
+User:   New or returning user choosing OAuth login
+Goal:   Provide Google / Apple social login as alternative auth on Welcome screen
+Refs:   FR-07C
+```
+
+### Layout
+```
+Background: bg-primary (#0D1117)
+Position:   Below existing "Tao tai khoan" and "Dang nhap" CTAs on Welcome screen
+Divider:    Horizontal line with "hoac" (or) label centered
+Buttons:    Two vertically stacked social login buttons
+```
+
+### Components
+
+**Divider with "hoac"**
+```
+mt: 24px from last primary CTA
+
+Container: full width (343px at 375px screen), flex-row, align-center
+Line left:  flex: 1, height: 1px, bg: border (#374151)
+Label:      "hoac" — text-body-sm (13px, weight 400), text-secondary (#9CA3AF)
+            mx: 12px
+Line right: flex: 1, height: 1px, bg: border (#374151)
+```
+
+**Google Login Button**
+```
+mt: 24px from divider
+
+Width:      343px (100% parent minus space-4 margins)
+Height:     52px
+Background: bg-card (#1F2937)
+Border:     border (#374151) 1px
+Radius:     radius-lg (16px)
+
+Content row (flex-row, align-center, justify-center, gap: 12px):
+  Icon:     Google "G" multicolor logo, 20x20px, left
+  Text:     "Tiep tuc voi Google" — text-body-md (14px, Semi Bold / weight 600), text-primary (#F9FAFB)
+```
+
+**Apple Login Button**
+```
+mt: 12px from Google button
+
+Width:      343px
+Height:     52px
+Background: bg-card (#1F2937)
+Border:     border (#374151) 1px
+Radius:     radius-lg (16px)
+
+Content row (flex-row, align-center, justify-center, gap: 12px):
+  Icon:     Apple logo (white), 20x20px, left
+  Text:     "Tiep tuc voi Apple" — text-body-md (14px, Semi Bold / weight 600), text-primary (#F9FAFB)
+```
+
+### Interaction Rules
+```
+Google tap       -> Show loading state -> Open Google OAuth popup (native)
+                    -> On success: API check user existence
+                    -> registration_required = true -> DOB entry (same as registration flow)
+                    -> registration_required = false -> Home Dashboard
+Apple tap        -> Show loading state -> Open Apple Sign In (native)
+                    -> Same routing logic as Google
+OAuth cancelled  -> Return to Welcome screen, buttons reset to default
+OAuth error      -> Toast: "Khong the ket noi voi [provider]. Vui long thu lai."
+Email conflict   -> Account Link Prompt bottom sheet (see below)
+```
+
+### Link Prompt (Bottom Sheet)
+```
+Trigger:    API returns existing_account = true for OAuth email
+Type:       Bottom sheet (half-sheet, see components 8.1)
+
+Title:      "Tai khoan voi email nay da ton tai"
+            text-title-md (18px, weight 600), text-primary
+Body:       "Email [masked] da duoc dang ky. Ban muon lien ket voi [Provider]?"
+            text-body-md (14px), text-secondary
+Masked email: text-body-md (14px, weight 600), text-primary
+              Pattern: lo***@gmail.com (per FR-48)
+
+Primary CTA:   "Lien ket" — Primary Button component, full width
+Secondary CTA: "Huy" — Text button, centered, text-secondary
+               mt: 12px from primary CTA
+
+Actions:
+  "Lien ket" -> API link social identity -> success -> Home Dashboard
+  "Huy"      -> Dismiss sheet -> navigate to Login screen
+```
+
+### States
+```
+Default:     Both social buttons visible with provider icons, text, border
+Pressed:     bg-card-hover (#263244), border unchanged, 80ms ease-sharp feedback
+Loading:     20px white spinner replaces icon, text changes to "Dang xu ly..."
+             Button not tappable during loading
+Disabled:    opacity 0.4, not tappable (when other button is loading)
+Error:       Red flash border (border-error #EF4444, 300ms), then revert to default
+             Toast error message shown simultaneously
+Success:     Button shows check icon (20px, positive #10B981), 300ms
+             Then navigate to next screen (DOB entry or Home)
+Link prompt: Bottom sheet with account link options (see Link Prompt section above)
+```
+
+### Edge Cases
+```
+Provider unavailable:    Toast: "Dich vu [Provider] tam thoi khong kha dung."
+                         Buttons remain enabled, user can retry or use email/password
+OAuth cancelled mid-flow: Native OAuth popup dismissed by user
+                         Return to Welcome screen, no error toast
+                         Buttons reset to default state
+Email already exists:    Account Link Prompt bottom sheet shown
+                         User decides to link or cancel
+                         If link: social identity attached to existing account
+                         If cancel: navigate to Login screen
+No Google Play Services: (Android) Toast: "Can cai dat Google Play Services."
+                         Google button disabled, Apple button remains active
+Apple not available:     (Android) Apple button hidden entirely
+                         Only Google button shown, layout adjusts
+Both providers fail:     Toast: "Khong the dang nhap bang mang xa hoi. Dung email/mat khau."
+                         Buttons show error state, user falls back to email/password
+Network error:           Toast: "Khong co ket noi mang. Vui long thu lai."
+                         Loading state reverts to default
+Rapid tap:               Debounce 500ms; second tap ignored during loading
+```
+
+### Dev Handoff Specs
+```
+Google OAuth:
+  Library:  @react-native-google-signin/google-signin (RN) or expo-auth-session
+  Config:   Web client ID from Google Cloud Console
+  Scopes:   ['email', 'profile']
+  Flow:     signIn() -> idToken -> POST /auth/social { provider: 'google', id_token }
+  Response: { access_token, refresh_token, registration_required: bool, user? }
+
+Apple Sign In:
+  Library:  @invertase/react-native-apple-authentication (iOS) or expo-apple-authentication
+  Config:   Apple Developer portal service ID
+  Flow:     appleAuth.performRequest() -> identityToken -> POST /auth/social { provider: 'apple', id_token }
+  Response: same schema as Google
+
+Account Link:
+  POST /auth/social/link { provider, id_token, partial_token }
+  On 200: session created, navigate to Home
+  On 409: "Lien ket khong thanh cong" (link failed)
+
+Button animations:
+  Press:    scale 1 to 0.97, 80ms ease-sharp
+  Release:  scale 0.97 to 1, 150ms ease-spring
+  Loading:  fade icon out (150ms), fade spinner in (150ms)
+  Error:    border flash border-error 300ms, ease-standard
+  Success:  fade spinner out (150ms), fade check in (150ms, ease-spring)
+
+Layout:
+  Social buttons section: mt: 24px from last primary CTA
+  Divider: full width within 16px horizontal margins
+  Buttons: 12px vertical gap between Google and Apple
+```
+
+### QA Tests
+```
+[ ] "hoac" divider renders between primary CTAs and social buttons
+[ ] Google button shows correct icon and Vietnamese text
+[ ] Apple button shows correct icon and Vietnamese text
+[ ] Both buttons are 343px wide, 52px tall, radius-lg
+[ ] Press state: bg-card-hover on tap
+[ ] Loading state: spinner replaces icon, text changes to "Dang xu ly..."
+[ ] Disabled state: opacity 0.4 on inactive button during loading
+[ ] Google OAuth popup opens on tap
+[ ] Apple Sign In popup opens on tap
+[ ] OAuth cancel returns to Welcome with no error
+[ ] Provider error shows toast and resets button
+[ ] Email conflict triggers Account Link bottom sheet
+[ ] Link prompt shows masked email
+[ ] "Lien ket" CTA links account and navigates to Home
+[ ] "Huy" CTA dismisses sheet and navigates to Login
+[ ] Apple button hidden on Android (no Apple Sign In support)
+[ ] Network error shows appropriate toast
+[ ] Rapid tap debounced (500ms)
+[ ] Touch targets meet 44px minimum
+[ ] Text contrast meets WCAG AA on bg-card
+```
+
+---
+
+## Screen 36 — 2FA OTP Verification
+
+### Screen Overview
+```
+Screen: 2FA OTP Verification
+User:   Returning user with 2FA enabled, after successful password login
+Goal:   Enter 6-digit OTP for two-factor authentication to complete login
+Refs:   FR-07D
+```
+
+### Layout
+```
+Background: bg-primary (#0D1117)
+Header:     Shield icon in accent circle + title + subtitle
+Main:       6-digit OTP input (reuses component from Screen 21)
+Timer:      5-minute countdown + resend with 60s cooldown
+Bottom:     "Huy dang nhap" cancel button
+```
+
+### Main Content
+
+**Section 1 — Shield Icon + Instructions**
+```
+Center aligned, mt: 80px + safe-area
+
+Icon:       Shield-check icon (Lucide: shield-check), 64x64px, accent-primary, opacity: 0.8
+            Contained in 96x96px circle, bg: accent-primary-subtle, radius-full
+
+Title:      "Xac thuc hai buoc" — text-title-lg (20px, weight 700), text-primary, mt: 24px
+Subtitle:   "Nhap ma OTP da gui den email cua ban"
+            text-body-md (14px), text-secondary, mt: 8px
+Email:      "lo***@gmail.com" — text-body-md (14px, weight 600), text-primary, mt: 4px
+            (email masked per FR-48 pattern)
+```
+
+**Section 2 — OTP Input (6-digit)**
+```
+mx: 40px, mt: 32px, centered
+
+Reuses exact OTP component from Screen 21 (Email Verification):
+  Container:  6 individual digit boxes, flex-row, gap: 8px, centered
+
+  Each digit box:
+    Width:      44px
+    Height:     56px
+    Background: bg-card (#1F2937)
+    Border:     border (#374151) 2px, radius-md (12px)
+    Focus:      border-focus (#3B82F6) 2px, bg-card
+    Filled:     border accent-primary 2px
+    Error:      border-error (#EF4444) 2px, bg rgba(239,68,68,0.05)
+    Text:       text-display-md (24px, weight 700), text-primary, text-align: center
+    Cursor:     Blinking accent-primary line, 2px wide, centered, animation blink 1s
+
+  Behavior:
+    Auto-focus first box on screen mount
+    Auto-advance to next box on digit entry
+    Backspace moves to previous box and clears
+    Paste support: 6-digit paste fills all boxes simultaneously
+    Auto-submit on 6th digit entry (no manual submit button)
+    Keyboard: numeric, auto-shown on mount
+```
+
+**Section 3 — Timer + Resend**
+```
+mt: 32px, centered
+
+Timer row:
+  "Ma het han sau " — text-body-sm (13px), text-secondary
+  "4:42" — text-body-sm (13px, weight 600), accent-primary
+  Timer counts down from 5:00 (300 seconds — shorter than registration per FR-07D)
+
+Resend row (mt: 16px):
+  Default (cooldown active, 60s after last send):
+    "Gui lai ma" — text-body-sm (13px), text-tertiary, non-interactive
+    "trong 45s" — text-caption (12px), text-tertiary
+
+  Cooldown expired:
+    "Gui lai ma" — text-body-sm (13px, weight 600), accent-primary, touchable
+    Touch area: 44px min height
+```
+
+**Section 4 — Cancel Button**
+```
+mt: 32px, centered
+
+"Huy dang nhap" — text-body-md (14px, weight 600), text-secondary (#9CA3AF)
+Touch area: 44px min height, 200px min width
+Tap: navigate back to Welcome screen, clear partial_token
+```
+
+### Interaction Rules
+```
+Digit entry         -> Auto-advance to next field
+6th digit entered   -> Auto-submit (API verify 2FA call with partial_token + OTP)
+Backspace           -> Clear current field, move to previous
+Paste 6 digits      -> Fill all fields, auto-submit
+Resend tap          -> Request new 2FA OTP, reset timer to 5:00, 60s cooldown restarts
+                       Toast: "Ma moi da duoc gui"
+Timer hits 0:00     -> "Phien het han. Dang nhap lai." message
+                       OTP input disabled, navigate to Login screen after 3s
+Cancel tap          -> Navigate to Welcome screen, clear session
+                       No confirmation dialog (low-risk action)
+```
+
+### States
+```
+Default:      First box focused, cursor blinking, timer counting from 5:00, resend greyed
+Typing:       Digits fill boxes with auto-advance, timer continues
+Verifying:    After 6th digit: all boxes show accent-primary border,
+              loading spinner replaces OTP boxes (subtle, 300ms transition)
+Success:      Shield-check icon animation (scale 0 to 1, 300ms ease-spring),
+              "Xac thuc thanh cong!" text, auto-navigate to Home after 1200ms
+Error:        All boxes flash border-error (300ms), shake animation (200ms),
+              "Ma khong dung. Con {remaining} lan thu." below OTP
+Locked:       After 5 failed attempts: OTP input disabled,
+              "Qua nhieu lan thu. Vui long thu lai sau 15 phut."
+              text-body-sm, negative, 15-minute countdown shown
+              partial_token invalidated server-side
+Expired:      Timer at 0:00 or partial_token expired (5 min),
+              "Phien het han. Dang nhap lai."
+              Auto-navigate to Login screen after 3s delay
+```
+
+### Edge Cases
+```
+Partial token expires:      Server returns 401 on submit
+                            Message: "Phien het han. Dang nhap lai."
+                            Navigate to Login screen after 3s
+5th failed attempt:         15-minute lockout, all inputs disabled
+                            partial_token invalidated
+                            User must restart login flow after lockout
+Timer expires:              Input disabled, navigate to Login screen
+                            Different from registration: no resend option after expiry
+New OTP invalidates old:    Server-side; old OTP rejected
+Network error on submit:    Toast: "Khong the xac nhan. Kiem tra ket noi."
+                            Re-enable input, do not increment attempt count
+Network error on resend:    Toast: "Khong the gui ma. Thu lai sau."
+                            Resend button re-enabled
+App killed during 2FA:      partial_token expires after 5min
+                            User must restart login on next app open
+Biometric bypass:           If user has biometric enabled, 2FA is bypassed entirely
+                            (biometric login goes directly to Home per FR-07B)
+Cancel during verify:       If verifying API call is in-flight, cancel request
+                            Navigate to Welcome screen
+Paste non-numeric:          Ignore; only accept digits 0-9
+```
+
+### Dev Handoff Specs
+```
+OTP input:
+  Reuse OTPInput component from Screen 21 (Email Verification)
+  Same component API: { length: 6, onComplete: (code) => void, autoFocus: true }
+  Only difference: timer duration (300s vs 600s) and API endpoint
+
+2FA verify:
+  POST /auth/2fa/verify { partial_token, otp: "123456" }
+  Headers: { Authorization: "Bearer {partial_token}" }
+  On 200: { access_token, refresh_token, user } -> save session, navigate to Home
+  On 401 (wrong OTP): increment fail count, show error, clear boxes, focus first
+  On 401 (token expired): "Phien het han. Dang nhap lai." -> Login screen
+  On 429 (rate limit): show lockout message + 15min timer
+
+2FA resend:
+  POST /auth/2fa/resend { partial_token }
+  Cooldown: 60s local timer
+  On 200: toast "Ma moi da duoc gui", reset 5min timer
+  On 429: "Vui long cho {seconds}s truoc khi gui lai"
+
+Timer:
+  useEffect countdown from 300s, clearInterval on unmount
+  Display: Math.floor(remaining/60) + ":" + String(remaining%60).padStart(2, "0")
+  On expiry: disable input, show expiry message, navigate after 3s delay
+
+Cancel:
+  Clear partial_token from memory
+  navigation.reset({ routes: [{ name: 'Welcome' }] })
+
+Animations:
+  Success shield:  scale 0 to 1, 300ms cubic-bezier(0.34, 1.56, 0.64, 1)
+  Error shake:     translateX [0, -8, 8, -6, 6, -3, 3, 0], 200ms
+  Box fill:        border-color transition 150ms ease-standard
+  Cursor blink:    opacity 0 to 1, 500ms, infinite alternate
+```
+
+### QA Tests
+```
+[ ] Shield icon renders in accent circle at top
+[ ] Title shows "Xac thuc hai buoc"
+[ ] Subtitle shows "Nhap ma OTP da gui den email cua ban"
+[ ] Masked email displayed correctly
+[ ] 6 digit boxes rendered, first auto-focused
+[ ] Auto-advance works on digit entry
+[ ] Backspace moves to previous box and clears digit
+[ ] Paste 6-digit code fills all boxes and auto-submits
+[ ] Correct OTP: success animation with shield-check, navigate to Home
+[ ] Incorrect OTP: shake animation, error message with remaining attempts
+[ ] 5 failed attempts: 15-minute lockout with countdown
+[ ] Timer counts down from 5:00 (not 10:00)
+[ ] Timer expires: "Phien het han" message, navigate to Login after 3s
+[ ] Resend button disabled during 60s cooldown
+[ ] Resend cooldown counter shows remaining seconds
+[ ] Resend tap: new OTP sent, timer resets to 5:00, toast shown
+[ ] "Huy dang nhap" button visible at bottom
+[ ] Cancel navigates to Welcome screen
+[ ] Partial token cleared on cancel
+[ ] Keyboard shown on mount (numeric)
+[ ] Non-numeric paste ignored
+[ ] Network error shows toast without incrementing attempt count
+[ ] Biometric login bypasses this screen entirely
+```
+
+---
+
 ## Component Library Summary (Quick Reference)
 
 | Component | File | Variants |
@@ -5598,12 +6001,13 @@ One-time check:
 | PrimaryButton | components/Button | default, disabled, loading, destructive |
 | SecondaryButton | components/Button | default, disabled |
 | TextButton | components/Button | default, destructive |
+| SocialLoginButton | components/Button | google, apple |
 | StockCard (trending) | components/StockCard | default, loading-skeleton |
 | StockRow (watchlist) | components/StockRow | default, compact, loading-skeleton |
 | IndexCard | components/IndexCard | large, small |
 | PriceChangeBadge | components/Badge | positive, negative, neutral |
 | ChipFilter | components/Chip | default, active |
-| BottomSheet | components/Sheet | half, full |
+| BottomSheet | components/Sheet | half, full, account-link-prompt |
 | MarketTab | components/Tab | default, active |
 | SettingsRow | components/SettingsRow | with-value, without-value, toggle |
 | Toast | components/Toast | info, success, error |
@@ -5616,4 +6020,4 @@ One-time check:
 
 ---
 
-*End of Screen Specifications — Paave V2 (Screens 1–34)*
+*End of Screen Specifications — Paave V2 (Screens 1–36)*

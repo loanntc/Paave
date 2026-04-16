@@ -36,10 +36,11 @@
 6. [Forms and Inputs](#6-forms-and-inputs)
    - [6.1 Primary Button](#61-primary-button)
    - [6.2 Secondary Button](#62-secondary-button)
-   - [6.3 Text Input](#63-text-input)
-   - [6.4 Date Picker](#64-date-picker)
-   - [6.5 Sentiment Selector](#65-sentiment-selector)
-   - [6.6 Toggle Switch](#66-toggle-switch)
+   - [6.3 Social Login Button](#63-social-login-button)
+   - [6.4 Text Input](#64-text-input)
+   - [6.5 Date Picker](#65-date-picker)
+   - [6.6 Sentiment Selector](#66-sentiment-selector)
+   - [6.7 Toggle Switch](#67-toggle-switch)
 7. [Feedback and Status](#7-feedback-and-status)
    - [7.1 Toast Notification](#71-toast-notification)
    - [7.2 Virtual Funds Banner](#72-virtual-funds-banner)
@@ -51,6 +52,7 @@
 8. [Bottom Sheets](#8-bottom-sheets)
    - [8.1 Half Sheet](#81-half-sheet)
    - [8.2 Full Sheet](#82-full-sheet)
+   - [8.3 Account Link Prompt](#83-account-link-prompt)
 
 ---
 
@@ -1467,7 +1469,83 @@ Small (inline):
 
 ---
 
-### 6.3 Text Input
+### 6.3 Social Login Button
+
+**Purpose:** OAuth provider login button for Google and Apple social authentication.
+**Used in:** Welcome Screen (FR-02), Login Screen (FR-07), per FR-07C.
+**Variants:** Google, Apple
+
+#### Anatomy
+
+```
+┌─────────────────────────────────────────┐
+│  [Provider Logo 20px]  Provider Text    │  52px height
+└─────────────────────────────────────────┘
+  343px wide, radius-lg (16px)
+
+Google variant:
++---------------------------------------------------------------+
+|                                                               |  52px height
+|     [G logo 20px]   Tiep tuc voi Google                      |  Centered row
+|                                                               |
++---------------------------------------------------------------+
+
+Apple variant:
++---------------------------------------------------------------+
+|                                                               |  52px height
+|     [ logo 20px]   Tiep tuc voi Apple                       |  Centered row
+|                                                               |
++---------------------------------------------------------------+
+
+Width: 100% of parent (minus space-4 margins = 343px at 375px)
+Icon-to-text gap: 12px
+Content alignment: center (flex-row, justify-center, align-center)
+```
+
+- **Height:** 52px (exceeds 44px accessibility minimum)
+- **Width:** 343px (full width minus 16px margins each side)
+- **Icon:** Provider logo, 20x20px. Google: multicolor "G". Apple: white Apple logo.
+- **Text:** `text-body-md` (14px, Semi Bold / weight 600), `text-primary` (#F9FAFB)
+- **Border radius:** `radius-lg` (16px)
+
+#### Tokens
+
+| Property | Token | Value |
+|----------|-------|-------|
+| Background | `bg-card` | `#1F2937` |
+| Background (pressed) | `bg-card-hover` | `#263244` |
+| Background (loading) | `bg-card` | `#1F2937` |
+| Background (disabled) | `bg-card` | `#1F2937`, opacity 0.4 |
+| Border | `border` | `#374151`, 1px |
+| Border (error) | `border-error` | `#EF4444`, 1px, 300ms flash |
+| Text | `text-primary` | `#F9FAFB` |
+| Text (loading) | `text-primary` | `#F9FAFB` ("Dang xu ly...") |
+| Text size | `text-body-md` | 14px, Semi Bold (weight 600) |
+| Icon size | — | 20x20px |
+| Touch target | — | 343x52px |
+| Border radius | `radius-lg` | 16px |
+| Press feedback | `duration-instant` | 80ms, `ease-sharp` |
+| Release | `duration-fast` | 150ms, `ease-spring` |
+
+#### States
+
+- **Default:** `bg-card` background with 1px `border`. Provider icon + text visible.
+- **Pressed:** `bg-card-hover` (#263244) background. Scale 1 to 0.97, 80ms `ease-sharp`. Release: 0.97 to 1, 150ms `ease-spring`.
+- **Loading:** 20px white spinner replaces provider icon. Text changes to "Dang xu ly..." (processing). Button not tappable. Other social button becomes disabled.
+- **Disabled:** Entire button at opacity 0.4. Not tappable. Applied when sibling button is in loading state.
+- **Error:** Border flashes `border-error` (#EF4444) for 300ms, then reverts to default border. Toast error shown simultaneously.
+- **Success:** Provider icon replaced by check icon (20px, `positive` #10B981), 300ms transition. Then navigate to next screen.
+
+#### Accessibility
+
+- **Touch target:** 343x52px — well above 44x44px minimum.
+- **Contrast:** `text-primary` (#F9FAFB) on `bg-card` (#1F2937) = 12.6:1 (exceeds WCAG AAA).
+- **Screen reader:** Google button announces "Tiep tuc voi Google" / Apple button announces "Tiep tuc voi Apple". Loading state announces "Dang xu ly, vui long cho." Disabled state announces "Khong kha dung."
+- **Focus indicator:** 2px solid `accent-primary` border with 2px offset.
+
+---
+
+### 6.4 Text Input
 
 **Purpose:** Standard text input field with floating label. Supports validation states.
 **Used in:** Registration (FR-05), Login (FR-07), Search (FR-40), Post Creation (FR-SOC-03), Price Alert (FR-28), Change Password (FR-50).
@@ -1549,7 +1627,7 @@ Padding: space-4 (16px) horizontal, space-2 (8px) top (label), space-3 (12px) bo
 
 ---
 
-### 6.4 Date Picker
+### 6.5 Date Picker
 
 **Purpose:** Date of birth selection during registration. Scroll-wheel picker with validation.
 **Used in:** Registration DOB (FR-AGE-01).
@@ -1613,7 +1691,7 @@ Unselected: text-secondary, text-body-md (14px)
 
 ---
 
-### 6.5 Sentiment Selector
+### 6.6 Sentiment Selector
 
 **Purpose:** Bull/Bear/Neutral toggle chip group for social post creation.
 **Used in:** Post Creation (FR-SOC-03).
@@ -1671,7 +1749,7 @@ Single chip:
 
 ---
 
-### 6.6 Toggle Switch
+### 6.7 Toggle Switch
 
 **Purpose:** Binary on/off control for notification and preference settings.
 **Used in:** Notification Settings (FR-52), Profile Settings.
@@ -2328,6 +2406,85 @@ Border radius: radius-lg (16px) top corners
 
 ---
 
+### 8.3 Account Link Prompt
+
+**Purpose:** Prompt user to link a social login identity (Google/Apple) to an existing email-based account. Prevents duplicate accounts when user has already registered with email/password.
+**Used in:** Social Login flow (FR-07C), when OAuth email matches an existing Paave account.
+**Variants:** Google link, Apple link
+
+#### Anatomy
+
+```
+┌─────────────────────────────────────────┐
+│                                         │
+│  [drag handle -- 32x4px, radius-full]   │  Handle: 12px top pad
+│                                         │
+│  ⚠ Tai khoan da ton tai                 │  Title: warning icon + text
+│                                         │
+│  Email us***@gmail.com da duoc dang ky. │  Body text
+│  Ban muon lien ket voi Google?          │
+│                                         │
+│  [Lien ket tai khoan]  ← Primary CTA   │  Primary Button
+│  [Huy]                 ← Text button    │  Secondary (cancel)
+│                                         │
+└─────────────────────────────────────────┘
+
+Width: 100% screen
+Height: auto (content-driven, approximately 280-320px)
+Border radius: radius-lg (16px) top-left and top-right only
+```
+
+- **Type:** Half sheet (slides up from bottom, see 8.1 Half Sheet for base behavior)
+- **Drag handle:** 32x4px centered bar, `neutral` (#9CA3AF), `radius-full`
+- **Warning icon:** Lucide `alert-triangle`, 20px, `warning` (#F59E0B), inline with title
+- **Title:** `text-title-md` (18px, weight 600), `text-primary` (#F9FAFB)
+- **Body text:** `text-body-md` (14px, weight 400), `text-secondary` (#9CA3AF)
+- **Masked email:** `text-body-md` (14px, weight 600), `text-primary` (#F9FAFB). Masking pattern per FR-48: `us***@gmail.com`
+- **Provider name:** Inline in body text, matches the provider the user tapped (Google or Apple)
+- **Primary CTA:** "Lien ket tai khoan" — uses Primary Button component (6.1), full width within sheet padding
+- **Cancel:** "Huy" — text-only button, `text-body-md` (14px, weight 600), `text-secondary`, centered, mt: 12px from Primary CTA
+
+#### Tokens
+
+| Property | Token | Value |
+|----------|-------|-------|
+| Sheet background | `bg-card` | `#1F2937` |
+| Backdrop | `bg-overlay` | `rgba(0,0,0,0.60)` |
+| Shadow | `shadow-sheet` | `0 -8px 32px rgba(0,0,0,0.6)` |
+| Border radius (top) | `radius-lg` | 16px top corners only |
+| Drag handle | `neutral` | `#9CA3AF`, 32x4px |
+| Warning icon | `warning` | `#F59E0B`, 20px |
+| Title | `text-title-md`, `text-primary` | 18px weight 600, `#F9FAFB` |
+| Body text | `text-body-md`, `text-secondary` | 14px weight 400, `#9CA3AF` |
+| Masked email | `text-body-md`, `text-primary` | 14px weight 600, `#F9FAFB` |
+| Primary CTA | Primary Button (6.1) | `accent-primary`, full width |
+| Cancel text | `text-body-md`, `text-secondary` | 14px weight 600, `#9CA3AF` |
+| Content padding | `space-5` | 20px horizontal |
+| Title to body gap | `space-3` | 12px |
+| Body to CTA gap | `space-6` | 24px |
+| CTA to cancel gap | `space-3` | 12px |
+| Open animation | `ease-decelerate` | translateY 100% to 0, 350ms |
+| Close animation | `ease-accelerate` | translateY 0 to 100%, 300ms |
+| Backdrop animation | `ease-standard` | opacity 0 to 0.6, 350ms |
+
+#### States
+
+- **Opening:** Sheet slides up from bottom at 350ms `ease-decelerate`. Backdrop fades in simultaneously. Content fully visible on open.
+- **Open:** Content static (no scrolling needed). Drag handle swipe-down to dismiss. Backdrop tap to dismiss.
+- **Linking (loading):** Primary CTA enters loading state (spinner, not tappable). Cancel button remains active. Drag-to-dismiss disabled during API call.
+- **Link success:** Primary CTA shows check icon briefly (300ms), then sheet auto-dismisses. Navigation to Home Dashboard.
+- **Link error:** Toast: "Lien ket khong thanh cong. Thu lai." Sheet remains open, CTA returns to default.
+- **Cancelled:** Sheet slides down at 300ms `ease-accelerate`. Navigate to Login screen.
+- **Dismissed (drag/backdrop):** Same as cancelled — navigate to Login screen.
+
+#### Accessibility
+
+- **Touch target:** Primary CTA: 343x52px. Cancel text: 44px min height. Drag handle area: 44px tall (including padding).
+- **Contrast:** Title `text-primary` on `bg-card` = 12.6:1. Body `text-secondary` on `bg-card` = 4.7:1 (passes AA). Warning icon `warning` on `bg-card` = 5.2:1.
+- **Screen reader:** Sheet announced as dialog with title "Tai khoan da ton tai". Body text read in sequence. Primary CTA announced as "Lien ket tai khoan, button". Cancel announced as "Huy, button". Focus trapped within sheet.
+
+---
+
 ## Appendix A: Animation Summary
 
 All animations reference design-system.md section 8.
@@ -2368,6 +2525,8 @@ All animations reference design-system.md section 8.
 | Notifications | Screen Header, Back Button, Toast Notification, Empty State |
 | Paper Trading Sheets | Full Sheet, Virtual Funds Banner, AI Analysis Card (pre-trade), Primary Button, Text Input, Price Display, Disclaimer Banner |
 | Post Creation | Full Sheet, Text Input (multiline), Sentiment Selector, Primary Button, Secondary Button, Toast |
+| Social Login (Screen 35) | Social Login Button (Google), Social Login Button (Apple), Account Link Prompt (Bottom Sheet), Toast |
+| 2FA Verification (Screen 36) | OTP Input (reused from Screen 21), Primary Button, Toast |
 | Celebration | Milestone Celebration Overlay, Achievement Card |
 
 ---
