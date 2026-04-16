@@ -1,7 +1,7 @@
 # Paave Shared Components Library
 ## Reusable UI Components — Anatomy, States, Tokens
 
-> Version: 1.0 | Date: 2026-04-16 | Status: V1 Production-Ready
+> Version: 2.0 | Date: 2026-04-16 | Status: V2 Production-Ready
 > All tokens reference design-system.md. All spacing on 8px grid.
 
 ---
@@ -53,6 +53,13 @@
    - [8.1 Half Sheet](#81-half-sheet)
    - [8.2 Full Sheet](#82-full-sheet)
    - [8.3 Account Link Prompt](#83-account-link-prompt)
+9. [Engagement & Reflection](#9-engagement--reflection)
+   - [9.1 Daily Challenge Card](#91-daily-challenge-card)
+   - [9.2 Puzzle Card](#92-puzzle-card)
+   - [9.3 IHS Score Display](#93-ihs-score-display)
+   - [9.4 DNA Card](#94-dna-card)
+   - [9.5 Reasoning Input](#95-reasoning-input)
+   - [9.6 Reflection Sheet](#96-reflection-sheet)
 
 ---
 
@@ -2485,6 +2492,608 @@ Border radius: radius-lg (16px) top-left and top-right only
 
 ---
 
+## 9. Engagement & Reflection
+
+---
+
+### 9.1 Daily Challenge Card
+
+**Purpose:** Self-contained card for the daily market prediction challenge. Displays a question, three answer option pills, an optional reasoning text input, and a countdown timer. Transitions through three time-dependent phases within the same card frame.
+**Used in:** Daily Challenge screen (Screen 38, FR-ENGAGE-01), Home Screen (inline card preview linking to full screen).
+**Variants:** Phase 1 (Question), Phase 2 (Waiting), Phase 3 (Result)
+
+#### Anatomy
+
+```
+Phase 1 (Question):
++---------------------------------------------------------------+
+|  [brain 24px]   Thu thach hom nay                              |  Header row
++---------------------------------------------------------------+
+|                                                                |
+|  VN-Index se dong cua tang hay giam hom nay?                   |  Question: text-body-lg
+|                                                                |
+|  +---------------------------------------------------+        |
+|  |  Tang hon 0.5%                              [  ]  |  52px  |  Option pill 1
+|  +---------------------------------------------------+        |
+|  +---------------------------------------------------+        |
+|  |  Tang nhe (0-0.5%)                          [  ]  |  52px  |  Option pill 2
+|  +---------------------------------------------------+        |
+|  +---------------------------------------------------+        |
+|  |  Giam                                       [  ]  |  52px  |  Option pill 3
+|  +---------------------------------------------------+        |
+|                                                                |
+|  +---------------------------------------------------+        |
+|  |  Tai sao ban chon nhu vay? (khong bat buoc)       |  80px  |  Reasoning Input (9.5)
+|  |                                           0/200   |        |
+|  +---------------------------------------------------+        |
+|                                                                |
+|  [clock 14px]  con 00:42:15  Ket thuc luc 9:05                |  Timer row
+|                                                                |
+|  [ ============ Gui cau tra loi ============ ]                 |  Submit CTA (full-width)
+|                                                                |
++---------------------------------------------------------------+
+
+Container: 343px wide, bg-card, radius-xl (24px), padding: space-5 (20px)
+Border: accent-primary-subtle 1px
+Shadow: shadow-card-raised
+```
+
+- **Header:** Lucide `brain` 24px in `accent-primary` + "Thu thach hom nay" in `text-title-md` (18px, weight 600)
+- **Question:** `text-body-lg` (16px, weight 400), `text-primary`, max 3 lines
+- **Option pills:** 100% width, 52px height, `bg-secondary`, `border` 1.5px, `radius-md` (12px). Text: `text-body-md` (14px, weight 600), centered. Single selection (radio behavior)
+- **Selected option:** `accent-primary-subtle` bg, `accent-primary` border 2px, `accent-primary` text, check icon 16px right-aligned
+- **Reasoning input:** Uses Reasoning Input component (9.5). Optional. 200-char max.
+- **Timer:** Lucide `clock` 14px + countdown in `text-caption-bold` (12px, weight 600), `warning` color
+- **Submit CTA:** Primary Button (6.1), full width, disabled until 1 option selected
+- **Option-to-option gap:** 12px
+- **Section gaps:** 16px (question to options), 16px (options to reasoning), 16px (reasoning to timer), 20px (timer to CTA)
+
+#### Tokens
+
+| Property | Token | Value |
+|----------|-------|-------|
+| Card background | `bg-card` | `#1F2937` |
+| Card border | `accent-primary-subtle` | `rgba(59,130,246,0.15)`, 1px |
+| Card radius | `radius-xl` | 24px |
+| Card shadow | `shadow-card-raised` | elevated |
+| Card padding | `space-5` | 20px |
+| Header icon | `accent-primary` | `#3B82F6`, 24px |
+| Header text | `text-title-md`, `text-primary` | 18px weight 600, `#F9FAFB` |
+| Question text | `text-body-lg`, `text-primary` | 16px weight 400, `#F9FAFB` |
+| Option bg (default) | `bg-secondary` | `#161B22` |
+| Option border (default) | `border` | `#374151`, 1.5px |
+| Option bg (selected) | `accent-primary-subtle` | `rgba(59,130,246,0.15)` |
+| Option border (selected) | `accent-primary` | `#3B82F6`, 2px |
+| Option text (default) | `text-body-md`, `text-primary` | 14px weight 600, `#F9FAFB` |
+| Option text (selected) | `text-body-md`, `accent-primary` | 14px weight 600, `#3B82F6` |
+| Check icon (selected) | `accent-primary` | `#3B82F6`, 16px |
+| Timer icon | `warning` | `#F59E0B`, 14px |
+| Timer text | `text-caption-bold`, `warning` | 12px weight 600, `#F59E0B` |
+| Phase transition | `ease-standard` | 300ms crossfade |
+| Option select | `ease-fast` | 150ms bg + border transition |
+
+#### States
+
+- **Default (Phase 1):** Question visible, 3 options unselected, reasoning empty, timer counting, submit disabled.
+- **Option selected:** One option highlighted with `accent-primary` border + bg. Submit enabled. Previous selection deselected on new tap.
+- **Submitting:** Submit CTA loading state (spinner). Options locked (not tappable).
+- **Waiting (Phase 2):** Card content crossfades (300ms) to waiting state: "Dang cho ket qua..." pulse badge, user's answer recap, optional live sparkline.
+- **Result (Phase 3):** Card content crossfades to result: correct/incorrect badge, actual result value, explanation card, coins earned, community comparison bar.
+- **Missed:** Greyed card with "Ban da bo lo thu thach hom nay" text in `text-tertiary`. No options shown.
+- **Loading:** Skeleton shimmer for question and option areas.
+- **Error:** Toast: "Khong the tai thu thach. Thu lai sau."
+
+#### Accessibility
+
+- **Touch target:** Each option pill is 52px tall (exceeds 44px minimum). Submit CTA is 52px. Timer area is not interactive.
+- **Contrast:** `accent-primary` option text on `accent-primary-subtle` bg = 5.2:1 (passes AA). `warning` timer on `bg-card` = 5.8:1.
+- **Screen reader:** Announces "Daily Challenge: [question]. Option 1: [text]. Option 2: [text]. Option 3: [text]. [Selected option] selected. Submit prediction button." Phase 2: "Waiting for result." Phase 3: "Result: [correct/incorrect]. [Explanation]."
+- **Reduced motion:** No pulse animation in Phase 2. Static badge instead.
+
+---
+
+### 9.2 Puzzle Card
+
+**Purpose:** Interactive card for the daily stock ticker guessing game. Presents progressive text hints and a 2x2 answer grid of ticker options. Reveals company details on answer.
+**Used in:** Stock Ticker Daily Puzzle screen (Screen 39, FR-ENGAGE-03).
+**Variants:** Unsolved (hints + grid), Solved (company reveal + facts)
+
+#### Anatomy
+
+```
+Unsolved:
++---------------------------------------------------------------+
+|  [puzzle 24px]  Doan ma CK           [Hang ngay] badge        |  Header row
++---------------------------------------------------------------+
+|                                                                |
+|  (1)  Ngan hang lon nhat Viet Nam tinh theo von hoa            |  Hint 1 (visible)
+|                                                                |
+|  (2)  - - - - - - - - - - - - - - - - - - - - - -             |  Hint 2 (hidden)
+|                                                                |
+|  (3)  - - - - - - - - - - - - - - - - - - - - - -             |  Hint 3 (hidden)
+|                                                                |
+|       [Xem goi y tiep v]                                      |  Reveal link
+|                                                                |
+|  +----------+----12px----+----------+                          |
+|  |   VCB    |            |   BID    |  56px each               |  2x2 grid row 1
+|  +----------+            +----------+                          |
+|  +----------+            +----------+                          |
+|  |   CTG    |            |   MBB    |  56px each               |  2x2 grid row 2
+|  +----------+            +----------+                          |
+|                                                                |
++---------------------------------------------------------------+
+
+Solved (replaces grid area):
++---------------------------------------------------------------+
+|                                                                |
+|  [VCB logo 64px]                                               |  Company logo
+|  VCB                                                           |  Ticker (display-md)
+|  Ngan hang TMCP Ngoai thuong Viet Nam                          |  Full name
+|                                                                |
+|  * Von hoa: 485 nghin ty VND                                   |  Fact 1
+|  * Thanh lap: 1963                                             |  Fact 2
+|  * San: HOSE                                                   |  Fact 3
+|                                                                |
+|  Xem chi tiet VCB ->                                           |  Stock link
+|                                                                |
+|  [coins 20px]  +10 coins                                      |  Reward badge
+|                                                                |
++---------------------------------------------------------------+
+
+Container: 343px wide, bg-card, radius-xl (24px), padding: space-5 (20px)
+Shadow: shadow-card-raised
+```
+
+- **Header icon:** Lucide `puzzle` 24px, `accent-secondary` (#06B6D4)
+- **Title:** "Doan ma CK" in `text-title-md` (18px, weight 600), `text-primary`
+- **Daily badge:** "Hang ngay" in `text-caption-bold` (12px), `accent-secondary`, bg: `accent-secondary-subtle`, `radius-full`, px: 8px, py: 4px
+- **Hint number:** 24x24px circle, `accent-primary-subtle` bg, number in `text-caption-bold` (12px), `accent-primary`
+- **Hint text:** `text-body-md` (14px), `text-primary`. Hidden hints show as dashed line in `text-tertiary`
+- **Reveal link:** "Xem goi y tiep" in `text-body-sm` (13px, weight 600), `accent-primary`, Lucide `chevron-down` 14px
+- **Grid options:** 2 columns x 2 rows, gap 12px. Each cell: ~146px wide, 56px tall, `bg-secondary`, `border` 1.5px, `radius-md` (12px), ticker in `text-title-sm` (16px, weight 600) centered
+- **Company logo (solved):** 64x64px, `radius-md`, `shadow-card`
+- **Facts list:** 6px circle bullet in `accent-secondary`, text in `text-body-sm` (13px), `text-primary`
+- **Stock link:** "Xem chi tiet [TICKER]" in `text-body-md` (14px, weight 600), `accent-primary`
+- **Coins badge:** Lucide `coins` 20px `warning` + "+10 coins" in `text-body-md` (14px, weight 700), `warning`
+
+#### Tokens
+
+| Property | Token | Value |
+|----------|-------|-------|
+| Card background | `bg-card` | `#1F2937` |
+| Card radius | `radius-xl` | 24px |
+| Card shadow | `shadow-card-raised` | elevated |
+| Card padding | `space-5` | 20px |
+| Puzzle icon | `accent-secondary` | `#06B6D4`, 24px |
+| Badge bg | `accent-secondary-subtle` | `rgba(6,182,212,0.15)` |
+| Badge text | `accent-secondary` | `#06B6D4`, `text-caption-bold` |
+| Hint number bg | `accent-primary-subtle` | `rgba(59,130,246,0.15)` |
+| Hint number text | `accent-primary` | `#3B82F6`, `text-caption-bold` |
+| Hidden hint line | `text-tertiary` | `#6B7280`, dashed |
+| Grid cell bg | `bg-secondary` | `#161B22` |
+| Grid cell border | `border` | `#374151`, 1.5px |
+| Grid cell radius | `radius-md` | 12px |
+| Correct cell bg | `positive-subtle` | `rgba(16,185,129,0.15)` |
+| Correct cell border | `positive` | `#10B981`, 2px |
+| Wrong cell bg | `negative-subtle` | `rgba(239,68,68,0.15)` |
+| Wrong cell border | `negative` | `#EF4444`, 2px |
+| Fact bullet | `accent-secondary` | `#06B6D4`, 6px circle |
+| Coins icon | `warning` | `#F59E0B`, 20px |
+| Coins text | `warning` | `#F59E0B`, `text-body-md` weight 700 |
+| Hint reveal | `ease-decelerate` | height 0 to auto + opacity 0 to 1, 300ms |
+| Wrong shake | -- | translateX [0, -4, 4, -3, 3, 0], 200ms |
+| Result reveal | `ease-standard` | fade in, 300ms |
+| Logo appear | `ease-spring` | scale 0.8 to 1 + opacity 0 to 1, 300ms |
+
+#### States
+
+- **Default (unsolved):** Hint 1 visible, hints 2-3 hidden as dashed lines. 4 ticker options in grid. "Xem goi y tiep" link visible.
+- **Hint revealing:** Next hint slides down with height animation (300ms `ease-decelerate`). Reveal link updates or hides when all hints shown.
+- **Option selected:** Cell highlighted with `accent-primary` border + bg. Auto-submits after 500ms.
+- **Correct answer:** Selected cell flashes `positive-subtle` bg + `positive` border. Other cells dim (opacity 0.4). Grid crossfades to company reveal.
+- **Wrong answer:** Selected cell flashes `negative-subtle` bg + shake animation (200ms). Correct cell then highlighted in `positive`. Grid crossfades to company reveal.
+- **Already played:** "Ban da choi hom nay roi!" message with result recap. Options not interactive.
+- **Loading:** Skeleton shimmer for hint area and grid.
+- **No puzzle:** "Cau do moi se co vao ngay mai" placeholder.
+
+#### Accessibility
+
+- **Touch target:** Each grid cell is 56px tall (exceeds 44px). Hint reveal link is 44px min height.
+- **Contrast:** Grid cell text `text-primary` on `bg-secondary` = 13.4:1. `accent-secondary` badge on `accent-secondary-subtle` = 5.6:1.
+- **Screen reader:** Announces "Stock Ticker Puzzle. Hint 1: [text]. [N hints remaining]. Option 1: [ticker]. Option 2: [ticker]. Option 3: [ticker]. Option 4: [ticker]." On solve: "Correct/Incorrect. Answer: [ticker], [company name]. [3 facts]."
+- **Reduced motion:** No shake animation on wrong answer. Instant color change instead.
+
+---
+
+### 9.3 IHS Score Display
+
+**Purpose:** Large composite display for the Investment Health Score. Shows a prominent score number with color coding, 4-dimension progress bars for sub-scores, a trend arrow for week-over-week change, and a 12-week sparkline history.
+**Used in:** Investment Health Score Dashboard (Screen 40, FR-SCORE-01), Profile Screen (compact inline variant).
+**Variants:** Full (dashboard hero + breakdown), Compact (profile inline, score number only)
+
+#### Anatomy
+
+```
+Full variant (dashboard):
++---------------------------------------------------------------+
+|                                                                |
+|                        72 /100                                 |  Score: text-display-xl
+|                    [trending-up] +5                            |  Trend arrow + delta
+|                  Diem suc khoe dau tu                          |  Label: text-body-md
+|                                                                |
++---------------------------------------------------------------+
+|                                                                |
+|  Ky luat            ==================------          85/100   |  Dimension 1
+|  Da dang hoa        ============------------------    60/100   |  Dimension 2
+|  Hoc tap            =================-----------      78/100   |  Dimension 3
+|  Phan anh           ==============--------------      65/100   |  Dimension 4
+|                                                                |
++---------------------------------------------------------------+
+|                                                                |
+|  12-week sparkline:  ___/\___/--\__/\___                       |  80px height
+|                      T1  T2  T3 ... T12                        |  X-axis labels
+|                                                                |
++---------------------------------------------------------------+
+
+Compact variant (profile inline):
++--80px---+
+|   72    |  text-display-md (24px/700)
+|  /100   |  text-body-sm (13px)
+| [arrow] |  12px trend icon
++---------+
+```
+
+- **Score number (full):** `text-display-xl` (40px, weight 800), color-coded (0-39: `negative`, 40-69: `warning`, 70-89: `accent-primary`, 90-100: `positive`)
+- **Score suffix:** "/100" in `text-display-md` (24px, weight 400), `text-secondary`
+- **Score label:** `text-body-md` (14px), `text-secondary`
+- **Trend arrow:** Lucide `trending-up`/`trending-down`/`minus` 20px, color matches direction. Delta text in `text-caption` (12px)
+- **Dimension bar label:** `text-body-md` (14px, weight 500), `text-primary`
+- **Dimension bar score:** `text-body-md` (14px, weight 700), color-coded same as main score
+- **Dimension bar track:** 8px height, `bg-secondary`, `radius-full`
+- **Dimension bar fill:** 8px height, color-coded, `radius-full`, animated width
+- **Sparkline:** 100% width, 80px height, `accent-secondary` 2px stroke, `accent-secondary-subtle` fill below
+- **Compact score:** `text-display-md` (24px, weight 700), color-coded
+- **Compact suffix:** "/100" in `text-body-sm` (13px), `text-secondary`
+
+#### Tokens
+
+| Property | Token | Value |
+|----------|-------|-------|
+| Score (0-39) | `negative` | `#EF4444` |
+| Score (40-69) | `warning` | `#F59E0B` |
+| Score (70-89) | `accent-primary` | `#3B82F6` |
+| Score (90-100) | `positive` | `#10B981` |
+| Score text (full) | `text-display-xl` | 40px, weight 800 |
+| Score suffix | `text-secondary` | `#9CA3AF`, `text-display-md` |
+| Score label | `text-secondary` | `#9CA3AF`, `text-body-md` |
+| Trend up icon | `positive` | `#10B981`, 20px |
+| Trend down icon | `negative` | `#EF4444`, 20px |
+| Trend neutral icon | `neutral` | `#9CA3AF`, 20px |
+| Trend delta text | -- | Matches icon color, `text-caption` |
+| Bar track | `bg-secondary` | `#161B22`, 8px, `radius-full` |
+| Bar fill | -- | Color-coded per score range |
+| Bar label | `text-body-md`, `text-primary` | 14px weight 500, `#F9FAFB` |
+| Bar score | `text-body-md` | 14px weight 700, color-coded |
+| Sparkline stroke | `accent-secondary` | `#06B6D4`, 2px |
+| Sparkline fill | `accent-secondary-subtle` | `rgba(6,182,212,0.15)` |
+| Score roll-up | `ease-decelerate` | 500ms on mount |
+| Bar fill animation | `ease-decelerate` | 500ms, 100ms stagger per bar |
+| Sparkline draw-in | `ease-decelerate` | 600ms stroke-dashoffset |
+
+#### States
+
+- **Default:** Score displayed with roll-up animation. Bars fill with stagger. Sparkline draws in.
+- **Score increase:** Score number counts up, trend arrow shows `positive` with "+" delta.
+- **Score decrease:** Score number counts down, trend arrow shows `negative` with "-" delta.
+- **No change:** Trend shows `minus` icon and "Khong doi" text.
+- **Loading:** Skeleton shimmer for score circle, bar tracks visible with no fill, sparkline hidden.
+- **No data:** "Giao dich them de xem diem suc khoe" message. Score shows "--" in `text-tertiary`.
+- **First week:** Score shown but sparkline has single data point (dot only, no line).
+
+#### Accessibility
+
+- **Touch target:** Dimension bars tappable (44px tall tap area including label row) for detail tooltip. Sparkline tappable for week detail.
+- **Contrast:** All score colors on `bg-card` exceed 4.5:1. `positive` on `bg-card` = 4.8:1. `warning` on `bg-card` = 5.8:1.
+- **Screen reader:** Full variant announces "Investment Health Score: [N] out of 100. [Trend direction] [delta] from last week. Discipline: [N]. Diversification: [N]. Learning: [N]. Reflection: [N]." Compact announces "Health Score: [N] out of 100."
+- **Reduced motion:** No roll-up animation. Score appears immediately. Bar fills appear at final width. Sparkline rendered without draw-in.
+
+---
+
+### 9.4 DNA Card
+
+**Purpose:** Shareable 9:16 format card summarizing a user's monthly investment personality. Contains style badge, key stats grid, best trade highlight, behavioral insight, and community rank. Designed for social sharing to Zalo, KakaoTalk, and Instagram Stories.
+**Used in:** Monthly DNA Card screen (Screen 41, FR-CARD-01).
+**Variants:** By investment style (Value, Growth, Momentum, Defensive, Active)
+
+#### Anatomy
+
+```
++-------280px--------+
+|                     |  498px height (9:16 ratio at preview scale)
+|  [Paave]  Th4,2026 |  Logo + month
+|                     |
+|    [ Value ]        |  Style badge (pill, colored)
+|  Phong cach dau tu  |  Style label
+|                     |
+|  +------+  +------+ |
+|  |+12.5%|  |  23  | |  Stats grid (2x2)
+|  | Loi   |  | Lenh | |
+|  | nhuan |  | GD   | |
+|  +------+  +------+ |
+|  +------+  +------+ |
+|  |8.5ngay| |  65% | |
+|  | Giu TB|  |Thang | |
+|  +------+  +------+ |
+|                     |
+|  [trophy] VCB +18% |  Best trade
+|                     |
+|  "Ban co xu huong   |  Insight (italic)
+|   giu co phieu lau" |
+|                     |
+|     Top 15%         |  Community rank
+|  [=======---]       |  Rank bar
+|                     |
+|  @pseudonym         |  Author
+|  paave.app          |  Brand footer
+|                     |
++---------------------+
+
+Background: gradient-hero with accent-glow overlay
+Border radius: radius-xl (24px)
+Export size: 1080x1920px (2x for Retina)
+```
+
+- **Dimensions:** 280x498px preview (1080x1920px export for sharing)
+- **Logo:** Paave brand mark 24x24px, top-left, opacity 0.6. "Paave" wordmark `text-caption` (12px, weight 700), `text-secondary`
+- **Month label:** "Thang [N], [YYYY]" in `text-caption-bold` (12px), `text-secondary`, top-right
+- **Style badge:** Pill shape, `radius-full`, px: 16px, py: 8px, centered. Text: `text-body-md` (14px, weight 700), `#FFFFFF`. Background: style-specific color
+- **Style colors:** Value = `tier-2-color` (#3B82F6), Growth = `positive` (#10B981), Momentum = `warning` (#F59E0B), Defensive = `accent-secondary` (#06B6D4), Active = `tier-5-color` (#8B5CF6)
+- **Style label:** "Phong cach dau tu cua ban" in `text-caption` (12px), `text-secondary`, centered
+- **Stats grid:** 2x2 cells, gap 12px. Each cell: `bg-secondary`, `radius-md` (12px), padding `space-3` (12px). Value: `text-title-md` (18px, weight 700), `text-primary`. Label: `text-caption` (12px), `text-secondary`
+- **Best trade:** Trophy icon 16px `warning` + "Giao dich tot nhat:" `text-caption` (12px), `text-secondary`. Value: `text-body-md` (14px, weight 700), `positive` (or `negative`)
+- **Insight:** `text-body-sm` (13px), `text-secondary`, italic, text-align center, max 1 line (truncate with ellipsis)
+- **Rank:** "Top [N]%" in `text-title-sm` (16px, weight 700), `accent-primary`. Sub-label: `text-caption` (12px), `text-secondary`. Bar: 80% width, 6px height, `radius-full`, `accent-primary` fill, `bg-secondary` track
+- **Pseudonym:** `text-body-sm` (13px), `text-secondary`
+- **Brand footer:** "paave.app" in `text-caption` (12px), `text-tertiary`
+
+#### Tokens
+
+| Property | Token | Value |
+|----------|-------|-------|
+| Card background | `gradient-hero` | `linear-gradient(135deg, #0D1117 0%, #1a1f35 100%)` |
+| Glow overlay | `gradient-accent-glow` | radial gradient |
+| Card radius | `radius-xl` | 24px |
+| Logo opacity | -- | 0.6 |
+| Style badge (Value) | `tier-2-color` | `#3B82F6` |
+| Style badge (Growth) | `positive` | `#10B981` |
+| Style badge (Momentum) | `warning` | `#F59E0B` |
+| Style badge (Defensive) | `accent-secondary` | `#06B6D4` |
+| Style badge (Active) | `tier-5-color` | `#8B5CF6` |
+| Stat cell bg | `bg-secondary` | `#161B22` |
+| Stat cell radius | `radius-md` | 12px |
+| Stat value | `text-title-md`, `text-primary` | 18px weight 700, `#F9FAFB` |
+| Stat label | `text-caption`, `text-secondary` | 12px, `#9CA3AF` |
+| Positive return | `positive` | `#10B981` |
+| Negative return | `negative` | `#EF4444` |
+| Trophy icon | `warning` | `#F59E0B`, 16px |
+| Rank text | `accent-primary` | `#3B82F6`, `text-title-sm` |
+| Rank bar fill | `accent-primary` | `#3B82F6` |
+| Rank bar track | `bg-secondary` | `#161B22` |
+| Brand text | `text-tertiary` | `#6B7280`, `text-caption` |
+
+#### States
+
+- **Generated:** Card fully rendered with current month data. Static display (not interactive within the card itself).
+- **Loading:** Skeleton shimmer for style badge, stats grid, and insight areas.
+- **No data (< 1 month):** "Can them du lieu de tao DNA Card" placeholder. Share CTA hidden.
+- **Mid-month:** Card rendered with partial data. "(chua hoan tat)" label appended to month.
+- **No trades in month:** Simplified card with "Khong co giao dich trong thang nay" message. Stats grid shows "--" values.
+- **Share action:** Native OS share sheet triggered with 1080x1920 pre-rendered image.
+- **Share failure:** Toast: "Khong the chia se. Anh da luu vao thu vien." Fallback save to gallery.
+
+#### Accessibility
+
+- **Touch target:** Card itself is not interactive. Share and Save buttons on the screen (not part of this component) are 44px+ each.
+- **Contrast:** All text on `gradient-hero` exceeds 10:1 (`text-primary` on dark gradient). Style badge white text on color bg: all variants exceed 4.5:1.
+- **Screen reader:** Announces "DNA Card for [month, year]. Investment style: [style]. Return: [N]%. Trades: [N]. Average hold: [N] days. Win rate: [N]%. Best trade: [ticker] [return]%. Community rank: top [N]%."
+
+---
+
+### 9.5 Reasoning Input
+
+**Purpose:** Compact text input field with a 200-character limit, prompt placeholder, and live character counter. Used to capture optional reasoning or reflection text alongside trading or challenge actions.
+**Used in:** Daily Challenge Card Phase 1 (Screen 38, 9.1), Order Placement reasoning field (Screen 42 Part A, FR-PT-07), Reflection Sheet Q2 (Screen 42 Part B, 9.6).
+**Variants:** Standard (multi-line), Compact (single-line)
+
+#### Anatomy
+
+```
+Standard (multi-line):
++---------------------------------------------------------------+
+|  Tai sao ban chon nhu vay? (khong bat buoc)                   |  Placeholder text
+|                                                                |  80px default height
+|                                                                |  Expandable to 120px
+|                                                      0/200    |  Character counter
++---------------------------------------------------------------+
+
+With content:
++---------------------------------------------------------------+
+|  Toi nghi VN-Index se tang vi cac ngan hang bao cao loi nhuan  |  User text
+|  tot hon ky vong trong quy 1...                                |
+|                                                                |
+|                                                     85/200    |  Counter updates
++---------------------------------------------------------------+
+
+Width: 100% of parent container
+Border: border (#374151) 1.5px
+Radius: radius-md (12px)
+Padding: space-3 (12px) horizontal, space-2 (8px) vertical
+```
+
+- **Placeholder:** `text-body-sm` (13px, weight 400), `text-tertiary` (#6B7280)
+- **Input text:** `text-body-sm` (13px, weight 400), `text-primary` (#F9FAFB)
+- **Character counter:** `text-caption` (12px, weight 400), `text-tertiary`, right-aligned, bottom-right corner inside field
+- **Counter near limit (180+):** Counter color changes to `warning` (#F59E0B)
+- **Counter at limit (200):** Counter color changes to `negative` (#EF4444)
+- **Height:** 80px default (3 lines), expandable to 120px (5 lines) as user types. Auto-grow behavior.
+- **Max characters:** 200 (hard limit, input rejected beyond 200)
+- **Label (optional, external):** `text-label-md` (13px, weight 500), `text-secondary`, with "(khong bat buoc)" suffix in `text-caption` (12px), `text-tertiary`
+
+#### Tokens
+
+| Property | Token | Value |
+|----------|-------|-------|
+| Background | `bg-card` | `#1F2937` |
+| Border (default) | `border` | `#374151`, 1.5px |
+| Border (focus) | `border-focus` | `#3B82F6`, 2px |
+| Border radius | `radius-md` | 12px |
+| Padding horizontal | `space-3` | 12px |
+| Padding vertical | `space-2` | 8px |
+| Placeholder text | `text-tertiary` | `#6B7280`, `text-body-sm` |
+| Input text | `text-primary` | `#F9FAFB`, `text-body-sm` |
+| Counter (normal) | `text-tertiary` | `#6B7280`, `text-caption` |
+| Counter (near limit, 180+) | `warning` | `#F59E0B`, `text-caption` |
+| Counter (at limit, 200) | `negative` | `#EF4444`, `text-caption` |
+| Focus transition | `ease-standard` | border-color 150ms |
+| Height expand | `ease-decelerate` | 200ms auto-grow |
+| Default height | -- | 80px (3 lines) |
+| Max height | -- | 120px (5 lines) |
+
+#### States
+
+- **Default (empty):** Placeholder text visible. Counter shows "0/200" in `text-tertiary`. Border: `border`.
+- **Focused:** Border changes to `border-focus` (2px `accent-primary`). Placeholder remains until typing starts. Keyboard shown.
+- **Typing:** Input text replaces placeholder. Counter updates live. Field auto-grows height as needed (max 120px).
+- **Near limit (180+ chars):** Counter turns `warning`. No other visual change.
+- **At limit (200 chars):** Counter turns `negative`. Additional input rejected. Brief haptic (light impact) on rejection.
+- **Filled (blurred):** Border returns to `border`. Text remains. Counter visible.
+- **Disabled:** Background: `bg-secondary`. Border: `border-subtle`. Text: `text-tertiary`. Not editable.
+- **Error (external validation):** Border: `border-error`. Error message below field in `negative` `text-caption`.
+
+#### Accessibility
+
+- **Touch target:** Full field area is tappable to focus. Minimum 80px tall (exceeds 44px).
+- **Contrast:** `text-primary` on `bg-card` = 12.6:1. Placeholder `text-tertiary` on `bg-card` = 3.3:1 (acceptable for placeholder per WCAG). Counter `text-tertiary` on `bg-card` = 3.3:1 (decorative indicator).
+- **Screen reader:** Announces "[Label if present], text field, optional, [character count] of 200 characters." On near-limit: "Approaching character limit." On at-limit: "Character limit reached."
+- **Keyboard:** Does not dismiss on return key (multi-line). Dismiss via tap outside or parent form submit.
+
+---
+
+### 9.6 Reflection Sheet
+
+**Purpose:** Post-trade reflection bottom sheet that captures user sentiment and lessons learned after closing a full position. Displays trade outcome with P&L, presents a quick sentiment question (Q1) with 3 option buttons, an optional free-text question (Q2), and a contextual lesson link.
+**Used in:** Trade Reflection (Screen 42 Part B, FR-PT-08). Triggered automatically 2 seconds after a full sell fills.
+**Variants:** Profitable trade (positive outcome), Losing trade (negative outcome)
+
+#### Anatomy
+
+```
++---------------------------------------------------------------+
+|               [ ======== ]                                     |  Drag handle: 32x4px
++---------------------------------------------------------------+
+|                                                                |
+|  +-----------------------------------------------------------+|
+|  |  VCB                  +₫1,250,000 (+13.5%)                ||  Outcome row 1
+|  |  Giu: 12 ngay    Mua: ₫92,500 → Ban: ₫105,000            ||  Outcome row 2
+|  +-----------------------------------------------------------+|
+|                                                                |
+|  Cam nhan cua ban ve giao dich nay?                            |  Q1 label
+|                                                                |
+|  +----------+  +----------+  +----------+                      |
+|  | Hai long |  |Binh thuong|  | Hoi tiec |                     |  Q1 buttons (3)
+|  +----------+  +----------+  +----------+                      |
+|                                                                |
+|  Ban hoc duoc gi?                                              |  Q2 label
+|  +-----------------------------------------------------------+|
+|  |  Viet mot cau ve bai hoc rut ra...              0/200     ||  Q2 input
+|  +-----------------------------------------------------------+|
+|                                                                |
+|  [book-open 14px]  Bai hoc lien quan: Khi nao nen chot loi?   |  Lesson link
+|                                                                |
+|  [ ============= Luu phan anh ============= ]                 |  Submit CTA
+|                                                                |
+|  Bo qua                                                        |  Skip link
+|                                                                |
++---------------------------------------------------------------+
+
+Type: Half Sheet (8.1)
+Trigger: 2s after full sell fills (remaining_quantity === 0)
+Sheet height: ~65% of screen
+```
+
+- **Drag handle:** 32x4px, `neutral` (#9CA3AF), centered, `radius-full`
+- **Outcome container:** Full-width, `bg-secondary` (#161B22), `radius-md` (12px), padding `space-4`
+- **Outcome row 1:** Ticker in `text-title-md` (18px, weight 600), `text-primary`. P&L amount + percentage in `text-body-md` (14px, weight 700), `positive`/`negative` color-coded
+- **Outcome row 2:** Hold time in `text-caption` (12px), `text-secondary`. Entry/Exit prices in `text-caption` (12px), `text-secondary`
+- **Q1 label:** `text-body-md` (14px, weight 500), `text-primary`
+- **Q1 buttons:** 3 equal-width buttons, ~93px each, 44px height, `radius-md` (12px), `border` 1.5px. Single selection (radio behavior)
+  - "Hai long": selected = `positive-subtle` bg + `positive` border + `positive` text
+  - "Binh thuong": selected = `neutral` bg (rgba(156,163,175,0.15)) + `neutral` border (#9CA3AF) + `text-primary`
+  - "Hoi tiec": selected = `negative-subtle` bg + `negative` border + `negative` text
+- **Q2 label:** `text-body-md` (14px, weight 500), `text-primary`
+- **Q2 input:** Uses Reasoning Input component (9.5) with 200-char max, 64px height (2 lines). Placeholder: "Viet mot cau ve bai hoc rut ra..."
+- **Lesson link:** Lucide `book-open` 14px `accent-primary` + lesson title in `text-body-sm` (13px), `accent-primary`. 44px touch area.
+- **Submit CTA:** "Luu phan anh" Primary Button (6.1), full width. Disabled until Q1 answered.
+- **Skip link:** "Bo qua" in `text-body-sm` (13px, weight 500), `text-secondary`, centered, 44px touch area
+- **Section gaps:** 20px (outcome to Q1), 12px (Q1 label to buttons), 16px (Q1 buttons to Q2), 12px (Q2 to lesson link), 20px (lesson link to CTA), 12px (CTA to skip)
+
+#### Tokens
+
+| Property | Token | Value |
+|----------|-------|-------|
+| Sheet background | `bg-card` | `#1F2937` |
+| Backdrop | `bg-overlay` | `rgba(0,0,0,0.60)` |
+| Sheet shadow | `shadow-sheet` | `0 -8px 32px rgba(0,0,0,0.6)` |
+| Sheet radius (top) | `radius-lg` | 16px top corners only |
+| Drag handle | `neutral` | `#9CA3AF`, 32x4px, `radius-full` |
+| Outcome bg | `bg-secondary` | `#161B22` |
+| Outcome radius | `radius-md` | 12px |
+| Outcome padding | `space-4` | 16px |
+| Ticker text | `text-title-md`, `text-primary` | 18px weight 600, `#F9FAFB` |
+| P&L positive | `positive` | `#10B981`, `text-body-md` weight 700 |
+| P&L negative | `negative` | `#EF4444`, `text-body-md` weight 700 |
+| Hold/price text | `text-caption`, `text-secondary` | 12px, `#9CA3AF` |
+| Q1 label | `text-body-md`, `text-primary` | 14px weight 500, `#F9FAFB` |
+| Q1 button height | -- | 44px |
+| Q1 button radius | `radius-md` | 12px |
+| Q1 button border | `border` | `#374151`, 1.5px |
+| Q1 "Hai long" selected bg | `positive-subtle` | `rgba(16,185,129,0.15)` |
+| Q1 "Hai long" selected border | `positive` | `#10B981` |
+| Q1 "Binh thuong" selected bg | `sentiment-neutral-bg` | `rgba(156,163,175,0.15)` |
+| Q1 "Binh thuong" selected border | `neutral` | `#9CA3AF` |
+| Q1 "Hoi tiec" selected bg | `negative-subtle` | `rgba(239,68,68,0.15)` |
+| Q1 "Hoi tiec" selected border | `negative` | `#EF4444` |
+| Q2 label | `text-body-md`, `text-primary` | 14px weight 500, `#F9FAFB` |
+| Lesson icon | `accent-primary` | `#3B82F6`, 14px |
+| Lesson text | `accent-primary` | `#3B82F6`, `text-body-sm` |
+| Skip text | `text-secondary` | `#9CA3AF`, `text-body-sm` weight 500 |
+| Open animation | `ease-decelerate` | translateY 100% to 0, 350ms |
+| Close animation | `ease-accelerate` | translateY 0 to 100%, 300ms |
+| Backdrop animation | `ease-standard` | opacity 0 to 0.6, 350ms |
+| Q1 button select | `ease-fast` | bg + border transition, 150ms |
+| Outcome fade | `ease-standard` | opacity 0 to 1, 200ms |
+
+#### States
+
+- **Opening:** Sheet slides up from bottom at 350ms `ease-decelerate`. Backdrop fades in. Outcome data populates with fade animation.
+- **Default:** Outcome visible. Q1 buttons unselected. Q2 empty. Submit disabled. Lesson link visible.
+- **Q1 selected:** One sentiment button highlighted with colored bg + border. Submit CTA enabled.
+- **Q2 typing:** Free-text input active. Uses Reasoning Input (9.5) with 200-char limit.
+- **Submitting:** Submit CTA enters loading state (spinner). Q1 buttons and Q2 input locked.
+- **Submitted:** Sheet slides down (300ms `ease-accelerate`). Toast: "+10 diem suc khoe dau tu". IHS score updated.
+- **Skipped:** Sheet slides down. No toast, no IHS points, no journal entry.
+- **Error:** Toast: "Khong the luu. Thu lai sau." Sheet stays open, CTA returns to default.
+- **Drag dismiss:** Swipe down on drag handle or tap backdrop = same behavior as "Bo qua" (skip).
+
+#### Accessibility
+
+- **Touch target:** Q1 buttons: ~93px x 44px each (exceeds minimum). Submit CTA: full-width x 52px. Skip link: 44px min height. Drag handle: 44px tap area (including padding). Lesson link: 44px min height.
+- **Contrast:** Q1 button text on respective selected backgrounds all exceed 4.5:1. Outcome ticker `text-primary` on `bg-secondary` = 13.4:1. P&L `positive` on `bg-secondary` = 6.1:1.
+- **Screen reader:** Sheet announced as dialog: "Trade Reflection. [Ticker] outcome: [P&L]. Question 1: How do you feel? [3 options]. Question 2: What did you learn? Text field, optional. Related lesson link. Save reflection button. Skip button." Focus trapped within sheet.
+- **Reduced motion:** Sheet appears with opacity fade only (no slide). Backdrop appears instantly.
+
+---
+
 ## Appendix A: Animation Summary
 
 All animations reference design-system.md section 8.
@@ -2508,6 +3117,13 @@ All animations reference design-system.md section 8.
 | Celebration confetti | Particle fall | 1200ms | physics-based | 50 particles |
 | Celebration card | Scale + fade | 350ms | `ease-decelerate` | From 0.8 to 1 |
 | Toggle switch | Thumb slide | 150ms | `ease-spring` | With track fade |
+| Challenge phase | Crossfade content | 300ms | `ease-standard` | Phase 1/2/3 swap |
+| Puzzle hint reveal | Height expand + fade | 300ms | `ease-decelerate` | Progressive hints |
+| Puzzle wrong answer | Shake | 200ms | -- | translateX oscillation |
+| IHS score roll-up | Count up | 500ms | `ease-decelerate` | 0 to N |
+| IHS bar fill | Width expand | 500ms | `ease-decelerate` | 100ms stagger per bar |
+| Reflection sheet open | Slide up | 350ms | `ease-decelerate` | Half sheet |
+| Reflection Q1 select | Color transition | 150ms | `ease-fast` | bg + border |
 
 ---
 
@@ -2528,6 +3144,12 @@ All animations reference design-system.md section 8.
 | Social Login (Screen 35) | Social Login Button (Google), Social Login Button (Apple), Account Link Prompt (Bottom Sheet), Toast |
 | 2FA Verification (Screen 36) | OTP Input (reused from Screen 21), Primary Button, Toast |
 | Celebration | Milestone Celebration Overlay, Achievement Card |
+| First Trade Guided (Screen 37) | Virtual Funds Banner, Primary Button, Stock Card (pre-selected), Milestone Celebration Overlay |
+| Daily Challenge (Screen 38) | Daily Challenge Card, Reasoning Input, Sparkline Chart, Primary Button, Toast |
+| Stock Ticker Puzzle (Screen 39) | Puzzle Card, Primary Button, Toast |
+| IHS Dashboard (Screen 40) | IHS Score Display, Sparkline Chart, Primary Button, Toast, Skeleton Loader |
+| DNA Card (Screen 41) | DNA Card, Primary Button, Toast |
+| Trade Reflection (Screen 42) | Reasoning Input, Reflection Sheet, Primary Button, Toast |
 
 ---
 
@@ -2545,4 +3167,4 @@ All components are designed mobile-first for 375px (iPhone SE). Layout behavior:
 
 ---
 
-*End of Shared Components Library. All components ready for design-to-code handoff. Reference design-system.md for token definitions and animation curves.*
+*End of Shared Components Library (Sections 1-9, 28 components). All components ready for design-to-code handoff. Reference design-system.md for token definitions and animation curves.*

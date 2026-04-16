@@ -1,12 +1,12 @@
 # FRD — Functional Requirement Document
-## Paave — Gen Z Fintech Investing App (V2)
+## Paave — Gen Z Fintech Investing App (V3)
 
-**Document version:** 2.2
+**Document version:** 3.0
 **Date:** 2026-04-16
 **Author:** Business Analysis Team
 **Status:** Approved for Development
-**Linked BRD:** BRD.md v2.2
-**Previous version:** FRD v1.0
+**Linked BRD:** BRD.md v3.0
+**Previous version:** FRD v2.2
 
 ---
 
@@ -31,16 +31,21 @@
 9. [Module F: Social Features P1 (FR-SOC-01 to FR-SOC-05)](#module-f-social-features-p1)
 10. [Module G: Language System (FR-LANG-01 to FR-LANG-02)](#module-g-language-system)
 11. [Module H: Legal / Disclaimers (FR-LEGAL-01 to FR-LEGAL-03)](#module-h-legal--disclaimers)
-12. [Business Rules](#business-rules)
-13. [Traceability Matrix](#traceability-matrix)
+12. [Module I: Daily Engagement (FR-ENGAGE-01 to FR-ENGAGE-03)](#module-i-daily-engagement)
+13. [Module J: Investment Health Score (FR-SCORE-01)](#module-j-investment-health-score)
+14. [Module K: Monthly Investment DNA Card (FR-CARD-01)](#module-k-monthly-investment-dna-card)
+15. [Module L: Structured Investment Curriculum (FR-LEARN-01)](#module-l-structured-investment-curriculum)
+16. [Business Rules](#business-rules)
+17. [Traceability Matrix](#traceability-matrix)
 
 ---
 
-## V2 Scope Notes
+## V3 Scope Notes
 
 - Paper trading is now **core functionality**, not a future add-on. FR-09 Portfolio hero widget (FR-09), FR-30–FR-35 Portfolio Tracking, and FR-08 onboarding now reference paper trading as the primary portfolio experience.
-- The following features previously deferred to V2 **remain deferred**: full social feed (copy trading, following feed), leaderboard v2, Morning Call AI briefing, portfolio sharing, brokerage integration.
-- Real money trading is **not in scope** for V1 or V2. All buy/sell actions are simulated.
+- **V3 additions (VestPaper competitive analysis):** First Trade Guided Experience (FR-ONBOARD-01), Trade Reasoning Field (FR-PT-07), Post-Trade Reflection (FR-PT-08), Daily Engagement module (FR-ENGAGE-01–03), Investment Health Score replacing Trader Score (FR-SCORE-01), Monthly DNA Card (FR-CARD-01), Structured Curriculum (FR-LEARN-01).
+- The following features previously deferred **remain deferred**: full social feed (copy trading, following feed), leaderboard v2, Morning Call AI briefing, portfolio sharing, brokerage integration.
+- Real money trading is **not in scope** for V1, V2, or V3. All buy/sell actions are simulated.
 
 ---
 
@@ -70,6 +75,15 @@
 | Milestone Celebrations | Registered User | Celebrate portfolio achievements with animations and shareable cards |
 | Portfolio Goal Setting | Registered User | Set and track virtual portfolio value targets |
 | Inline Tooltips | Registered User | Tap any financial term for instant plain-language explanation |
+| First Trade Guided Experience | New User | Complete first simulated trade within 90 seconds of account creation |
+| Trade Reasoning Field | Registered User | Record reasoning for each trade to build disciplined investing habits |
+| Post-Trade Reflection | Registered User | Reflect on closed positions to improve future decision-making |
+| Daily Challenge (Market Prediction) | Authenticated User | Predict daily market outcomes for coins, streaks, and education |
+| Morning Brief Notification | System | Pre-market push notification with sentiment, portfolio alerts, and challenge teaser |
+| Stock Ticker Daily Puzzle | Authenticated User | Guess VN-listed company from progressive hints for coins and learning |
+| Investment Health Score (IHS) | System / Registered User | Weekly behavioral score measuring investment process quality (not returns) |
+| Monthly Investment DNA Card | System / Registered User | Auto-generated monthly shareable card with investment style and stats |
+| Structured Investment Curriculum | Authenticated User | 3-level progressive curriculum with quizzes and virtual coin rewards |
 
 ---
 
@@ -273,6 +287,28 @@
 - **Acceptance Criteria:**
   - Given user on Account Details step → step 3 of 4 highlighted.
 - **Edge Cases:** None.
+- **Priority:** P0
+
+---
+
+#### FR-ONBOARD-01 — First Trade Guided Experience ("Aha Moment")
+
+- **Actor:** User who completed onboarding
+- **Description:** Guided walkthrough to complete first simulated trade within 90 seconds of account creation. Flow: (1) Welcome message with virtual balance displayed; (2) App pre-selects one stock based on user's market (VN: VCB, KR: Samsung, Global: NVIDIA); (3) One-tap buy at market price with pre-filled quantity (~50M VND equivalent); (4) Micro-animation showing shares added to portfolio; (5) Confirmation: "Day la co phieu dau tien trong portfolio cua ban."
+- **Key Rules:**
+  - First trade is pre-facilitated — user cannot reach empty portfolio state after onboarding
+  - If market is closed (after 14:30 or weekend), system uses previous close price and queues order for next open
+  - First trade confirmation skips the standard "Are you sure?" modal to reduce friction
+  - First trade triggers FR-GAME-06 milestone celebration (first trade milestone)
+  - XP +10 awarded for completing first trade
+- **Acceptance Criteria:**
+  - Given user completes onboarding → guided first trade screen shown within 2s
+  - Given user taps "Mua ngay" → simulated buy placed at last traded price → portfolio shows position → confirmation shown
+  - Given market is closed → order queued with note "Lenh se duoc thuc hien khi mo cua phien toi"
+- **Edge Cases:**
+  - User force-closes app during guided trade → resumes at guided trade on next open
+  - Pre-selected stock is trading halted → substitute with next most-liquid stock in same market
+  - User has already completed first trade (re-install) → skip guided experience
 - **Priority:** P0
 
 ---
@@ -1019,6 +1055,48 @@
 
 ---
 
+#### FR-PT-07 — Trade Reasoning Field
+
+- **Actor:** Registered User placing a paper trade
+- **Description:** Every buy and sell order form includes an optional reasoning field: "Tai sao ban mua/ban co phieu nay?" (Vietnamese) / "Why are you buying/selling this stock?" (English). Max 200 characters. Field is prominently placed above the confirm button. Not required to proceed, but prompted with placeholder text.
+- **Key Rules:**
+  - Reasoning field visible on every order placement screen (market and limit orders)
+  - Entering >=10 characters of reasoning earns +5 IHS points per trade
+  - Reasoning stored permanently in order record; surfaced in weekly IHS review and trade journal
+  - Reasoning field pre-populated with helpful prompt: "VD: P/E thap hon nganh, doanh thu quy tang..."
+- **Acceptance Criteria:**
+  - Given user on order placement → reasoning field visible above confirm button with placeholder
+  - Given user enters "P/E thap, tang truong tot" → order includes reasoning → +5 IHS points
+  - Given user leaves reasoning empty → order proceeds normally, no IHS bonus
+- **Edge Cases:**
+  - Reasoning field with only spaces/punctuation → treated as empty (no IHS bonus)
+  - First trade guided experience (FR-ONBOARD-01) → reasoning field hidden (reduce friction)
+- **Priority:** P0
+
+---
+
+#### FR-PT-08 — Post-Trade Reflection Prompt
+
+- **Actor:** Registered User who fully closes a position
+- **Description:** When a position is fully sold (0 remaining shares), system prompts structured reflection within 2 seconds. Flow: (1) Outcome display: "Ban vua chot loi +X% / cat lo -X% voi TICKER"; (2) Q1: "Ket qua nay dung voi ky vong cua ban khong?" — Yes / No / Khong chac (3 buttons); (3) Q2: "Ban hoc duoc gi tu trade nay?" — free text, max 300 chars, optional; (4) Contextual lesson link based on trade outcome.
+- **Key Rules:**
+  - Prompt is non-blocking — user can dismiss within 3 seconds (swipe down or tap outside)
+  - Completing Q1 AND Q2 (>=20 characters) earns +10 IHS points
+  - Reflection data stored and surfaced in weekly IHS review, trade journal, and monthly DNA card
+  - If dismissed, prompt does NOT reappear for that specific trade
+  - Reflection prompt appears AFTER post-trade AI card (FR-AI-01) if both are triggered
+- **Acceptance Criteria:**
+  - Given user sells all shares of VCB → reflection prompt appears within 2s showing P&L result
+  - Given user answers both questions → +10 IHS points → journal entry updated with reflection
+  - Given user dismisses → prompt gone forever for that trade → no IHS bonus
+- **Edge Cases:**
+  - Position closed by portfolio reset (FR-PT-05) → no reflection prompt (bulk close, not deliberate sell)
+  - Multiple positions closed simultaneously → queue reflections; show one at a time
+  - Offline when position closes → reflection prompt shown on next app open
+- **Priority:** P0
+
+---
+
 ## Module C: Gamification
 
 > **Purpose:** Drive engagement, learning, and retention through XP, tiers, challenges, and streaks. Does not involve real money.
@@ -1077,24 +1155,8 @@
 #### FR-GAME-03 — Trader Score
 
 - **Actor:** Registered User
-- **Description:** Composite weekly score computed on Sundays. Score range: 0–100 per week. Formula:
-  - Return (40%): paper portfolio weekly return vs. benchmark (scaled 0–40)
-  - Consistency (30%): % of days with at least one meaningful action (scaled 0–30)
-  - Risk Discipline (20%): absence of flagged behaviors (scaled 0–20)
-  - Activity (10%): raw trade + lesson count (scaled 0–10)
-
-  Weekly scores are **additive** to a cumulative Trader Score. Cumulative score determines Trader Tier (FR-GAME-02). Tiers can only increase, never decrease.
-- **Key Rules:**
-  - Score computed every Sunday at midnight UTC.
-  - Score displayed on public profile and leaderboard (deferred V2 feature).
-  - Weekly score range: 0–100. Weekly scores are additive to a cumulative Trader Score.
-  - Cumulative score determines Trader Tier (FR-GAME-02). Tiers can only increase, never decrease.
-  - Behavioral deductions: each FR-AI-07 flag in the week reduces Risk Discipline component by 5 points (max 4 flags = 0 Risk Discipline score for that week).
-- **Acceptance Criteria:**
-  - Given user had 5% weekly portfolio return with consistent activity and no flags → high score computed and added to profile.
-  - Given Sunday midnight passes → score badge on profile updates.
-- **Edge Cases:** User had no activity in a week → minimal score computed (Activity component = 0); tier not affected.
-- **Priority:** P1
+- **Description:** **REPLACED BY FR-SCORE-01 (Investment Health Score).** The Trader Score is renamed to Investment Health Score (IHS). See FR-SCORE-01 for the updated behavioral scoring model.
+- **Priority:** P1 (see FR-SCORE-01)
 
 ---
 
@@ -1588,6 +1650,165 @@
 
 ---
 
+## Module I: Daily Engagement
+
+> **Purpose:** Drive daily active usage through prediction games, morning briefs, and ticker puzzles. Combines entertainment, education, and habit formation.
+
+---
+
+#### FR-ENGAGE-01 — Daily Challenge (Market Prediction)
+
+- **Actor:** Authenticated user
+- **Description:** One market prediction question per trading day. Three phases: (1) Morning (8:45-9:05 AM): user submits prediction; (2) During trading (9:05-14:30): anticipation with optional live sparkline; (3) After close (14:30+): result + 100-150 word educational explanation.
+- **Question types (rotated):**
+  - "Hom nay [TICKER] se: Tang / Giam / Di ngang?"
+  - "Hom nay VN-Index se: Tang >0.5% / Di ngang (+-0.5%) / Giam >0.5%?"
+  - "Trong 3 co phieu sau, co phieu nao tang nhieu nhat hom nay: [A, B, C]?"
+- **Key Rules:**
+  - Same question for all users (community comparison baseline)
+  - Submission closes at 9:05 AM ICT — late users can view results but earn nothing
+  - Correct prediction: +50,000 VND virtual coins + streak point
+  - Participation (any answer): +10,000 VND virtual coins + streak point
+  - Educational explanation always shown regardless of correctness
+  - Weekend: historical case study question (no streak points, coins available)
+  - Challenge content set by editorial/algorithm team by 8:00 AM daily
+  - Challenge history retained and scrollable
+- **Acceptance Criteria:**
+  - Given trading day at 8:50 AM → user sees prediction question → taps answer → confirmed → "Ket qua luc 14:30"
+  - Given 14:35 PM → result shown with educational explanation → coins awarded
+  - Given answer submitted at 9:06 AM → rejected "Het gio gui du doan"
+- **Edge Cases:**
+  - Challenge stock trading halted → substitute with VN-Index question
+  - Market holiday → no challenge; notification not sent
+  - User answers then deletes app → answer preserved server-side; result viewable on re-install
+- **Priority:** P0
+
+---
+
+#### FR-ENGAGE-02 — Morning Brief Notification
+
+- **Actor:** System (push notification)
+- **Description:** Daily pre-market push at 8:45 AM ICT on trading days. Three components: (1) Market sentiment line (max 80 chars); (2) Portfolio-relevant event alert if applicable; (3) Daily Challenge teaser.
+- **Key Rules:**
+  - Only sent on trading days (Mon-Fri, excluding VN public holidays)
+  - Only sent if user has opted into push notifications
+  - Deep links to Daily Challenge screen
+  - If user hasn't opened app in 3+ days, frequency reduced to every other day
+  - Not sent between 10 PM and 7 AM
+- **Acceptance Criteria:**
+  - Given trading day → user receives push at 8:45 AM with sentiment + challenge teaser
+  - Given user's VCB has DHCD today → portfolio alert component included
+  - Given weekend → no morning brief sent
+- **Priority:** P0
+
+---
+
+#### FR-ENGAGE-03 — Stock Ticker Daily Puzzle ("Ma CK Hom Nay")
+
+- **Actor:** Authenticated user
+- **Description:** Daily puzzle: guess the VN-listed company from 3 progressive hints. Hint 1 (vague): industry. Hint 2 (after 30s or tap): company characteristic. Hint 3 (after 60s or second tap): near-reveal. Answer via 4-option multiple choice or ticker input.
+- **Key Rules:**
+  - Rewards: Hint 1 correct: +30K, Hint 2: +20K, Hint 3: +10K, Wrong: +5K coins
+  - One puzzle per day; same for all users
+  - Available from midnight; no time limit
+  - After answering, show 3 key facts about company + link to stock page
+  - Rotates across VN-Index 30 companies before repeating
+- **Acceptance Criteria:**
+  - Given user opens puzzle → Hint 1 shown → user guesses correctly → +30K coins + company facts
+  - Given user needs all 3 hints → answers correctly → +10K coins
+  - Given wrong answer → +5K coins + correct answer revealed + company facts
+- **Priority:** P1
+
+---
+
+## Module J: Investment Health Score
+
+> **Purpose:** Replace the Trader Score with a behavior-focused Investment Health Score (IHS) that measures investment process quality rather than returns.
+
+---
+
+#### FR-SCORE-01 — Investment Health Score (IHS)
+
+- **Actor:** System (calculated weekly), User (views)
+- **Description:** Weekly behavioral score (0-100) measuring investment PROCESS quality, not returns. Four equally-weighted dimensions (25% each):
+  - **Discipline (Ky luat):** Ratio of trades with reasoning entered vs total trades
+  - **Diversification (Da dang hoa):** HHI index of portfolio, inverted (more spread = higher score)
+  - **Learning (Hoc tap):** Lessons completed this week / target (2/week = 100%)
+  - **Reflection (Phan chieu):** Closed positions with reflection completed vs total closed
+- **Key Rules:**
+  - Calculated every Monday at 6:00 AM for previous week
+  - Score displayed as: current week + previous week + trend arrow (up/down/flat)
+  - History retained 12+ weeks as sparkline
+  - No dimension based on P&L or returns (this is deliberate — behavior over outcome)
+  - Score is private by default; user may display on public profile
+  - Weekly push notification with score + weakest dimension + recommended action
+  - IHS replaces the old Trader Score in all tier calculations
+- **Acceptance Criteria:**
+  - Given user placed 10 trades (7 with reasoning) → Discipline = 70/100
+  - Given portfolio has 5 equal-weight positions → Diversification ~ 80/100
+  - Given user completed 2 lessons → Learning = 100/100
+  - Given user reflected on 3/4 closed positions → Reflection = 75/100
+  - IHS = (70+80+100+75)/4 = 81.25 → displayed as 81
+- **Priority:** P1
+
+---
+
+## Module K: Monthly Investment DNA Card
+
+> **Purpose:** Auto-generated shareable monthly summary card that drives organic sharing and viral acquisition.
+
+---
+
+#### FR-CARD-01 — Monthly Investment DNA Card
+
+- **Actor:** System (generated monthly), User (views and shares)
+- **Description:** Auto-generated shareable card on 1st of each month. Content: (1) Investment style label (Value/Growth/Momentum/Defensive/Active from trade patterns); (2) Key stats: return vs VN-Index, trade count, avg hold duration; (3) Best decision: ticker + % gain; (4) Behavioral insight (1 sentence); (5) Community rank percentile.
+- **Key Rules:**
+  - Generated only if user placed >=3 trades in the month
+  - Not generated for first partial month (wait for first full calendar month)
+  - Card designed for vertical sharing (1080x1920px)
+  - Both good and bad months framed positively (always shareable)
+  - Export as PNG via native share sheet
+  - No forced social login to share
+- **Acceptance Criteria:**
+  - Given user placed 15 trades in March → on April 1 → DNA card generated with style label and stats
+  - Given user taps "Chia se" → native share sheet opens with PNG
+  - Given user placed 2 trades in March → no card generated
+- **Priority:** P1
+
+---
+
+## Module L: Structured Investment Curriculum
+
+> **Purpose:** Progressive educational content that builds investing knowledge from beginner to intermediate, integrated with gamification rewards.
+
+---
+
+#### FR-LEARN-01 — Structured Investment Curriculum
+
+- **Actor:** Authenticated user
+- **Description:** 3-level structured curriculum with progressive unlock. Each lesson: 300-500 words Vietnamese + VN market example + 3-5 question quiz + "apply to portfolio" prompt.
+  - **Level 1 — F0 Foundation** (5 modules, ~14 lessons): Market basics, reading price boards, stock types, order placement, risk/diversification
+  - **Level 2 — F1 Fundamentals** (5 modules, ~18 lessons): FA basics, financial statements, P/E/P/B valuation, TA basics, investor psychology
+  - **Level 3 — F2 Intermediate** (5 modules, ~18 lessons): Sector analysis, investment strategies, portfolio management, reading prospectuses, VN macro context
+- **Key Rules:**
+  - Lessons within a module must be completed in order
+  - Level 1 accessible to all users regardless of assigned level
+  - Level 2 unlocks after: all Level 1 complete + 2 weeks account age + >=10 trades
+  - Level 3 unlocks after: all Level 2 complete + IHS >=60 for 4 consecutive weeks
+  - Lesson completion: +20K VND virtual coins
+  - Quiz pass (>=3/5): +30K VND virtual coins
+  - Full module completion: +100K VND bonus
+  - Perfect quiz (5/5): +50K bonus
+  - Coins add to virtual cash balance
+- **Acceptance Criteria:**
+  - Given Level 1 user → all Level 1 modules accessible, Level 2 locked with progress indicator
+  - Given user completes lesson + passes quiz → coins awarded, next lesson unlocked
+  - Given user completes all Level 1 + 2 weeks + 10 trades → Level 2 unlocks with notification
+- **Priority:** P1 (Level 1 content at launch; Level 2-3 in Phase 2)
+
+---
+
 ## 3. Business Rules
 
 | Rule ID | Description |
@@ -1624,6 +1845,10 @@
 | BR-30 | All financial terminology must have inline contextual tooltips (one-tap explainer). Separate education sections are not acceptable alternatives. |
 | BR-31 | Social login (Google/Apple) creates or links a Paave account. If social email matches an existing account, user must explicitly confirm the link. No automatic merging. |
 | BR-32 | 2FA is opt-in. When enabled, password and social logins require OTP verification. Biometric login bypasses 2FA. |
+| BR-33 | Every paper trade order form must display an optional reasoning field (max 200 chars). Entering >=10 characters of reasoning earns +5 IHS points per trade. Reasoning is stored permanently in the order record and surfaced in weekly IHS review and trade journal. |
+| BR-34 | When a position is fully closed (0 remaining shares), a structured reflection prompt must appear within 2 seconds. Completing both questions (Q1 + Q2 with >=20 characters) earns +10 IHS points. Dismissed prompts do not reappear for that trade. |
+| BR-35 | Daily Challenge submissions close at 9:05 AM ICT. Late submissions are rejected. Correct prediction: +50K virtual coins + streak point. Participation: +10K virtual coins + streak point. Same question for all users. |
+| BR-36 | Investment Health Score (IHS) is calculated every Monday at 6:00 AM for the previous week. Score range 0-100 with four equally-weighted dimensions (25% each): Discipline, Diversification, Learning, Reflection. No dimension is based on P&L or returns. IHS replaces the Trader Score in all tier calculations. |
 
 ---
 
@@ -1633,16 +1858,16 @@ This matrix links each functional requirement to the BRD business objectives it 
 
 | BRD Objective | Description | Linked FRs |
 |---------------|-------------|------------|
-| BO-01 | Acquire 50K MAU within 6 months | FR-01, FR-02, FR-03, FR-04, FR-05, FR-06, FR-07, FR-07B, FR-07C, FR-08, FR-AGE-01, FR-AGE-03, FR-LEGAL-03, FR-LANG-01, FR-SOC-01, FR-GAME-01, FR-GAME-06 |
-| BO-02 | D7 retention >= 35% | FR-09, FR-10, FR-11, FR-12, FR-13, FR-14, FR-42, FR-43, FR-44, FR-45, FR-46, FR-47, FR-52, FR-GAME-04, FR-GAME-05, FR-GAME-07 |
-| BO-03 | Watchlist adoption >= 60% | FR-12, FR-20, FR-27, FR-28, FR-46, FR-SOC-01 |
+| BO-01 | Acquire 50K MAU within 6 months | FR-01, FR-02, FR-03, FR-04, FR-05, FR-06, FR-07, FR-07B, FR-07C, FR-08, FR-AGE-01, FR-AGE-03, FR-LEGAL-03, FR-LANG-01, FR-SOC-01, FR-GAME-01, FR-GAME-06, FR-CARD-01 |
+| BO-02 | D7 retention >= 35% | FR-09, FR-10, FR-11, FR-12, FR-13, FR-14, FR-42, FR-43, FR-44, FR-45, FR-46, FR-47, FR-52, FR-GAME-04, FR-GAME-05, FR-GAME-07, FR-ONBOARD-01, FR-ENGAGE-01, FR-ENGAGE-02, FR-ENGAGE-03, FR-SCORE-01 |
+| BO-03 | Watchlist adoption >= 60% | FR-12, FR-20, FR-27, FR-28, FR-46, FR-SOC-01, FR-ENGAGE-01, FR-ENGAGE-02, FR-ENGAGE-03 |
 | BO-04 | Discover as primary acquisition channel >= 40% | FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-SOC-01, FR-EDU-01 |
-| BO-05 | VN as lead market >= 70% MAU | FR-03, FR-04, FR-37, FR-LANG-01, FR-LANG-02, FR-PT-01 |
+| BO-05 | VN as lead market >= 70% MAU | FR-03, FR-04, FR-37, FR-LANG-01, FR-LANG-02, FR-PT-01, FR-LEARN-01 |
 | BO-06 | VN data latency <= 15s | FR-37, FR-10, FR-PT-02 |
 | BO-07 | Onboarding completion >= 75% | FR-01, FR-02, FR-03, FR-04, FR-05, FR-06, FR-07C, FR-08, FR-AGE-01, FR-LEGAL-03, FR-LANG-01 |
-| BO-08 | Paper trade activation >= 50% | FR-PT-01, FR-PT-02, FR-PT-03, FR-PT-04, FR-PT-05, FR-PT-06, FR-09, FR-23, FR-AI-01, FR-AI-04, FR-GAME-06 |
-| BO-09 | Gamification Tier 2 >= 40% | FR-GAME-01, FR-GAME-02, FR-GAME-03, FR-GAME-04, FR-GAME-05, FR-GAME-06, FR-GAME-07, FR-AI-06, FR-EDU-01 |
-| BO-10 | AI card read-through >= 65% | FR-AI-01, FR-AI-02, FR-AI-03, FR-AI-04, FR-AI-05, FR-AI-06, FR-AI-07, FR-LANG-02, FR-LEGAL-02, FR-EDU-01 |
+| BO-08 | Paper trade activation >= 50% | FR-PT-01, FR-PT-02, FR-PT-03, FR-PT-04, FR-PT-05, FR-PT-06, FR-09, FR-23, FR-AI-01, FR-AI-04, FR-GAME-06, FR-ONBOARD-01 |
+| BO-09 | Gamification Tier 2 >= 40% | FR-GAME-01, FR-GAME-02, FR-GAME-03, FR-GAME-04, FR-GAME-05, FR-GAME-06, FR-GAME-07, FR-AI-06, FR-EDU-01, FR-SCORE-01 |
+| BO-10 | AI card read-through >= 65% | FR-AI-01, FR-AI-02, FR-AI-03, FR-AI-04, FR-AI-05, FR-AI-06, FR-AI-07, FR-LANG-02, FR-LEGAL-02, FR-EDU-01, FR-PT-07, FR-PT-08 |
 | BO-11 | Community feed engagement >= 35% | FR-SOC-01, FR-SOC-02, FR-SOC-03, FR-SOC-04, FR-SOC-05, FR-16, FR-GAME-02 |
 | BO-12 | Age 16-17 compliance, zero violations | FR-AGE-01, FR-AGE-02, FR-AGE-03, FR-AGE-04, FR-LEGAL-01, FR-LEGAL-02, FR-LEGAL-03, FR-PT-06 |
 | BO-13 | Account security and fraud prevention | FR-07, FR-07B, FR-07C, FR-07D, FR-12 |

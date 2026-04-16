@@ -1,11 +1,11 @@
 # BRD — Business Requirements Document
 ## Paave — Gen Z Fintech Investing App
 
-**Document version:** 2.1
+**Document version:** 3.0
 **Date:** 2026-04-16
 **Author:** Business Analysis Team
 **Status:** Approved for Development
-**Supersedes:** BRD v2.0 (2026-04-14)
+**Supersedes:** BRD v2.1
 
 ---
 
@@ -123,6 +123,9 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | VN data latency | Time delta between HOSE/HNX exchange tick and in-app display | ≤ 15 seconds | Server-side monitoring |
 | App crash rate | % of sessions ending in crash | ≤ 0.5% | Crashlytics |
 | Notification opt-in rate | % of users who enable at least 1 push notification | ≥ 45% | Push permission analytics |
+| Weekly Active Learner-Traders (WALT) | Users who complete >=1 lesson AND place >=1 trade in the same week | >= 40% of WAU | Backend event tracking |
+| Daily Challenge completion rate | % of DAU who submit a Daily Challenge answer | >= 55% of DAU | Challenge event tracking |
+| Trade reasoning adoption | % of paper trades with reasoning field filled | >= 40% of trades | Order event tracking |
 
 ### 4.2 Paper Trading KPIs
 
@@ -138,7 +141,7 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 
 | KPI | Definition | Target | Measurement Method |
 |-----|-----------|--------|-------------------|
-| Trader Score distribution | % of active users at each Tier | Tier 1: ≤ 40%, Tier 2+: ≥ 60% by month 3 | Backend aggregation |
+| Investment Health Score (IHS) distribution | % of active users at each Tier | Tier 1: ≤ 40%, Tier 2+: ≥ 60% by month 3 | Backend aggregation |
 | Weekly challenge completion rate | % of active users who complete the weekly challenge | ≥ 30% | Challenge system event tracking |
 | Learning streak rate | % of active users maintaining a ≥ 3-day learning streak | ≥ 25% | Streak system backend |
 | XP earned per active user per week | Avg. XP accumulated | ≥ 200 XP/user/week | Backend aggregation |
@@ -189,12 +192,13 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | Market preference selection | User selects VN, KR, or both. |
 | Age-appropriate onboarding path | 16–17 users see Learn Mode onboarding; 18+ users see full onboarding. |
 | Language selection | User selects preferred language (vi / ko / en). Default: device language setting. |
+| First Trade Guided Experience | After onboarding quiz completion, user is guided to place their first paper trade within 90 seconds. App pre-selects one stock (VCB for VN beginners, Samsung for KR), pre-fills quantity (~50M VND worth), one-tap buy. User cannot reach an empty portfolio state after onboarding. If market is closed, system uses previous close price and queues order for next open. First trade confirmation skips the standard confirmation modal to reduce friction. |
 
 #### 5.1.3 Home Screen
 
 | Feature | Description |
 |---|---|
-| Portfolio hero widget | 18+ only: total paper portfolio value, unrealized P&L. Hidden for 16–17. |
+| Portfolio hero widget | 18+ only: total paper portfolio value, unrealized P&L. Hidden for 16–17. VN-Index benchmark comparison always visible: 'Your portfolio vs VN-Index today: +X.X% vs +Y.Y%'. Benchmark line cannot be hidden. |
 | Market snapshot | VN-Index and KOSPI index values with change % and direction arrow. |
 | Trending stocks section | Top 5 trending stocks by Paave community engagement (watchlist adds + social post volume + view counts). Refreshed every 15 minutes. Each card shows: ticker, company name, price, daily % change, social proof counter. |
 | Personalized watchlist | User's followed stocks with real-time price data. |
@@ -233,26 +237,31 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | Supported markets | VN: HOSE + HNX stocks. KR: KOSPI + KOSDAQ stocks (V1: model knowledge + web search; real-time feed in V2). |
 | Order types | Market orders and limit orders. |
 | Order fill mechanics | Simulated orders filled at next available real-time price snapshot (≤ 15s delay for VN; best-available for KR in V1). |
-| Portfolio reset | User can reset their paper portfolio to VND 500,000,000 starting balance at any time. Reset is logged and impacts Trader Score history (resets score streak but not XP). |
+| Portfolio reset | User can reset their paper portfolio to VND 500,000,000 starting balance at any time. Reset is logged and impacts Investment Health Score (IHS) history (resets score streak but not XP). |
 | Portfolio view | Holdings table: ticker, quantity, avg. buy price, current price, unrealized P&L %. |
 | Transaction history | Full list of paper trades with timestamp, order type, fill price, and outcome. |
 | Virtual funds label | Paper trading mode always displays a persistent banner: see BR-DISC-03. |
 | No real transactions | System must never route paper orders to a real brokerage. All order processing is internal simulation. |
+| Trade reasoning field | Every buy and sell order includes an optional (but prompted) reasoning field: "Tai sao ban mua/ban co phieu nay?" (max 200 characters). Reasoning entries are stored and surfaced in weekly behavioral reviews. Entering reasoning earns Investment Health Score points. |
+| Post-trade reflection prompt | When a position is fully closed, system prompts a structured reflection: (1) "Ket qua dung ky vong khong?" (Yes/No/Unsure), (2) "Ban hoc duoc gi?" (free text, max 300 chars). Completing reflection earns +10 Investment Health Score points. Prompt is non-blocking (dismissible within 3 seconds). Reflection data stored and surfaced in weekly reviews. Contextual lesson link shown based on trade outcome. |
 
 #### 5.1.6 Gamification — Trader Tier System
 
 | Feature | Description |
 |---|---|
-| Trader Score formula | Return (40%) + Consistency (30%) + Risk Discipline (20%) + Activity (10%). Weekly score range: 0–100. Weekly scores are additive to a cumulative Trader Score. Tier thresholds based on cumulative score: Tier 1 (0), Tier 2 (500), Tier 3 (1,500), Tier 4 (3,500), Tier 5 (7,500), Tier 6 (15,000). |
+| Investment Health Score (IHS) | Weekly-calculated behavioral score (0-100) measuring investment process quality, NOT returns. Four equally-weighted dimensions (25% each): (1) Discipline — ratio of trades with reasoning entered vs total trades; (2) Diversification — HHI index of portfolio, inverted to reward spread; (3) Learning — lessons completed this week vs target (2/week = 100%); (4) Reflection — closed positions with reflection completed vs total closed. Score calculated every Monday at 6:00 AM. Displayed as current week + previous week + trend arrow. History retained 12+ weeks as sparkline. Score is private by default; user may opt to display publicly. |
 | Trader Tiers (VN) | Tier 1: Mầm non, Tier 2: Người học, Tier 3: Nhà đầu tư, Tier 4: Trader, Tier 5: Chuyên gia, Tier 6: Huyền thoại |
 | Trader Tiers (KR) | Tier 1: 새싹, Tier 2: 입문자, Tier 3: 투자자, Tier 4: 트레이더, Tier 5: 전문가, Tier 6: 레전드 |
 | Trader Tiers (EN) | Tier 1: Seedling, Tier 2: Learner, Tier 3: Investor, Tier 4: Trader, Tier 5: Expert, Tier 6: Legend |
-| XP system | XP earned for: completing a paper trade, completing a micro-lesson, completing a challenge, maintaining a streak, reaching a new Trader Tier. |
+| XP system | XP earned for: completing a paper trade, completing a micro-lesson, completing a challenge, maintaining a streak, reaching a new Trader Tier. Tier thresholds based on cumulative Investment Health Score (IHS): Tier 1 (0), Tier 2 (500), Tier 3 (1,500), Tier 4 (3,500), Tier 5 (7,500), Tier 6 (15,000). |
 | Weekly challenges | New challenge issued every Monday at 00:00 UTC+7. Challenge examples: "Make 3 limit orders this week", "Research 5 stocks using the AI query". |
 | Learning streaks | Daily streak counter for completing ≥ 1 micro-lesson per day. Streak broken if no lesson completed by 23:59 UTC+7. |
 | Tier badge display | Trader Tier badge displayed on user profile and on all community posts. |
 | Milestone celebrations | Users receive animated celebration moments (confetti, haptic feedback, shareable achievement card) upon reaching key milestones: first paper trade, first profitable day, reaching each Trader Tier, portfolio value milestones (e.g., first 10M VND virtual profit). Achievement cards are 9:16 format, shareable to social media / messaging apps (Zalo, KakaoTalk, Instagram Stories). |
 | Portfolio goal-setting | Users can set a virtual portfolio target (e.g., "Reach 600M VND by end of month"). Progress bar displayed on Portfolio tab. Goal completion triggers milestone celebration. |
+| Daily Challenge (market prediction) | One market prediction question per trading day, answered before market open (9:05 AM), result revealed at close (14:30 PM). Question types rotate: stock direction, index movement, top performer pick. Same question for all users (enables community comparison). Result includes 100-150 word educational explanation. Correct prediction: +50,000 VND virtual coins. Participation (any answer): +10,000 VND virtual coins. Challenge history retained. Weekend: historical case study question. |
+| Stock Ticker Daily Puzzle ("Ma CK Hom Nay") | Daily puzzle: guess the VN-listed company from 3 progressive hints (industry -> characteristic -> near-reveal). Rewards: correct on Hint 1 (+30K), Hint 2 (+20K), Hint 3 (+10K), wrong (+5K). One puzzle per day, same for all users. After answering, shows 3 key facts about the company + link to stock page. Rotates across VN-Index 30 companies. |
+| Monthly Investment DNA Card | Auto-generated shareable card on 1st of each month. Content: investment style label (Value/Growth/Momentum/Defensive/Active based on trade patterns), key stats (return vs VN-Index, trade count, avg hold duration), best decision, behavioral insight (1 sentence), community rank percentile. Designed for vertical mobile sharing (1080x1920px). Both good and bad months framed positively. Only generated if >=3 trades in the month. Exported as PNG via native share sheet. |
 
 #### 5.1.7 Stock Detail Page
 
@@ -285,7 +294,7 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | Follow system | Users can follow other traders. Follower/following counts visible on profile. Followed user's activity visible in (future) social feed. |
 | Bull/Bear/Neutral sentiment tags | Every post must be tagged with one sentiment tag. Tag is required before submission. |
 | 60-second submission delay | All posts enter a 60-second review buffer before appearing publicly. System auto-flags content matching moderation keyword list. |
-| Trader Score on posts | Poster's current Trader Tier badge is always displayed alongside their post. |
+| Investment Health Score (IHS) on posts | Poster's current Trader Tier badge is always displayed alongside their post. |
 | Post character limit | 1,000 characters per post. Posts longer than 280 characters are truncated in feed view with a 'Read more' expander. No inline images in V1. |
 
 #### 5.1.10 AI System — P0 Features (V1 Launch)
@@ -314,6 +323,7 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | Market open/close | VN and KR market session open/close notifications. User opt-in required. |
 | Watchlist movement alerts | Configurable % threshold for watched stocks. |
 | Gamification notifications | New challenge available, tier upgrade, streak at risk (remind at 20:00 local time if streak not yet maintained). |
+| Morning Brief notification | Daily pre-market push at 8:45 AM ICT (trading days only). Three components: (1) Market sentiment line (max 80 chars): VN-Index outlook + foreign flow signal; (2) Portfolio alert (if applicable): earnings, DHCD, ex-dividend for held stocks; (3) Daily Challenge teaser. Deep links to Daily Challenge screen. Not sent on weekends/holidays. Frequency reduced if user hasn't opened app in 3+ days. |
 
 #### 5.1.13 User Account
 
@@ -322,7 +332,7 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | Registration | Email + password. DOB required. Market preference. Language preference. |
 | Biometric authentication | Face ID (iOS) and fingerprint (Android) as primary login method after first login. Biometric auth bypasses email/password for returning users. Opt-in during first login. Fallback to email/password if biometric fails (see BR-AUTH-01, BR-AUTH-02). |
 | Login | Email/password (first login). Biometric (Face ID / fingerprint) for returning users. Social login (Google, Apple) planned for V1.1. |
-| Profile | Avatar, Trader Tier badge, Trader Score, paper portfolio summary (% return only — no VND/KRW absolute amounts shown publicly). |
+| Profile | Avatar, Trader Tier badge, Investment Health Score (IHS), paper portfolio summary (% return only — no VND/KRW absolute amounts shown publicly). |
 | Language switcher | Available in settings. All three languages available at all times. |
 | Notification preferences | Granular controls per notification type. |
 
@@ -385,7 +395,7 @@ Gen Z investors (age 16–27) in Vietnam and Korea face compounding barriers whe
 | BR-PT-02 | Virtual funds label: the string "Tiền ảo / 가상 자금 / Virtual Funds" (in user's language) must be permanently visible in any paper trading screen. This is a persistent UI element, not a one-time toast. | UI audit: paper trading portfolio page and order confirmation page must both display the virtual funds label in a visible, non-dismissible position. |
 | BR-PT-03 | Paper orders must NEVER be routed to any real brokerage API. All order fills are internal simulation only. | Integration test: place a paper order and verify zero outbound calls to any external brokerage API endpoint. |
 | BR-PT-04 | Simulated orders are filled at the next available real-time price snapshot for VN stocks (≤ 15-second delay). KR stocks in V1 are filled at best-available model/search price at time of order. Fill must be labeled with the price source. | VN order fill timestamp must be ≤ 15 seconds after order submission. KR orders display "Price estimated" label. |
-| BR-PT-05 | Portfolio reset is always available. Resetting: (a) restores balance to VND 500,000,000; (b) clears all holdings and transaction history; (c) resets Trader Score to baseline for that portfolio session; (d) does NOT reset XP or Trader Tier. | Post-reset state: balance = 500,000,000, holdings = 0, history = empty. XP and Tier badge unchanged. |
+| BR-PT-05 | Portfolio reset is always available. Resetting: (a) restores balance to VND 500,000,000; (b) clears all holdings and transaction history; (c) resets Investment Health Score (IHS) to baseline for that portfolio session; (d) does NOT reset XP or Trader Tier. | Post-reset state: balance = 500,000,000, holdings = 0, history = empty. XP and Tier badge unchanged. |
 | BR-PT-06 | Paper trading is clearly separated from any future real portfolio tracking. No mixing of real and virtual data in any view. | Test account with both paper trades and real holdings (V2+): paper and real sections must render in separate, clearly labeled sections. |
 
 ### 6.4 AI Rules
@@ -466,6 +476,15 @@ Displayed on the Learn Mode home screen and paper trading onboarding. Replaces (
 | BR-UX-02 | Radical simplicity: information hierarchy must be ruthless — the most important number on each screen must be 2–3× larger than supporting text. | Visual audit: hero number size ≥ 2× body text size on all financial data screens. |
 | BR-UX-03 | All financial terminology displayed in the app (P/E, EPS, market cap, dividend yield, CASA ratio, etc.) must have a one-tap inline explainer tooltip. Tooltips render contextually at point of display. Navigation to a separate education section is not an acceptable alternative. | QA test: tap any financial term label on Stock Detail — tooltip appears inline within 200ms. |
 
+### 6.10 Learning & Reflection Rules
+
+| Rule ID | Rule | Testable Condition |
+|---|---|---|
+| BR-LEARN-01 | Trade reasoning field is optional but prompted on every buy/sell order. Entering reasoning earns IHS points. Reasoning is stored permanently and surfaced in weekly reviews. | UI: reasoning field visible on order screen. Backend: reasoning stored in order record. |
+| BR-LEARN-02 | Post-trade reflection prompt appears within 2 seconds of position closure. Dismissible within 3 seconds. Completing both questions earns +10 IHS points. | Test: close position -> reflection shown <=2s. Dismiss -> not re-shown for that trade. |
+| BR-LEARN-03 | Daily Challenge submission window: 8:45 AM to 9:05 AM ICT. Late submissions (after 9:05) cannot earn coins or streak points but can view results at 14:30. | Test: submit at 9:06 -> rejected with "Het gio" message. |
+| BR-LEARN-04 | Investment Health Score measures behavior quality, not portfolio returns. No dimension of the IHS is based on P&L or return percentage. | Audit: IHS formula contains no return/P&L variables. |
+
 ---
 
 ## 7. Assumptions
@@ -479,7 +498,7 @@ Displayed on the Learn Mode home screen and paper trading onboarding. Replaces (
 - Parental consent flow for under-16 users is email-based in V1. In-app biometric or government ID verification is deferred to V2.
 - AI models (GPT-4o, Claude) are available via API with sufficient rate limits and uptime SLA for the projected V1 MAU.
 - PhoBERT and KoELECTRA fine-tuned models are available and deployed by launch for the VN and KR NLP layers.
-- The Trader Score algorithm is finalized by the end of technical design phase and does not change within a V1 version cycle (changes require a migration plan for existing scores).
+- The Investment Health Score (IHS) algorithm is finalized by the end of technical design phase and does not change within a V1 version cycle (changes require a migration plan for existing scores).
 - Paper trading order simulation does not require integration with any real exchange order matching engine. All fills are price-snapshot-based simulation.
 - SSC (State Securities Commission of Vietnam) regulations on licensed securities activities do not apply to paper trading with virtual funds. Legal counsel has confirmed this assumption (see Risk Register RISK-06).
 - Content moderation keyword list is maintained by the Operations team and updated weekly.
@@ -538,11 +557,11 @@ Displayed on the Learn Mode home screen and paper trading onboarding. Replaces (
 | RISK-05 | Regulatory classification risk — SSC or Vietnamese regulator classifies Paave's features as requiring a securities license | Low | Critical | Legal counsel confirmation that paper trading with virtual funds is not a regulated securities activity; no real order execution in any code path; prominent disclaimers at all times; maintain ongoing dialogue with SSC |
 | RISK-06 | KR PIPA non-compliance — improper handling of Korean user PII | Low | High | PIPA compliance checklist implemented before launch; Korean legal counsel engaged; data localization for KR users; deletion request flow tested |
 | RISK-07 | AI model API outage — GPT-4o/Claude API unavailable | Medium | Medium | Graceful degradation: AI cards display "AI analysis unavailable" with retry option; core market data and paper trading continue to function without AI layer |
-| RISK-08 | Gamification Trader Score manipulation — users game the score formula | Medium | Medium | Score formula details not fully exposed in UI; rate limiting on paper trades (max 50 orders/day per user); anomaly detection on score velocity; tunable formula weights |
+| RISK-08 | Gamification Investment Health Score (IHS) manipulation — users game the score formula | Medium | Medium | Score formula details not fully exposed in UI; rate limiting on paper trades (max 50 orders/day per user); anomaly detection on score velocity; tunable formula weights |
 | RISK-09 | Under-age user harm — 16–17 user misinterprets paper trading performance as investment advice for real money | Medium | High | Learn Mode persistent disclaimer (BR-DISC-04); AI outputs always appended with educational disclaimer; no feature in Learn Mode simulates or references real brokerage accounts; onboarding explicitly communicates virtual-only nature |
 | RISK-10 | Pretendard font rendering issues on older Android devices (Android 10–11) | Low | Medium | Font load testing on Android 10–11; fallback to system sans-serif if Pretendard fails to load; automated visual regression tests on minimum supported OS versions |
 | RISK-11 | KR market data accuracy in V1 (model knowledge + web search) | High | Medium | Clear in-app label on KR data: "Data sourced from web search — may be delayed or estimated". No user-facing SLA promise for KR data in V1. |
-| RISK-12 | Community feed spam or coordinated pump-and-dump posts | Medium | High | Trader Score threshold required to post (minimum Tier 1 with ≥ 5 completed trades before posting); rate limit: max 5 posts per hour per user; Operations team monitors leaderboard-linked accounts |
+| RISK-12 | Community feed spam or coordinated pump-and-dump posts | Medium | High | Investment Health Score (IHS) threshold required to post (minimum Tier 1 with >= 5 completed trades before posting); rate limit: max 5 posts per hour per user; Operations team monitors leaderboard-linked accounts |
 
 ---
 
@@ -572,7 +591,7 @@ Displayed on the Learn Mode home screen and paper trading onboarding. Replaces (
 | 1 | Obtain legal counsel sign-off on SSC paper trading classification (confirms ASSUMPTION-07 and closes RISK-05) | Legal Counsel VN | Before architecture phase |
 | 2 | Obtain legal counsel sign-off on PIPA compliance design (closes RISK-06) | Legal Counsel KR | Before architecture phase |
 | 3 | Execute VN real-time market data feed contract with data vendor (HOSE/HNX); confirm ≤ 15-second SLA in writing | Engineering Lead + Data Provider VN | Before development kickoff |
-| 4 | Finalize Trader Score algorithm parameters (weights for Return/Consistency/Risk Discipline/Activity) and document immutability policy for V1 | AI/Data Science Team + Product Owner | Technical Design Phase |
+| 4 | Finalize Investment Health Score (IHS) algorithm parameters (weights for Discipline/Diversification/Learning/Reflection) and document immutability policy for V1 | AI/Data Science Team + Product Owner | Technical Design Phase |
 | 5 | Produce FRD (Functional Requirements Document) decomposing each BRD feature into user stories, acceptance criteria, and API contracts | BA Team | Technical Design Phase |
 | 6 | Produce SRD (System Requirements Document) for paper trading simulation engine, AI RAG architecture, and real-time data pipeline | Engineering Lead + AI/Data Science Team | Technical Design Phase |
 | 7 | Finalize localization glossary for all three languages (VN/KR/EN financial terminology) and establish translation review process | UX Writing + Legal Counsel | Before content production |

@@ -1,12 +1,12 @@
 # SRD — System Requirement Document
 ## Paave — Gen Z Fintech Investing App (V1)
 
-**Document version:** 2.2
+**Document version:** 3.0
 **Date:** 2026-04-16
 **Author:** Business Analysis Team
 **Status:** Approved for Development
-**Linked FRD:** FRD.md v2.2
-**Linked BRD:** BRD.md v2.1
+**Linked FRD:** FRD.md v3.0
+**Linked BRD:** BRD.md v3.0
 
 ---
 
@@ -634,6 +634,68 @@
 1. Same step-up auth required (password verification)
 2. PATCH /api/v1/users/me with {two_factor_enabled: false}, requires stepup_token
 3. Immediate effect, no OTP needed to disable
+```
+
+### 2.29 First Trade Guided Experience Flow
+
+```
+1. Trigger: User completes onboarding (OTP verified + quiz completed)
+2. Server: Create virtual portfolio (500M VND) if not exists
+3. Server: Select pre-facilitated stock based on user market preference:
+   - VN → VCB (most liquid banking stock)
+   - KR → Samsung Electronics (005930)
+   - Global → NVIDIA (NVDA)
+4. Server: Calculate pre-fill quantity = floor(50,000,000 / current_price / 100) * 100
+5. Mobile app: Show guided trade screen with pre-selected stock + pre-filled quantity
+6. User taps "Mua ngay":
+   a. If market is open: execute at last_traded_price
+   b. If market is closed: queue order with previous_close_price, status = QUEUED_FOR_OPEN
+7. Update virtual portfolio immediately (optimistic for closed-market orders)
+8. Fire events: XP +10, milestone FIRST_TRADE, celebration overlay
+9. Navigate to portfolio dashboard showing new position
+```
+
+### 2.30 Daily Challenge Flow
+
+```
+1. Content pipeline (daily, by 8:00 AM):
+   a. Editorial/algorithm selects challenge question for today
+   b. Store in daily_challenges table: {date, question_type, question_text, ticker, correct_answer}
+   c. If selected stock is trading halted → substitute with VN-Index direction question
+
+2. Morning notification (8:45 AM ICT, trading days):
+   a. Push notification to opted-in users: market sentiment + challenge teaser
+   b. Deep link to challenge screen
+
+3. Submission phase (8:45 AM - 9:05 AM):
+   a. User opens challenge → GET /api/v1/engage/daily-challenge/today
+   b. User submits answer → POST /api/v1/engage/daily-challenge/submit
+   c. Validate: submission_time <= 9:05 AM ICT; reject late submissions
+   d. Store in challenge_responses: {user_id, challenge_id, answer, reasoning, submitted_at}
+
+4. Result phase (14:35 PM):
+   a. Cron job evaluates all responses against actual market close data
+   b. For each response: is_correct = (answer matches correct_answer)
+   c. Award coins: correct = 50,000, participated = 10,000
+   d. Update streak (qualifying action for the day)
+   e. Push notification: "Ket qua challenge: [correct/incorrect] — xem giai thich"
+   f. Generate educational explanation (100-150 words) for the stock's movement
+```
+
+### 2.31 Investment Health Score Calculation Flow
+
+```
+1. Weekly cron job: Monday 6:00 AM ICT
+2. For each active user (>=1 action in past 7 days):
+   a. Discipline = (trades_with_reasoning / max(total_trades, 1)) x 100
+   b. HHI = sum(position_weight^2); Diversification = max(0, (1 - HHI) x 100)
+   c. Learning = min(100, (lessons_completed_this_week / 2) x 100)
+   d. Reflection = (closed_with_reflection / max(total_closed, 1)) x 100
+   e. IHS = (Discipline + Diversification + Learning + Reflection) / 4
+3. Store in ihs_scores: {user_id, week_start, discipline, diversification, learning, reflection, total}
+4. Check tier thresholds against cumulative IHS
+5. Push notification at 8:00 AM: "IHS tuan nay: [N]/100. Diem yeu nhat: [dim]"
+6. In-app insight: score breakdown + behavioral observation + recommended action
 ```
 
 ---
@@ -2528,6 +2590,173 @@
 }
 ```
 
+### 5.16 Engagement Endpoints
+
+#### GET /api/v1/engage/daily-challenge/today
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Response 200:**
+```json
+{
+  "challenge_id": "ch_20260416",
+  "date": "2026-04-16",
+  "question_type": "stock_direction",
+  "question_text": "Hom nay FPT se: Tang / Giam / Di ngang?",
+  "ticker": "FPT",
+  "options": ["Tang", "Giam", "Di ngang"],
+  "submission_deadline": "2026-04-16T02:05:00Z",
+  "status": "open",
+  "user_submitted": false
+}
+```
+
+#### POST /api/v1/engage/daily-challenge/submit
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Request:**
+```json
+{
+  "challenge_id": "ch_20260416",
+  "answer": "Tang",
+  "reasoning": "FPT vua cong bo doanh thu Q1 tot"
+}
+```
+
+**Response 200:**
+```json
+{
+  "submitted": true,
+  "submitted_at": "2026-04-16T01:50:00Z",
+  "message": "Ket qua luc 14:30"
+}
+```
+
+**Response 400 — Late submission:**
+```json
+{
+  "error_code": "E-9001",
+  "message": "Het gio gui du doan. Ban van co the xem ket qua luc 14:30."
+}
+```
+
+#### GET /api/v1/engage/daily-challenge/result/{challengeId}
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Response 200:**
+```json
+{
+  "challenge_id": "ch_20260416",
+  "correct_answer": "Tang",
+  "actual_result": "+1.8%",
+  "user_answer": "Tang",
+  "is_correct": true,
+  "coins_earned": 50000,
+  "explanation": "FPT tang 1.8% nho ket qua kinh doanh Q1/2026 vuot ky vong...",
+  "community_correct_pct": 62
+}
+```
+
+#### GET /api/v1/engage/puzzle/today
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Response 200:**
+```json
+{
+  "puzzle_id": "pz_20260416",
+  "hints": [
+    {"level": 1, "text": "Cong ty hoat dong trong nganh ngan hang"},
+    {"level": 2, "text": "Thanh lap nam 1963, tung la ngan hang ngoai thuong duy nhat", "unlock_after_seconds": 30},
+    {"level": 3, "text": "Ticker bat dau bang V, von hoa lon nhat nganh", "unlock_after_seconds": 60}
+  ],
+  "options": ["VCB", "CTG", "BID", "TCB"]
+}
+```
+
+#### POST /api/v1/engage/puzzle/submit
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Request:**
+```json
+{
+  "puzzle_id": "pz_20260416",
+  "answer": "VCB",
+  "hints_used": 1
+}
+```
+
+**Response 200:**
+```json
+{
+  "correct": true,
+  "answer": "VCB",
+  "company_name": "Ngan hang TMCP Ngoai thuong Viet Nam",
+  "coins_earned": 30000,
+  "facts": [
+    "Von hoa lon nhat nganh ngan hang VN",
+    "ROE trung binh >20% trong 5 nam",
+    "Co dong chien luoc: Mizuho (15%)"
+  ],
+  "stock_page_link": "/stock/VCB"
+}
+```
+
+### 5.17 Score Endpoints
+
+#### GET /api/v1/score/ihs/current
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Response 200:**
+```json
+{
+  "user_id": "usr_01HX1234",
+  "current_week": {
+    "week_start": "2026-04-13",
+    "discipline": 70,
+    "diversification": 80,
+    "learning": 100,
+    "reflection": 75,
+    "total": 81
+  },
+  "previous_week": {
+    "total": 72
+  },
+  "trend": "up",
+  "cumulative_score": 2450,
+  "current_tier": 3,
+  "history_12w": [45, 52, 58, 63, 67, 70, 68, 72, 75, 78, 80, 81]
+}
+```
+
+### 5.18 DNA Card Endpoints
+
+#### GET /api/v1/cards/dna/{month}
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Response 200:**
+```json
+{
+  "month": "2026-03",
+  "style_label": "Growth Tracker",
+  "stats": {
+    "return_pct": 8.5,
+    "vnindex_return_pct": 3.2,
+    "trade_count": 15,
+    "avg_hold_days": 12
+  },
+  "best_trade": {"ticker": "FPT", "return_pct": 22.3},
+  "insight": "Ban co xu huong giu co phieu lau hon 75% community — day la dau hieu cua chien luoc dai han.",
+  "rank_percentile": 23,
+  "card_image_url": "https://cdn.paave.app/dna/usr_01HX1234_2026-03.png"
+}
+```
+
 ---
 
 ## 6. Error Handling Logic
@@ -2580,7 +2809,11 @@ All error responses follow this structure:
 | E-2503 | 404 | No AI portfolio health report yet | Show "No portfolio health report available yet." |
 | E-8501 | 403 | Feature blocked by feature_tier | Show "This feature requires full access. You'll unlock it when you turn 18." |
 | E-9000 | 500 | Unexpected server error | Show "Something went wrong. Please try again." with retry option |
-| E-9001 | 503 | Service temporarily unavailable | Show "Service temporarily unavailable. Please try again in a moment." |
+| E-9001 | 400 | Challenge submission deadline passed | Daily challenge | Show "Het gio gui du doan." |
+| E-9002 | 409 | Challenge already submitted | Daily challenge | Show "Ban da gui du doan hom nay." |
+| E-9003 | 409 | Puzzle already answered | Daily puzzle | Show "Ban da tra loi cau do hom nay." |
+| E-9004 | 404 | DNA card not available (insufficient trades) | Monthly DNA | Show "Chua du giao dich de tao the DNA." |
+| E-9005 | 503 | Service temporarily unavailable | Show "Service temporarily unavailable. Please try again in a moment." |
 | E-1011 | 401 | Social authentication failed | Show "Social authentication failed. Please try again." |
 | E-1012 | 401 | 2FA partial token expired | Show "Session expired. Please log in again." Navigate to Login screen. |
 | E-1013 | 400 | Account link declined | Return to login screen; no account linking performed |
@@ -2591,7 +2824,7 @@ All error responses follow this structure:
 |-----------|---------------------|
 | No internet connection | Show "No internet connection. Pull to refresh when connected." Cached data displayed if available. |
 | Request timeout (> 10 seconds) | Show "Request timed out. Please check your connection and try again." |
-| HTTP 5xx received | Show E-9000 or E-9001 message; offer retry button |
+| HTTP 5xx received | Show E-9000 or E-9005 message; offer retry button |
 | HTTP 401 with valid refresh token | Silently refresh access token and retry original request (max 1 retry) |
 | HTTP 401 with invalid/expired refresh token | Navigate to Login screen; clear local session |
 
@@ -2938,6 +3171,7 @@ Parental consent token expired:
 | status | VARCHAR(15) | NOT NULL | `PENDING`, `FILLED`, `CANCELLED`, `EXPIRED` |
 | fill_price | DECIMAL(18, 4) | NULLABLE | Set on FILLED |
 | fill_timestamp | TIMESTAMPTZ | NULLABLE | Set on FILLED |
+| reasoning | VARCHAR(200) | NULLABLE | User-provided reasoning for the trade |
 | pre_reset | BOOLEAN | NOT NULL, DEFAULT false | True if placed before last portfolio reset |
 | created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
 
@@ -3093,6 +3327,89 @@ Parental consent token expired:
 | linked_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
 | UNIQUE(social_type, social_id) | | | One identity per provider per user |
 
+### 9.28 `daily_challenges` Table
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| challenge_id | VARCHAR | PK | Format: ch_YYYYMMDD |
+| date | DATE | UNIQUE | One per trading day |
+| question_type | ENUM('stock_direction','index_direction','top_performer') | NOT NULL | |
+| question_text | TEXT | NOT NULL | Vietnamese |
+| ticker | VARCHAR(10) | NULLABLE | NULL for index questions |
+| options | JSONB | NOT NULL | Array of answer options |
+| correct_answer | VARCHAR(50) | NULLABLE | Populated at 14:35 |
+| explanation | TEXT | NULLABLE | 100-150 word educational text |
+| created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
+
+### 9.29 `challenge_responses` Table
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| response_id | VARCHAR(26) | PK | ULID |
+| user_id | VARCHAR(26) | FK → users | |
+| challenge_id | VARCHAR | FK → daily_challenges | |
+| answer | VARCHAR(50) | NOT NULL | |
+| reasoning | VARCHAR(100) | NULLABLE | |
+| is_correct | BOOLEAN | NULLABLE | Populated at evaluation |
+| coins_earned | INTEGER | NOT NULL, DEFAULT 0 | |
+| submitted_at | TIMESTAMPTZ | NOT NULL | Must be before deadline |
+| UNIQUE(user_id, challenge_id) | | | One answer per user per day |
+
+### 9.30 `ihs_scores` Table
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| score_id | VARCHAR(26) | PK | ULID |
+| user_id | VARCHAR(26) | FK → users | |
+| week_start | DATE | NOT NULL | Monday of the scored week |
+| discipline | DECIMAL(5,2) | NOT NULL | 0-100 |
+| diversification | DECIMAL(5,2) | NOT NULL | 0-100 |
+| learning | DECIMAL(5,2) | NOT NULL | 0-100 |
+| reflection | DECIMAL(5,2) | NOT NULL | 0-100 |
+| total | DECIMAL(5,2) | NOT NULL | Average of 4 dimensions |
+| computed_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
+| UNIQUE(user_id, week_start) | | | |
+
+### 9.31 `daily_puzzles` Table
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| puzzle_id | VARCHAR | PK | Format: pz_YYYYMMDD |
+| date | DATE | UNIQUE | |
+| ticker | VARCHAR(10) | NOT NULL | Correct answer |
+| hints | JSONB | NOT NULL | Array of {level, text} |
+| options | JSONB | NOT NULL | 4-option array |
+| facts | JSONB | NOT NULL | 3 company facts |
+| created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
+
+### 9.32 `puzzle_responses` Table
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| response_id | VARCHAR(26) | PK | ULID |
+| user_id | VARCHAR(26) | FK → users | |
+| puzzle_id | VARCHAR | FK → daily_puzzles | |
+| answer | VARCHAR(10) | NOT NULL | |
+| hints_used | INTEGER | NOT NULL | 1, 2, or 3 |
+| is_correct | BOOLEAN | NOT NULL | |
+| coins_earned | INTEGER | NOT NULL | |
+| answered_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
+| UNIQUE(user_id, puzzle_id) | | | |
+
+### 9.33 `trade_reflections` Table
+
+| Column | Type | Constraints | Notes |
+|--------|------|-------------|-------|
+| reflection_id | VARCHAR(26) | PK | ULID |
+| user_id | VARCHAR(26) | FK → users | |
+| position_id | VARCHAR(26) | FK → virtual_portfolio | Closed position |
+| ticker | VARCHAR(10) | NOT NULL | |
+| pnl_pct | DECIMAL(10,4) | NOT NULL | |
+| expectation_met | ENUM('yes','no','unsure') | NOT NULL | Q1 answer |
+| learning_text | VARCHAR(300) | NULLABLE | Q2 answer |
+| ihs_points_earned | INTEGER | NOT NULL, DEFAULT 0 | |
+| created_at | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | |
+
 ---
 
-*Document end — v2.2. Full traceability: BRD Business Objectives → FRD Functional Requirements → SRD System Flows and API Contracts.*
+*Document end — v3.0. Full traceability: BRD Business Objectives → FRD Functional Requirements → SRD System Flows and API Contracts.*

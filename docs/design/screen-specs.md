@@ -6017,7 +6017,1129 @@ Animations:
 | Sparkline | components/Chart | 7-day-line |
 | LineChart | components/Chart | interactive, readonly |
 | DonutChart | components/Chart | portfolio-allocation |
+| DailyChallengeCard | components/ChallengeCard | phase-1-question, phase-2-waiting, phase-3-result, missed |
+| PuzzleCard | components/PuzzleCard | unsolved, solved, already-played |
+| IHSScoreDisplay | components/IHSScore | full-dashboard, compact-profile |
+| DNACard | components/DNACard | value, growth, momentum, defensive, active |
+| ReasoningInput | components/ReasoningInput | standard-multiline, compact-singleline |
+| ReflectionSheet | components/ReflectionSheet | profitable, losing |
 
 ---
 
-*End of Screen Specifications — Paave V2 (Screens 1–36)*
+## Screen 37 — First Trade Guided Experience
+
+### Screen Overview
+```
+Screen: First Trade Guided Experience
+User:   New user immediately after onboarding completion
+Goal:   Guide user through their very first paper trade with a pre-selected stock, zero friction
+Refs:   FR-ONBOARD-01
+```
+
+### Layout
+```
+Background: bg-primary (#0D1117) with gradient-accent-glow at top
+Full-screen guided walkthrough (no bottom nav visible)
+Phases:    3 sequential phases in single screen flow
+           Phase 1 — Balance intro + stock selection
+           Phase 2 — One-tap buy
+           Phase 3 — Success animation + portfolio confirmation
+```
+
+### Main Content
+
+**Phase 1 — Virtual Balance Display + Pre-Selected Stock**
+```
+Center aligned, mt: 80px + safe-area
+
+Balance label:
+  "Ban co" — text-body-md (14px, weight 400), text-secondary (#9CA3AF)
+
+Balance amount:
+  "500 trieu VND" — text-display-xl (40px, weight 800), text-primary (#F9FAFB)
+  Number roll-up animation: 500ms ease-decelerate
+  Suffix: "de dau tu ao" — text-body-md (14px, weight 400), text-secondary, mt: 4px
+
+Virtual Funds Banner:
+  Full-width, mt: 16px
+  Uses Virtual Funds Banner component (7.2)
+  Text: "Tien ao — Khong su dung tien that"
+
+Pre-selected stock card (mt: 32px):
+  Container: full-width (343px), bg-card (#1F2937), radius-lg (16px), padding: space-4
+  Border:    accent-primary (#3B82F6) 2px
+  Shadow:    shadow-card-raised
+
+  Row 1 (flex-row, align-center, gap: 12px):
+    Logo:     40x40px, radius-full, VCB bank logo
+    Ticker:   "VCB" — text-title-md (18px, weight 600), text-primary
+    Name:     "Vietcombank" — text-body-sm (13px), text-secondary
+    Price:    "₫92,500" — text-display-md (24px, weight 700), text-primary, align-right
+
+  Row 2 (mt: 12px):
+    Pre-filled quantity: "So luong: 100 co phieu" — text-body-md (14px), text-secondary
+    Estimated total:     "Tong: ₫9,250,000" — text-body-md (14px, weight 600), text-primary
+```
+
+**Phase 2 — One-Tap Buy CTA**
+```
+mt: 24px from stock card
+
+CTA Button:
+  "Mua ngay" — Primary Button component (6.1), full-width (343px), height 56px
+  Background: accent-primary (#3B82F6)
+  Text:       "Mua ngay" — text-title-md (18px, weight 700), #FFFFFF
+  Shadow:     shadow-glow-accent
+  Icon:       Lucide `shopping-cart` 20px, left of text, gap: 8px
+
+Skip link (mt: 16px, centered):
+  "Bo qua, toi tu kham pha" — text-body-sm (13px, weight 500), text-secondary
+  Touch area: 44px min height
+```
+
+**Phase 3 — Success Animation + Confirmation**
+```
+Trigger: After "Mua ngay" tap
+
+Success animation:
+  Shares flying into portfolio:
+    3 mini stock cards (48x48px each, accent-primary-subtle bg, VCB ticker)
+    Animate from center → fly to bottom-right (portfolio icon position)
+    Duration: 800ms, physics-based spring easing
+    Stagger: 100ms between each card
+  Background:
+    Confetti particles (20, accent-primary + positive colors)
+    Duration: 1200ms
+  Haptic: medium impact at t=0ms
+
+Confirmation (fade in at 600ms offset):
+  Check icon: 64x64px, positive (#10B981), contained in 96x96px circle
+              bg: positive-subtle, radius-full
+              Scale 0 to 1, 300ms ease-spring
+
+  Title:      "Chuc mung!" — text-display-md (24px, weight 700), text-primary, mt: 24px
+  Subtitle:   "Day la co phieu dau tien trong portfolio cua ban"
+              text-body-md (14px), text-secondary, mt: 8px, text-align: center
+              max-width: 280px
+
+  CTA (mt: 32px):
+    "Xem danh muc" — Primary Button, full-width
+    Navigates to Portfolio tab
+
+Reduced motion variant:
+  No flying cards, no confetti
+  Check icon: opacity 0 to 1, 300ms ease-standard
+  Haptic preserved
+```
+
+### Interaction Rules
+```
+"Mua ngay" tap     -> Loading state (spinner, 300ms) -> Success animation -> Confirmation
+Skip tap           -> Navigate to Home Dashboard directly (no trade placed)
+"Xem danh muc" tap -> Navigate to Portfolio tab (fade replace stack)
+Back gesture       -> Same as skip (navigate to Home)
+```
+
+### States
+```
+Default:      Phase 1 visible with balance roll-up animation + stock card highlighted
+Loading:      "Mua ngay" shows spinner, not tappable (per FR-PT-02, fill <=15s)
+Success:      Phase 3 with flying animation + confirmation
+Error:        Toast: "Khong the dat lenh. Thu lai sau." CTA re-enabled.
+              Rare — pre-selected stock should always be available
+```
+
+### Edge Cases
+```
+Pre-selected stock unavailable:    Fallback to next most-traded VN stock (per FR-ONBOARD-01)
+Virtual balance not yet created:   Wait for server confirm (max 3s), then show
+                                   If timeout: "Dang thiet lap tai khoan..." spinner
+App killed mid-animation:          On reopen, skip to Portfolio if trade was filled
+User already has holdings:         Screen not shown (only fires for zero-trade accounts)
+Reduced motion:                    No particles, no flying cards; opacity-only transitions
+```
+
+### Dev Handoff Specs
+```
+Screen entry:
+  Triggered after onboarding completion (registration Step 10) for zero-trade accounts
+  navigation.replace('FirstTradeGuided') — replaces onboarding stack
+
+Pre-selected stock:
+  API: GET /onboarding/recommended-stock → { ticker: "VCB", price, name, logo_url }
+  Fallback hardcoded: VCB if API fails
+
+Buy action:
+  POST /paper-trade/quick-buy { ticker: "VCB", quantity: 100 }
+  On 200: trigger success animation, then navigate to Portfolio
+  On error: toast error, re-enable CTA
+
+Animations:
+  Balance roll-up:     CountUp from 0 to 500,000,000, 500ms ease-decelerate
+  Flying cards:        3x translateXY from center to (bottom: 80px, right: 75%), 800ms spring
+  Confetti:            Reuse Milestone Celebration particle system (20 particles, 1200ms)
+  Check scale:         scale 0 to 1, 300ms cubic-bezier(0.34, 1.56, 0.64, 1)
+
+Layout:
+  Full screen, no bottom nav
+  Safe area respected at top and bottom
+  Content centered vertically with scroll fallback for small screens
+```
+
+### QA Tests
+```
+[ ] Screen appears only for users with zero trade history
+[ ] Balance displays "500 trieu VND" with roll-up animation
+[ ] Virtual Funds Banner visible with "Tien ao" text
+[ ] Pre-selected stock card shows VCB with correct price
+[ ] Pre-filled quantity shows 100 shares
+[ ] "Mua ngay" CTA is tappable and shows loading state on tap
+[ ] Success animation plays: flying cards + confetti + check icon
+[ ] Confirmation text: "Day la co phieu dau tien trong portfolio cua ban"
+[ ] "Xem danh muc" navigates to Portfolio tab
+[ ] Skip link navigates to Home without placing trade
+[ ] Reduced motion: no particles, opacity-only transitions
+[ ] Haptic feedback fires on success
+[ ] Portfolio shows new VCB holding after completion
+[ ] Screen does not reappear on subsequent app opens
+```
+
+---
+
+## Screen 38 — Daily Challenge
+
+### Screen Overview
+```
+Screen: Daily Challenge
+User:   All authenticated users, accessible from Home challenge card or push notification
+Goal:   Present a daily prediction question, wait for market result, show outcome with explanation
+Refs:   FR-ENGAGE-01
+```
+
+### Layout
+```
+Background: bg-primary (#0D1117)
+Header:     Screen Header with back button + "Thu thach hang ngay" title
+Main:       Single card with 3 time-dependent phases
+            Phase 1 — Morning (before 9:05 AM)
+            Phase 2 — During (9:05 AM – 14:30 PM)
+            Phase 3 — Result (after 14:30 PM)
+Bottom nav: Visible
+```
+
+### Main Content
+
+**Phase 1 — Morning (Question Phase, before 9:05 AM)**
+```
+Question Card:
+  Container:  full-width (343px), bg-card (#1F2937), radius-xl (24px)
+  Padding:    space-5 (20px) all sides
+  Border:     accent-primary-subtle (rgba(59,130,246,0.15)) 1px
+  Shadow:     shadow-card-raised
+
+  Header row (flex-row, align-center, gap: 8px):
+    Icon:     Lucide `brain` 24px, accent-primary (#3B82F6)
+    Title:    "Thu thach hom nay" — text-title-md (18px, weight 600), text-primary
+
+  Question (mt: 16px):
+    Text:     Question string — text-body-lg (16px, weight 400), text-primary
+              Max 3 lines, e.g. "VN-Index se dong cua tang hay giam hom nay?"
+
+  Answer Options (mt: 20px, flex-col, gap: 12px):
+    3 option buttons, each:
+      Width:      100% (303px)
+      Height:     52px
+      Background: bg-secondary (#161B22)
+      Border:     border (#374151) 1.5px
+      Radius:     radius-md (12px)
+      Text:       text-body-md (14px, weight 600), text-primary, centered
+      Touch:      44px min height
+
+    Selected state:
+      Background: accent-primary-subtle (rgba(59,130,246,0.15))
+      Border:     accent-primary (#3B82F6) 2px
+      Text:       accent-primary (#3B82F6)
+      Check icon: Lucide `check` 16px, accent-primary, right side
+
+  Reasoning field (mt: 16px, optional):
+    Uses Reasoning Input component (see components.md)
+    Placeholder: "Tai sao ban chon nhu vay? (khong bat buoc)"
+    Max: 200 chars
+    text-body-sm (13px), text-secondary
+
+  Countdown timer (mt: 16px, centered):
+    "Ket thuc nhan cau tra loi luc 9:05" — text-caption (12px), text-secondary
+    Timer:  "con 00:42:15" — text-caption-bold (12px, weight 600), warning (#F59E0B)
+    Icon:   Lucide `clock` 14px, warning
+
+  Submit CTA (mt: 20px):
+    "Gui cau tra loi" — Primary Button, full-width
+    Disabled until 1 option selected
+```
+
+**Phase 2 — During (Waiting Phase, 9:05 AM – 14:30 PM)**
+```
+Same card container as Phase 1, content replaced:
+
+  Status badge (centered, mt: 24px):
+    Container: accent-primary-subtle bg, radius-full, px: 16px, py: 8px
+    Text:      "Dang cho ket qua..." — text-body-md (14px, weight 600), accent-primary
+    Pulse animation: opacity 0.7 to 1, 1.5s ease-standard, infinite
+
+  Timestamp (mt: 12px):
+    "Ket qua luc 14:30" — text-body-sm (13px), text-secondary
+
+  Your answer recap (mt: 24px):
+    "Cau tra loi cua ban:" — text-caption (12px), text-secondary
+    Answer text — text-body-md (14px, weight 600), accent-primary
+
+  Live sparkline (optional, mt: 20px):
+    Uses Sparkline Chart component (5.2)
+    Intraday data for relevant index/stock
+    Width: 100%, height: 80px
+    Label: "VN-Index hom nay" — text-caption (12px), text-secondary
+```
+
+**Phase 3 — Result (after 14:30 PM)**
+```
+Same card container, content replaced:
+
+  Result badge (centered, mt: 16px):
+    Correct:
+      Container: positive-subtle bg, radius-full, px: 16px, py: 8px
+      Icon: Lucide `check-circle` 20px, positive (#10B981)
+      Text: "Chinh xac!" — text-body-md (14px, weight 700), positive
+    Incorrect:
+      Container: negative-subtle bg, radius-full, px: 16px, py: 8px
+      Icon: Lucide `x-circle` 20px, negative (#EF4444)
+      Text: "Chua chinh xac" — text-body-md (14px, weight 700), negative
+
+  Actual result (mt: 16px):
+    "Ket qua thuc te:" — text-caption (12px), text-secondary
+    Result value — text-display-md (24px, weight 700), text-primary
+    E.g., "VN-Index +1.23% (1,285.50)"
+
+  Explanation card (mt: 20px):
+    Container: bg-secondary (#161B22), radius-md (12px), padding: space-4
+    Text:      100-150 word explanation — text-body-md (14px), text-primary
+    Source:    "Nguon: du lieu HoSE" — text-caption (12px), text-secondary, mt: 8px
+
+  Coins earned row (mt: 16px, flex-row, align-center, justify-between):
+    Left:  Lucide `coins` 20px, warning (#F59E0B) + "Coins nhan duoc" text-body-sm
+    Right: "+15 coins" — text-body-md (14px, weight 700), warning
+           (Correct: +15, Incorrect: +5 for participation)
+
+  Community comparison (mt: 12px):
+    "42% nguoi dung cung tra loi chinh xac" — text-body-sm (13px), text-secondary
+    Horizontal bar: accent-primary fill at 42%, bg-secondary track
+    Width: 100%, height: 8px, radius-full
+```
+
+### Interaction Rules
+```
+Option tap (Phase 1)     -> Select option (single selection, deselect previous)
+Submit tap (Phase 1)     -> POST answer, transition to Phase 2
+Phase auto-transition    -> Server time determines active phase
+Notification tap         -> Deep link to this screen in correct phase
+Sparkline tap (Phase 2)  -> Navigate to relevant Stock Detail
+Explanation scroll       -> Scrollable within card if text exceeds visible area
+```
+
+### States
+```
+Morning (before 9:05):   Phase 1 — question active, options tappable
+During (9:05-14:30):     Phase 2 — waiting state, sparkline updating
+Result (after 14:30):    Phase 3 — outcome displayed
+Missed:                  "Ban da bo lo thu thach hom nay" with greyed card
+Already answered:        Phase 2 shown immediately (no re-answer)
+Loading:                 Skeleton shimmer for question card
+Error:                   Toast: "Khong the tai thu thach. Thu lai sau."
+```
+
+### Edge Cases
+```
+User opens after 9:05 without answering:   "Missed" state, no answer allowed
+User opens after 14:30 without answering:  "Missed" state, can view result explanation
+Timezone handling:                          All times in ICT (UTC+7) for VN market
+No challenge available today:              "Khong co thu thach hom nay" placeholder
+Server time mismatch:                      Client syncs with server timestamp on load
+```
+
+### Dev Handoff Specs
+```
+Challenge data:
+  GET /daily-challenge/today → { id, question, options[], deadline, status }
+  POST /daily-challenge/{id}/answer → { option_id, reasoning? }
+  GET /daily-challenge/{id}/result → { correct_option, actual_result, explanation, coins, community_pct }
+
+Phase determination:
+  const phase = serverTime < 9:05 ? 'morning' : serverTime < 14:30 ? 'during' : 'result'
+  Auto-refresh on phase boundary (poll every 30s near boundaries)
+
+Animations:
+  Phase transition: crossfade content, 300ms ease-standard
+  Result badge:     scale 0.8 to 1, 300ms ease-spring
+  Coins:            number roll-up, 300ms ease-decelerate
+  Community bar:    width 0% to N%, 500ms ease-decelerate
+  Sparkline:        standard chart draw-in, 600ms ease-decelerate
+
+Deep link: paave://daily-challenge
+Notification: "Thu thach moi! Hom nay VN-Index se tang hay giam?" at 8:45 AM
+```
+
+### QA Tests
+```
+[ ] Morning phase shows question card with 3 answer options
+[ ] Only 1 option selectable at a time (radio behavior)
+[ ] Optional reasoning field accepts up to 200 chars
+[ ] Countdown timer shows correct time until 9:05
+[ ] Submit disabled until option selected
+[ ] Submit sends answer and transitions to Phase 2
+[ ] Phase 2 shows "Dang cho ket qua..." with pulse animation
+[ ] Phase 2 shows user's selected answer
+[ ] Optional sparkline displays intraday data
+[ ] Phase 3 shows correct/incorrect badge
+[ ] Explanation text is 100-150 words
+[ ] Coins earned displayed with correct amount (+15 correct, +5 incorrect)
+[ ] Community comparison bar renders accurately
+[ ] Missed state shown if user opens after deadline without answering
+[ ] Deep link from notification opens correct phase
+[ ] Reduced motion: no pulse, static badge
+```
+
+---
+
+## Screen 39 — Stock Ticker Daily Puzzle
+
+### Screen Overview
+```
+Screen: Stock Ticker Daily Puzzle
+User:   All authenticated users, accessible from Home or Discover
+Goal:   Fun daily puzzle — guess a stock ticker from progressive hints
+Refs:   FR-ENGAGE-03
+```
+
+### Layout
+```
+Background: bg-primary (#0D1117)
+Header:     Screen Header with back button + "Doan ma CK" title
+Main:       Puzzle card with hints and answer grid
+Bottom nav: Visible
+```
+
+### Main Content
+
+**Section 1 — Puzzle Card**
+```
+Container: full-width (343px), bg-card (#1F2937), radius-xl (24px)
+Padding:   space-5 (20px) all sides
+Shadow:    shadow-card-raised
+
+Title row (flex-row, align-center, gap: 8px):
+  Icon:    Lucide `puzzle` 24px, accent-secondary (#06B6D4)
+  Title:   "Doan ma CK" — text-title-md (18px, weight 600), text-primary
+  Badge:   "Hang ngay" — text-caption-bold (12px), accent-secondary, bg: accent-secondary-subtle
+           radius-full, px: 8px, py: 4px
+```
+
+**Section 2 — Progressive Hints**
+```
+mt: 20px from title
+
+Hints container (flex-col, gap: 12px):
+  Hint 1 (always visible):
+    Row: flex-row, align-start, gap: 12px
+    Number:   "1" — 24x24px circle, bg: accent-primary-subtle, text: accent-primary
+              text-caption-bold (12px), centered
+    Text:     Hint text — text-body-md (14px), text-primary
+              E.g., "Ngan hang lon nhat Viet Nam tinh theo von hoa"
+
+  Hint 2 (revealed after 15s or on tap):
+    Same layout as Hint 1
+    Reveal animation: height 0 to auto, opacity 0 to 1, 300ms ease-decelerate
+
+  Hint 3 (revealed after 30s or on tap):
+    Same layout as Hint 2
+
+Hint reveal button (shown when hints remain hidden):
+  "Xem goi y tiep" — text-body-sm (13px, weight 600), accent-primary
+  Lucide `chevron-down` 14px, accent-primary
+  Touch area: 44px min height
+  Tapping reveals next hint immediately
+```
+
+**Section 3 — Answer Grid (2x2)**
+```
+mt: 24px from hints
+
+4-option grid (2 columns, 2 rows):
+  Grid gap: 12px (space-3)
+
+  Each option:
+    Width:      calc((303px - 12px) / 2) = ~146px
+    Height:     56px
+    Background: bg-secondary (#161B22)
+    Border:     border (#374151) 1.5px
+    Radius:     radius-md (12px)
+    Text:       Ticker code — text-title-sm (16px, weight 600), text-primary, centered
+    Touch:      Full cell is touch target (44px min met)
+
+  Selected state:
+    Background: accent-primary-subtle
+    Border:     accent-primary 2px
+    Text:       accent-primary
+
+  Correct answer (after submit):
+    Background: positive-subtle
+    Border:     positive (#10B981) 2px
+    Text:       positive
+
+  Wrong answer (after submit):
+    Background: negative-subtle
+    Border:     negative (#EF4444) 2px
+    Text:       negative
+    Shake animation: translateX [0, -4, 4, -3, 3, 0], 200ms
+```
+
+**Section 4 — Result (after answer submitted)**
+```
+Replaces answer grid area, fade transition 300ms:
+
+Company reveal (centered):
+  Logo:       64x64px, radius-md (12px), shadow-card, centered
+  Ticker:     "VCB" — text-display-md (24px, weight 700), text-primary, mt: 12px
+  Name:       "Ngan hang TMCP Ngoai thuong Viet Nam" — text-body-md (14px), text-secondary, mt: 4px
+
+3 facts list (mt: 16px, flex-col, gap: 8px):
+  Each fact:
+    Bullet: 6x6px circle, accent-secondary, mt: 6px (align with first line)
+    Text:   text-body-sm (13px), text-primary
+    E.g., "Von hoa: 485 nghin ty VND"
+
+Link to stock page (mt: 16px):
+  "Xem chi tiet VCB →" — text-body-md (14px, weight 600), accent-primary
+  Touch area: 44px min height
+  Navigates to Stock Detail screen
+
+Coins earned (mt: 16px, flex-row, align-center, gap: 8px):
+  Icon:  Lucide `coins` 20px, warning (#F59E0B)
+  Text:  "+10 coins" — text-body-md (14px, weight 700), warning
+```
+
+### Interaction Rules
+```
+Hint reveal tap        -> Show next hint with slide-down animation
+Option tap             -> Select (highlight), then auto-submit after 500ms
+Correct answer         -> Green highlight + result reveal + coins
+Wrong answer           -> Red highlight + shake, then reveal correct + result
+Stock link tap         -> Navigate to Stock Detail
+Auto-hint timer        -> Hints 2 and 3 reveal automatically at 15s and 30s intervals
+```
+
+### States
+```
+Default:        Hint 1 visible, hints 2-3 hidden, 4 options available
+Hints revealing: Progressive hint display with animation
+Answered:       Result section visible, options show correct/wrong
+Already played: "Ban da choi hom nay roi!" with result recap
+Loading:        Skeleton shimmer for puzzle card
+Error:          Toast: "Khong the tai cau do. Thu lai sau."
+```
+
+### Edge Cases
+```
+User already played today:    Show result from earlier + "Da choi" badge
+No puzzle available:          "Cau do moi se co vao ngay mai" placeholder
+All hints revealed:           Answer grid still active until submission
+Network error on submit:      Local answer stored, sync when reconnected
+User closes before answering: Puzzle preserved for later in same day
+```
+
+### Dev Handoff Specs
+```
+Puzzle data:
+  GET /daily-puzzle/today → { id, hints[3], options[4], answer_ticker, status }
+  POST /daily-puzzle/{id}/answer → { selected_ticker }
+  Response: { correct: bool, company_info, facts[3], coins_earned }
+
+Animations:
+  Hint reveal:     height 0 to auto, opacity 0 to 1, 300ms ease-decelerate
+  Wrong shake:     translateX [0, -4, 4, -3, 3, 0], 200ms
+  Correct pulse:   scale 1 to 1.05 to 1, 200ms ease-spring
+  Result reveal:   fade in, 300ms ease-standard
+  Logo appear:     scale 0.8 to 1, opacity 0 to 1, 300ms ease-spring
+
+Deep link: paave://daily-puzzle
+```
+
+### QA Tests
+```
+[ ] Puzzle card renders with "Doan ma CK" title and puzzle icon
+[ ] Hint 1 visible on load, hints 2-3 hidden
+[ ] "Xem goi y tiep" reveals next hint with animation
+[ ] Auto-reveal at 15s and 30s intervals
+[ ] 2x2 answer grid with 4 ticker options
+[ ] Single selection behavior (tap selects, auto-submits)
+[ ] Correct answer shows green highlight + result
+[ ] Wrong answer shows red + shake, then correct revealed
+[ ] Company logo, name, and 3 facts displayed in result
+[ ] "Xem chi tiet" link navigates to Stock Detail
+[ ] Coins badge displays earned amount
+[ ] Already-played state shows previous result
+[ ] Skeleton loader on initial load
+[ ] Touch targets meet 44px minimum on all interactive elements
+```
+
+---
+
+## Screen 40 — Investment Health Score Dashboard
+
+### Screen Overview
+```
+Screen: Investment Health Score (IHS) Dashboard
+User:   All authenticated users, accessible from Profile or Home
+Goal:   Display user's investment health score with dimensional breakdown, history, and improvement actions
+Refs:   FR-SCORE-01
+```
+
+### Layout
+```
+Background: bg-primary (#0D1117)
+Header:     Screen Header with back button + "Diem suc khoe dau tu" title
+Main:       Scrollable content — score hero, breakdown, history, insights
+Bottom nav: Visible
+```
+
+### Main Content
+
+**Section 1 — IHS Score Hero**
+```
+Container: full-width (343px), bg-card (#1F2937), radius-xl (24px)
+Padding:   space-6 (24px) all sides
+Shadow:    shadow-card-raised
+Background: gradient-hero overlay
+
+Score display (centered):
+  Score number: text-display-xl (40px, weight 800), text-primary
+                Number roll-up animation: 0 to N, 500ms ease-decelerate
+                E.g., "72"
+  Score suffix: "/100" — text-display-md (24px, weight 400), text-secondary
+  Score label:  "Diem suc khoe dau tu" — text-body-md (14px), text-secondary, mt: 8px
+
+Trend arrow (inline with score, right side):
+  Up trend:   Lucide `trending-up` 20px, positive (#10B981)
+              "+5 so voi tuan truoc" — text-caption (12px), positive
+  Down trend: Lucide `trending-down` 20px, negative (#EF4444)
+              "-3 so voi tuan truoc" — text-caption (12px), negative
+  No change:  Lucide `minus` 20px, neutral (#9CA3AF)
+              "Khong doi" — text-caption (12px), neutral
+
+Score color coding:
+  0-39:  negative (#EF4444)
+  40-69: warning (#F59E0B)
+  70-89: accent-primary (#3B82F6)
+  90-100: positive (#10B981)
+```
+
+**Section 2 — 4-Dimension Breakdown**
+```
+mt: 16px from hero
+
+Container: full-width (343px), bg-card (#1F2937), radius-lg (16px)
+Padding:   space-4 (16px) all sides
+
+Title: "Chi tiet theo chieu" — text-title-sm (16px, weight 600), text-primary
+
+4-bar chart (mt: 16px, flex-col, gap: 16px):
+  Each dimension:
+    Label row (flex-row, justify-between):
+      Dimension name: text-body-md (14px, weight 500), text-primary
+      Score:          text-body-md (14px, weight 700), color-coded (same as hero)
+
+    Progress bar:
+      Width: 100%, height: 8px, radius-full
+      Track:  bg-secondary (#161B22)
+      Fill:   Color-coded, width animated 0% to N%, 500ms ease-decelerate
+
+  Dimensions:
+    1. "Ky luat" (Discipline)        — e.g., 85/100
+    2. "Da dang hoa" (Diversification) — e.g., 60/100
+    3. "Hoc tap" (Learning)          — e.g., 78/100
+    4. "Phan anh" (Reflection)       — e.g., 65/100
+```
+
+**Section 3 — Weakest Dimension Highlight**
+```
+mt: 16px
+
+Container: full-width (343px), bg: warning-subtle (rgba(245,158,11,0.15))
+           radius-md (12px), padding: space-4
+Border:    warning (#F59E0B) 1px
+
+Row (flex-row, align-center, gap: 12px):
+  Icon:   Lucide `alert-triangle` 20px, warning
+  Text:   "Diem yeu nhat: Da dang hoa" — text-body-md (14px, weight 600), text-primary
+
+Action (mt: 8px):
+  "Hay them co phieu tu nganh khac vao danh muc" — text-body-sm (13px), text-secondary
+
+CTA (mt: 12px):
+  "Kham pha co phieu" — text-body-sm (13px, weight 600), accent-primary
+  Touch area: 44px min height
+  Navigates to Discover tab with diversification filter
+```
+
+**Section 4 — 12-Week Sparkline History**
+```
+mt: 16px
+
+Container: full-width (343px), bg-card (#1F2937), radius-lg (16px)
+Padding:   space-4 (16px) all sides
+
+Title: "Lich su 12 tuan" — text-title-sm (16px, weight 600), text-primary
+
+Sparkline (mt: 12px):
+  Width:  100% (311px), height: 80px
+  Line:   accent-secondary (#06B6D4), 2px stroke
+  Fill:   accent-secondary-subtle below line
+  Draw-in animation: 600ms ease-decelerate
+  12 data points, one per week
+  X-axis labels: "T1", "T2", ... "T12" — text-caption (12px), text-tertiary
+  Current week highlighted: 6px circle, accent-primary, at last data point
+```
+
+**Section 5 — Weekly Insight Card**
+```
+mt: 16px, mb: space-20 (80px, bottom nav clearance)
+
+Container: full-width (343px), bg-card (#1F2937), radius-lg (16px)
+Padding:   space-4 (16px) all sides
+Border:    accent-primary-subtle 1px
+
+Icon: Lucide `lightbulb` 20px, accent-primary
+Title: "Nhan xet tuan nay" — text-title-sm (16px, weight 600), text-primary, mt: 4px
+Body:  Insight text — text-body-md (14px), text-secondary, mt: 8px
+       Max 3 lines, e.g., "Ban da giao dich nhieu hon tuan truoc nhung chua ghi nhat ky..."
+```
+
+### Interaction Rules
+```
+Dimension bar tap   -> Expand with detail tooltip (what contributes to this dimension)
+Weakest CTA tap     -> Navigate to Discover with recommended filter
+Sparkline tap       -> Show tooltip with exact score for that week
+Insight card tap    -> Navigate to related action (contextual)
+Pull down           -> Refresh score data
+```
+
+### States
+```
+Default:       All sections loaded with animated data
+Loading:       Skeleton shimmer for score hero + dimension bars
+No data:       "Giao dich them de xem diem suc khoe" (min 1 week of activity required)
+Error:         Toast: "Khong the tai diem suc khoe. Thu lai sau."
+First week:    Score shown but history sparkline shows single point
+```
+
+### Dev Handoff Specs
+```
+Score data:
+  GET /investment-health-score → {
+    total_score, trend_delta, trend_direction,
+    dimensions: { discipline, diversification, learning, reflection },
+    history: [{ week, score }],  // 12 weeks
+    weakest: { dimension, action_text, cta_link },
+    weekly_insight: string
+  }
+
+Animations:
+  Score roll-up:    CountUp 0 to N, 500ms ease-decelerate
+  Bar fill:         width 0% to N%, 500ms ease-decelerate, 100ms stagger per bar
+  Sparkline:        stroke-dashoffset draw-in, 600ms ease-decelerate
+  Trend arrow:      fade in, 200ms ease-standard
+
+Deep link: paave://health-score
+```
+
+### QA Tests
+```
+[ ] Score displays 0-100 with correct color coding
+[ ] Number roll-up animation plays on mount
+[ ] Trend arrow shows correct direction and delta
+[ ] 4 dimension bars render with correct labels and scores
+[ ] Bars animate fill from 0% to correct width
+[ ] Weakest dimension highlighted in warning card
+[ ] Recommended action text is contextual
+[ ] 12-week sparkline renders with correct data points
+[ ] Current week dot highlighted on sparkline
+[ ] Weekly insight card shows relevant text
+[ ] Pull-to-refresh updates score
+[ ] Loading state shows skeleton shimmer
+[ ] No-data state shown for new users
+[ ] Touch targets meet 44px minimum
+```
+
+---
+
+## Screen 41 — Monthly DNA Card
+
+### Screen Overview
+```
+Screen: Monthly DNA Card
+User:   All authenticated users with at least 1 month of activity
+Goal:   Generate and display a shareable card summarizing the user's investment personality for the month
+Refs:   FR-CARD-01
+```
+
+### Layout
+```
+Background: bg-primary (#0D1117)
+Header:     Screen Header with back button + "DNA Dau tu thang nay" title
+Main:       Full-screen preview of shareable card + share CTA
+Bottom nav: Visible
+```
+
+### Main Content
+
+**Section 1 — Card Preview**
+```
+Container: centered, width: 280px (1080x1920 aspect ratio at preview scale)
+           height: 498px (maintains 9:16 ratio)
+           bg-card (#1F2937), radius-xl (24px)
+           Shadow: shadow-card-raised
+           overflow: hidden
+
+Card inner padding: space-4 (16px) all sides
+
+--- Card Content (top to bottom) ---
+
+Paave logo (top-left):
+  Logo mark: 24x24px, opacity: 0.6
+  "Paave" wordmark: text-caption (12px, weight 700), text-secondary
+
+Month label (top-right):
+  "Thang 4, 2026" — text-caption-bold (12px), text-secondary
+
+Investment style badge (centered, mt: 24px):
+  Badge container: px: 16px, py: 8px, radius-full
+  Background: tier-color-coded (varies by style)
+  Text: style name — text-body-md (14px, weight 700), #FFFFFF
+
+  Styles and colors:
+    "Value"     — tier-2-color (#3B82F6)
+    "Growth"    — positive (#10B981)
+    "Momentum"  — warning (#F59E0B)
+    "Defensive" — accent-secondary (#06B6D4)
+    "Active"    — tier-5-color (#8B5CF6)
+
+Style label (mt: 8px, centered):
+  "Phong cach dau tu cua ban" — text-caption (12px), text-secondary
+
+Key stats grid (mt: 20px):
+  2 columns x 2 rows, gap: 12px
+
+  Each stat cell:
+    Container: bg-secondary (#161B22), radius-md (12px), padding: space-3 (12px)
+    Value:     text-title-md (18px, weight 700), text-primary
+    Label:     text-caption (12px), text-secondary, mt: 4px
+
+  Cells:
+    [0,0] Return:       "+12.5%" (color-coded positive/negative)
+                        "Loi nhuan vs VN-Index"
+    [0,1] Trades:       "23"
+                        "So lenh giao dich"
+    [1,0] Avg hold:     "8.5 ngay"
+                        "Thoi gian giu TB"
+    [1,1] Win rate:     "65%"
+                        "Ti le thang"
+
+Best trade highlight (mt: 16px):
+  Container: bg-secondary (#161B22), radius-md (12px), padding: space-3
+  Row (flex-row, align-center, gap: 8px):
+    Trophy icon: 16px, warning (#F59E0B)
+    "Giao dich tot nhat:" — text-caption (12px), text-secondary
+  Value (mt: 4px):
+    "VCB +18.2%" — text-body-md (14px, weight 700), positive
+
+Behavioral insight (mt: 12px, centered):
+  "Ban co xu huong giu co phieu lau hon trung binh"
+  text-body-sm (13px), text-secondary, italic, text-align: center
+  Max 1 line (truncate with ellipsis if needed)
+
+Community rank (mt: 16px, centered):
+  "Top 15%" — text-title-sm (16px, weight 700), accent-primary
+  "trong cong dong Paave" — text-caption (12px), text-secondary
+  Horizontal rank bar: accent-primary fill, bg-secondary track
+  Width: 80%, height: 6px, radius-full, centered
+```
+
+**Section 2 — Share CTA**
+```
+Below card preview, mt: 24px
+
+Primary CTA:
+  "Chia se" — Primary Button, full-width (343px), height: 52px
+  Icon: Lucide `share-2` 20px, left of text, gap: 8px
+  Tap: opens native share sheet with pre-rendered 1080x1920 image
+
+Secondary CTA (mt: 12px, centered):
+  "Luu anh" — text-body-sm (13px, weight 600), accent-primary
+  Touch area: 44px min height
+  Saves card image to device gallery
+```
+
+### Interaction Rules
+```
+"Chia se" tap     -> Render card at 1080x1920, open native share sheet
+                     Targets: Zalo, KakaoTalk, Instagram Stories, general share
+"Luu anh" tap     -> Save 1080x1920 image to device gallery
+                     Toast: "Da luu anh vao thu vien"
+Card tap          -> No action (preview only)
+Pull down         -> Refresh card data
+```
+
+### States
+```
+Default:     Card preview with current month data
+Loading:     Skeleton shimmer for card preview area
+No data:     "Giao dich it nhat 1 thang de nhan DNA Card" (need 1 full month)
+Error:       Toast: "Khong the tao DNA Card. Thu lai sau."
+Shared:      Toast: "Da chia se!" after successful share
+```
+
+### Edge Cases
+```
+First month (insufficient data):   "Can them du lieu de tao DNA Card" placeholder
+Mid-month access:                  Shows current month progress with "(chua hoan tat)" label
+No trades in month:                "Khong co giao dich trong thang nay" with simplified card
+Share fails (no compatible app):   Toast: "Khong the chia se. Anh da luu vao thu vien."
+Very long ticker in best trade:    Truncate with ellipsis at 12 chars
+```
+
+### Dev Handoff Specs
+```
+DNA Card data:
+  GET /dna-card/current → {
+    month, year, style, style_label,
+    stats: { return_pct, vs_index, trade_count, avg_hold_days, win_rate },
+    best_trade: { ticker, return_pct },
+    behavioral_insight: string,
+    community_rank_pct: number
+  }
+
+Card rendering:
+  Use react-native-view-shot or expo-capture to render card view at 1080x1920
+  Save to temp file, then pass to Share API or save to gallery
+  Card must render identically at preview (280x498) and export (1080x1920) sizes
+
+Share:
+  import { Share } from 'react-native'
+  Share.share({ url: tempImagePath, title: 'My Paave DNA Card' })
+
+Deep link: paave://dna-card
+```
+
+### QA Tests
+```
+[ ] Card preview renders at correct 9:16 aspect ratio
+[ ] Investment style badge shows correct style and color
+[ ] Stats grid shows 4 cells with correct data
+[ ] Return percentage is color-coded (positive green, negative red)
+[ ] Best trade highlight shows trophy icon and return
+[ ] Behavioral insight text is max 1 line
+[ ] Community rank percentage and bar render correctly
+[ ] "Chia se" opens native share sheet
+[ ] Shared image is 1080x1920px
+[ ] "Luu anh" saves to gallery with success toast
+[ ] Loading state shows skeleton shimmer
+[ ] No-data state for users with less than 1 month activity
+[ ] Paave logo and month label visible on card
+[ ] Touch targets meet 44px minimum
+```
+
+---
+
+## Screen 42 — Trade Reasoning & Reflection
+
+### Screen Overview
+```
+Screen: Trade Reasoning & Reflection
+User:   All users placing or completing paper trades
+Goal:   Capture trade reasoning before order and prompt reflection after trade outcome
+Refs:   FR-PT-07, FR-PT-08
+```
+
+### Layout
+```
+Part A — Reasoning field (integrated into Order Placement, Screen 23)
+Part B — Post-trade Reflection bottom sheet (triggered after sell completes)
+```
+
+### Part A — Reasoning Field (Order Placement Integration)
+
+> This section describes a new field added to the existing Order Placement screen (Screen 23). It appears below the quantity input and above the "Xem lai lenh" CTA.
+
+```
+Position:  Below quantity input, above CTA, mt: 16px
+Container: full-width within order form (343px)
+
+Reasoning Input component:
+  Uses Reasoning Input component (see components.md)
+  Label:       "Ly do giao dich" — text-label-md (13px, weight 500), text-secondary
+  Placeholder: "Tai sao ban mua/ban co phieu nay?" — text-body-sm (13px), text-tertiary
+  Max chars:   200
+  Counter:     "0/200" — text-caption (12px), text-tertiary, right-aligned
+  Height:      80px (3 lines), expandable to 120px
+  Optional:    "(khong bat buoc)" — text-caption (12px), text-tertiary, inline with label
+
+Behavior:
+  Text persisted with order (stored alongside trade record)
+  Shown in Trade History detail view
+  Used by AI for post-trade reflection (Part B)
+```
+
+### Part B — Post-Trade Reflection Bottom Sheet
+
+> This bottom sheet appears automatically 2 seconds after a full sell (position fully closed) fills. It is a half-sheet (see components 8.1).
+
+```
+Trigger:  Sell order fills AND position quantity reaches 0 (full exit)
+Delay:    2s after fill confirmation
+Type:     Half sheet (see 8.1), slides up from bottom
+
+--- Sheet Content ---
+
+Outcome display (mt: 16px):
+  Container: full-width, bg-secondary (#161B22), radius-md (12px), padding: space-4
+  Row 1 (flex-row, justify-between):
+    Ticker:   "VCB" — text-title-md (18px, weight 600), text-primary
+    P&L:      "+₫1,250,000 (+13.5%)" — text-body-md (14px, weight 700), positive/negative
+  Row 2 (mt: 8px):
+    Hold time: "Giu: 12 ngay" — text-caption (12px), text-secondary
+    Entry/Exit: "Mua: ₫92,500 → Ban: ₫105,000" — text-caption (12px), text-secondary
+
+Q1 — Quick sentiment (mt: 20px):
+  Label: "Cam nhan cua ban ve giao dich nay?" — text-body-md (14px, weight 500), text-primary
+
+  3 buttons (flex-row, gap: 12px, mt: 12px):
+    Each button:
+      Width:  calc((303px - 24px) / 3) = ~93px
+      Height: 44px
+      Radius: radius-md (12px)
+      Border: border (#374151) 1.5px
+
+    Options:
+      "Hai long"    — positive-subtle bg when selected, positive border
+      "Binh thuong" — neutral bg when selected, neutral border
+      "Hoi tiec"    — negative-subtle bg when selected, negative border
+
+    Single selection (radio behavior)
+
+Q2 — Lesson learned (mt: 16px):
+  Label:       "Ban hoc duoc gi?" — text-body-md (14px, weight 500), text-primary
+  Input:       text-body-sm (13px), text-primary
+  Placeholder: "Viet mot cau ve bai hoc rut ra..."
+  Max chars:   200
+  Height:      64px (2 lines)
+  Border:      border (#374151) 1.5px, radius-md (12px)
+  Focus:       border-focus (#3B82F6)
+
+Lesson link (mt: 12px):
+  "Bai hoc lien quan: Khi nao nen chot loi?" — text-body-sm (13px), accent-primary
+  Lucide `book-open` 14px, accent-primary, left of text
+  Touch area: 44px min height
+  Navigates to relevant lesson in curriculum
+
+Submit CTA (mt: 20px):
+  "Luu phan anh" — Primary Button, full-width
+  Disabled until Q1 answered (Q2 is optional)
+
+Skip link (mt: 12px, centered):
+  "Bo qua" — text-body-sm (13px, weight 500), text-secondary
+  Touch area: 44px min height
+  Dismisses sheet without saving
+```
+
+### Interaction Rules
+```
+Q1 button tap     -> Select sentiment (single selection, highlight)
+Q2 text input     -> Optional free-text response
+Lesson link tap   -> Navigate to lesson (sheet remains open, push underneath)
+"Luu phan anh"    -> Save reflection, dismiss sheet, award IHS points
+                     Toast: "+10 diem suc khoe dau tu"
+"Bo qua"          -> Dismiss sheet without saving
+Drag down         -> Same as "Bo qua"
+Backdrop tap      -> Same as "Bo qua"
+```
+
+### States
+```
+Default:    Outcome visible, Q1 buttons unselected, Q2 empty
+Q1 selected: One sentiment button highlighted, submit enabled
+Submitted:  Sheet dismisses with slide-down, toast appears
+Skipped:    Sheet dismisses, no toast, no points
+Loading:    Submit CTA shows spinner during save
+Error:      Toast: "Khong the luu. Thu lai sau." Sheet stays open.
+```
+
+### Edge Cases
+```
+Partial sell (not full exit):     Reflection NOT triggered (only on full position close)
+Multiple sells in quick succession: Queue reflections, show one at a time
+User force-closes during reflection: Reflection data lost, not re-shown
+Trade had no reasoning (Part A):   Reflection still shown, reasoning field empty in outcome
+Network error on save:             Toast error, sheet stays open for retry
+Lesson link navigation:            Sheet preserved in background, shown on return
+```
+
+### Dev Handoff Specs
+```
+Reasoning save (Part A):
+  Included in POST /paper-trade/order body: { ...order, reasoning?: string }
+  Max 200 chars, sanitized server-side
+
+Reflection save (Part B):
+  POST /paper-trade/{trade_id}/reflection {
+    sentiment: 'satisfied' | 'neutral' | 'regret',
+    lesson?: string,  // max 200 chars
+  }
+  On 200: +10 IHS points awarded, journal entry created server-side
+
+Lesson recommendation:
+  GET /paper-trade/{trade_id}/related-lesson → { lesson_id, title, url }
+  Contextual based on trade outcome + stock sector
+
+Trigger logic:
+  After sell fill event where remaining_quantity === 0
+  setTimeout(showReflectionSheet, 2000)
+  Only once per full-exit trade
+
+Animations:
+  Sheet open:       standard half-sheet (350ms ease-decelerate)
+  Outcome fade-in:  opacity 0 to 1, 200ms ease-standard
+  Q1 button select: background-color transition, 150ms ease-standard
+  Submit:           sheet slide-down, 300ms ease-accelerate
+```
+
+### QA Tests
+```
+[ ] Part A: Reasoning field appears on Order Placement screen below quantity
+[ ] Part A: Placeholder text "Tai sao ban mua/ban co phieu nay?"
+[ ] Part A: Character counter shows X/200
+[ ] Part A: Field is optional (order submits without it)
+[ ] Part B: Reflection sheet appears 2s after full sell completes
+[ ] Part B: Outcome shows ticker, P&L, hold time, entry/exit prices
+[ ] Part B: P&L is color-coded (positive green, negative red)
+[ ] Part B: Q1 has 3 sentiment buttons, single selection
+[ ] Part B: Q2 text input accepts up to 200 chars
+[ ] Part B: Lesson link navigates to curriculum
+[ ] Part B: "Luu phan anh" disabled until Q1 answered
+[ ] Part B: Submit awards +10 IHS points with toast
+[ ] Part B: "Bo qua" dismisses without saving
+[ ] Part B: Sheet not triggered for partial sells
+[ ] Part B: Touch targets meet 44px minimum
+[ ] Part B: Drag-to-dismiss works as skip
+```
+
+---
+
+*End of Screen Specifications — Paave V2 (Screens 1–42)*

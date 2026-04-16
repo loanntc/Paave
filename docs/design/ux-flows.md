@@ -92,6 +92,20 @@ App Root
     │   ├── Pre-Trade AI Card (collapsible)
     │   ├── Order Confirmation
     │   └── Post-Trade AI Card (bottom sheet)
+    ├── First Trade Guided (Screen 37, post-onboarding, no nav)
+    │   └── → Portfolio (on success)
+    ├── Daily Challenge (Screen 38, from Home or notification)
+    │   └── → Stock Detail (sparkline tap)
+    ├── Stock Ticker Daily Puzzle (Screen 39, from Home or Discover)
+    │   └── → Stock Detail (stock link tap)
+    ├── Investment Health Score Dashboard (Screen 40, from Profile or Home)
+    │   └── → Discover (weakest dimension CTA)
+    ├── Monthly DNA Card (Screen 41, from Profile)
+    │   └── → Native share sheet (share CTA)
+    ├── Trade Reflection (Screen 42)
+    │   ├── Part A: Reasoning field (inline in Order Placement)
+    │   └── Part B: Reflection bottom sheet (after full sell)
+    │       └── → Lesson Detail (lesson link tap)
     └── Milestone Celebration Overlay (modal, any screen)
 ```
 
@@ -118,6 +132,12 @@ Login        → [2FA required]      → 2FA OTP Verification (push, per FR-07D)
 Welcome      → [Social login tap]  → OAuth popup (native) → DOB / Home / Link Prompt
 Social OAuth → [Email conflict]    → Account Link Prompt (bottom sheet, half-height)
 Age Upgrade  → [On login at 18]    → Age Upgrade Modal (full-screen modal)
+Home         → [Daily Challenge]    → Daily Challenge screen (push)
+Home         → [Puzzle card]        → Stock Ticker Puzzle (push)
+Notification → [Challenge notify]   → Daily Challenge screen (push, deep link)
+Profile      → [IHS card]           → IHS Dashboard (push)
+Profile      → [DNA card]           → Monthly DNA Card (push)
+Sell fill    → [Full exit, 2s]      → Reflection Bottom Sheet (half sheet, auto)
 ```
 
 ---
@@ -1193,6 +1213,257 @@ App killed during 2FA:     partial_token expires after 5min
 
 ---
 
+### Journey 18: First Trade Guided Experience
+
+> New user completes onboarding and is guided through their very first paper trade with zero friction. Pre-selected stock, one-tap buy, instant portfolio confirmation.
+
+```
+Step 1  → Onboarding complete (registration Step 10 finished, per FR-ONBOARD-01)
+            → Account created, virtual portfolio initialized (500M VND, per FR-PT-01)
+            → If user has zero trade history → navigate to First Trade Guided screen (Screen 37)
+            → If user already has holdings (e.g., returning user) → skip to Home Dashboard
+
+Step 2  → First Trade Guided screen loads (full-screen, no bottom nav)
+            → Balance display animates: "Ban co 500 trieu VND de dau tu ao"
+            → Number roll-up animation from 0 to 500,000,000 (500ms ease-decelerate)
+            → Virtual Funds Banner visible: "Tien ao — Khong su dung tien that"
+
+Step 3  → Pre-selected stock card displayed
+            → VCB (Vietcombank) shown as recommended first stock
+            → Price, company name, and logo visible
+            → Pre-filled quantity: 100 shares
+            → Estimated total shown below
+
+Step 4  → User taps "Mua ngay" one-tap CTA
+            → CTA enters loading state (spinner)
+            → Order placed via quick-buy API (per FR-PT-02)
+            → Order fills at current price snapshot
+
+Step 5  → Success animation plays
+            → 3 mini stock cards fly from center to portfolio position
+            → Confetti particles (20, accent-primary + positive colors, 1200ms)
+            → Haptic feedback (medium impact)
+            → Check icon scales in (0 to 1, 300ms ease-spring)
+
+Step 6  → Confirmation screen
+            → Title: "Chuc mung!"
+            → Subtitle: "Day la co phieu dau tien trong portfolio cua ban"
+            → CTA: "Xem danh muc" → navigates to Portfolio tab
+
+Step 7  → Portfolio tab loads (fade replace stack)
+            → VCB holding visible in Holdings List
+            → Virtual cash decreased by trade amount
+            → Trade appears in Trade History
+            → First Trade Milestone Celebration fires (per FR-GAME-06)
+            → Confetti + achievement card: "Giao dich dau tien!"
+```
+
+**Flow validation:**
+- Guided experience fires exactly once per user lifetime (zero-trade accounts only).
+- Pre-selected stock (VCB) is the most-traded VN stock — fallback to next most-traded if VCB unavailable.
+- One-tap buy eliminates the full order flow friction for the first trade. Subsequent trades use the standard Order Placement flow (Journey 7).
+- Skip option available ("Bo qua, toi tu kham pha") for users who prefer to explore first.
+- Edge case: API error on quick-buy → toast error, CTA re-enabled, user can retry or skip.
+- Edge case: App killed mid-animation → on reopen, check if trade was filled; if yes, skip to Portfolio.
+
+---
+
+### Journey 19: Daily Habit Loop (Morning to Evening)
+
+> Full-day engagement loop: morning notification triggers Daily Challenge, user answers before market open, waits for result during the day with optional learning/trading, receives result in afternoon with explanation and coins.
+
+```
+Step 1  → 8:45 AM — Morning brief push notification fires (per FR-ENGAGE-01)
+            → Notification: "Thu thach moi! Hom nay VN-Index se tang hay giam?"
+            → Tap → deep link: paave://daily-challenge
+
+Step 2  → App opens → Daily Challenge screen (Screen 38, Phase 1)
+            → Question card visible with 3 answer options
+            → E.g., "VN-Index se dong cua tang hay giam hom nay?"
+            → Options: "Tang hon 0.5%" | "Tang nhe (0-0.5%)" | "Giam"
+            → Countdown timer: "Ket thuc nhan cau tra loi luc 9:05"
+
+Step 3  → User selects an answer option (single selection, radio behavior)
+            → Optional: enters reasoning in text field (max 200 chars)
+            → Taps "Gui cau tra loi"
+            → Toast: "Da gui! Ket qua luc 14:30"
+
+Step 4  → Screen transitions to Phase 2 (Waiting)
+            → "Dang cho ket qua... 14:30" with pulse animation
+            → User's selected answer shown for confirmation
+            → Optional live sparkline of intraday market data
+
+Step 5  → During the day (9:05 AM – 14:30 PM):
+            → User engages with other app features:
+              → Reads a lesson from curriculum → XP +25 (per FR-GAME-01)
+              → Places a paper trade → XP +10
+              → Browses Discover or Markets
+            → Daily Challenge remains in Phase 2 if revisited
+
+Step 6  → 2:35 PM — Result push notification fires
+            → Notification: "Ket qua thu thach da co! Xem ngay"
+            → Tap → deep link: paave://daily-challenge
+
+Step 7  → Daily Challenge screen (Screen 38, Phase 3)
+            → Result badge: "Chinh xac!" (positive) or "Chua chinh xac" (negative)
+            → Actual result displayed: "VN-Index +1.23% (1,285.50)"
+            → Explanation card: 100-150 word analysis of why the market moved
+            → Source attribution: "Dua tren du lieu HoSE"
+
+Step 8  → Coins awarded
+            → Correct answer: +15 coins
+            → Incorrect answer: +5 coins (participation reward)
+            → Community comparison: "42% nguoi dung cung tra loi chinh xac"
+            → Coins added to user's balance with number roll-up animation
+```
+
+**Flow validation:**
+- Morning notification fires at 8:45 AM (ICT, UTC+7) to give 20 minutes before 9:05 cutoff.
+- Answer deadline (9:05 AM) is 5 minutes after VN market open — ensures prediction is meaningful.
+- Result available at 14:30 PM (near VN market close at 14:45 PM for HOSE).
+- Participation reward (+5 coins for wrong answer) maintains engagement even on incorrect predictions.
+- Edge case: User opens after 9:05 without answering → "Missed" state, can still view result at 14:30.
+- Edge case: User opens after 14:30 without answering → "Missed" state, can view result and explanation but no coins.
+- Edge case: Notification permission denied → challenge still accessible from Home challenge card.
+- Timezone: All times are ICT (UTC+7). Users in other timezones see adjusted local times with VN market context.
+
+---
+
+### Journey 20: Learning Loop (Lesson to Trade)
+
+> User opens the curriculum, completes a lesson with quiz, earns coins, then applies knowledge by paper trading the relevant stock.
+
+```
+Step 1  → User navigates to curriculum
+            → Access from: Home learning card, Profile > Gamification, or Discover section
+            → Curriculum screen shows lesson modules organized by topic
+            → Each module shows: title, difficulty, estimated read time, completion status
+
+Step 2  → User selects a lesson
+            → Push transition to Lesson Detail screen
+            → Lesson content: 300-500 words of educational text
+            → Topics: fundamental analysis, technical indicators, risk management, etc.
+            → Content includes inline financial term tooltips (per FR-EDU-01)
+            → Progress bar at top shows read progress
+
+Step 3  → User reaches end of lesson content
+            → "Kiem tra kien thuc" (Knowledge Check) section appears
+            → Quiz: 3-5 multiple choice questions
+            → Each question: question text + 4 answer options
+            → Answers selectable one at a time, CTA "Tiep theo" to advance
+
+Step 4  → User completes quiz
+            → Score calculated: correct answers / total questions
+            → Pass threshold: >=3/5 (60%)
+
+            --- Path A: Pass (>=3/5) ---
+Step 5a → Celebration micro-animation (scale-up badge, 300ms ease-spring)
+            → "Chuc mung! Ban dat X/5" — positive badge
+            → Coins earned: +25 coins (per FR-GAME-01)
+            → XP earned: +25 XP
+            → Lesson marked as completed in curriculum
+
+            --- Path B: Fail (<3/5) ---
+Step 5b → "Chua dat. Ban dat X/5" — neutral badge
+            → "Thu lai" CTA to retake quiz
+            → No coins/XP awarded on fail
+            → Lesson remains incomplete
+
+Step 6  → After passing, "Apply to portfolio" prompt appears
+            → Card: "Ap dung kien thuc — Xem co phieu lien quan?"
+            → Contextual stock suggestion based on lesson topic
+            → E.g., lesson about banking sector → suggests VCB, BID, CTG
+            → CTA: "Xem [TICKER]" → navigates to Stock Detail
+
+Step 7  → User on Stock Detail screen
+            → Standard Stock Detail with price, chart, stats
+            → "Giao dich thu" CTA visible
+            → User taps "Giao dich thu" → Order Placement (Journey 7)
+
+Step 8  → User places paper trade
+            → Reasoning field (Screen 42, Part A) pre-populated with lesson reference
+            → E.g., "Ap dung bai hoc: Phan tich co ban nganh ngan hang"
+            → Trade fills → XP +10 → portfolio updated
+```
+
+**Flow validation:**
+- Lesson length (300-500 words) keeps completion time under 3 minutes — designed for mobile reading.
+- Quiz pass threshold (3/5) is achievable but requires attention to lesson content.
+- "Apply to portfolio" prompt is the key bridge from learning to action — makes knowledge immediately actionable.
+- Stock suggestions are contextual to lesson topic, not random.
+- Edge case: Quiz retake allowed unlimited times — no lockout.
+- Edge case: User skips "Apply to portfolio" prompt → prompt dismissed, no penalty.
+- Edge case: Suggested stock not available (halted/delisted) → fallback to sector index or next related stock.
+- Edge case: Lesson completed but quiz not taken → lesson marked "In progress", no XP/coins until quiz passed.
+
+---
+
+### Journey 21: Reflection Loop (Sell to Learn)
+
+> User sells a full position, receives post-trade AI analysis, completes reflection, earns IHS points, and is linked to a relevant lesson.
+
+```
+Step 1  → User on Portfolio tab, taps a holding → Stock Detail
+            → Views current position: quantity, avg cost, unrealized P&L
+            → Decides to sell → taps "Giao dich thu" → Order Placement (Screen 23)
+
+Step 2  → Order Placement screen (Sell mode)
+            → Toggle: "Ban" (Sell) selected
+            → Quantity: full position (e.g., 100 shares VCB)
+            → Reasoning field (Screen 42, Part A): "Tai sao ban ban co phieu nay?"
+            → User enters reasoning (optional, max 200 chars)
+            → Taps "Xem lai lenh" → confirmation → "Xac nhan lenh"
+
+Step 3  → Sell order fills
+            → Toast: "Lenh da khop! Ban X co phieu [TICKER]"
+            → XP +10 awarded
+            → Post-Trade AI Card appears (per FR-AI-01)
+              → "Chuyen gi da xay ra" / "Tai sao" / "Can theo doi gi"
+            → User reads AI analysis → rates with thumbs up/down
+
+Step 4  → 2 seconds after sell fill → Post-Trade Reflection bottom sheet appears (Screen 42, Part B)
+            → Outcome display: Ticker, P&L amount + percentage, hold time, entry/exit prices
+            → P&L color-coded (positive green, negative red)
+
+Step 5  → Q1: "Cam nhan cua ban ve giao dich nay?"
+            → User taps one of 3 sentiment buttons: "Hai long" / "Binh thuong" / "Hoi tiec"
+            → Single selection (radio behavior)
+
+Step 6  → Q2: "Ban hoc duoc gi?"
+            → User types free-text reflection (optional, max 200 chars)
+            → E.g., "Nen dat stop-loss som hon, da giu qua lau khi xu huong giam"
+
+Step 7  → User taps "Luu phan anh"
+            → Reflection saved → toast: "+10 diem suc khoe dau tu"
+            → IHS score updated: +10 points to Reflection dimension (per FR-SCORE-01)
+            → Journal entry auto-created with trade data + reasoning + reflection
+
+Step 8  → Lesson link shown in sheet before dismiss:
+            → "Bai hoc lien quan: Khi nao nen chot loi?"
+            → Contextual based on trade outcome (profitable exit → "profit taking" lesson,
+               losing exit → "stop-loss strategy" lesson)
+            → Tap → navigates to Lesson Detail (curriculum)
+
+Step 9  → Sheet dismisses → user returns to Portfolio tab
+            → Holding removed from list (full position sold)
+            → Trade recorded in Trade History with reasoning + reflection metadata
+            → IHS dashboard (Screen 40) shows updated Reflection score
+```
+
+**Flow validation:**
+- Reflection triggers only on full position close (remaining_quantity === 0). Partial sells do not trigger.
+- 2-second delay after sell fill gives user time to process the AI card before reflection prompt.
+- Q1 is required for submit; Q2 is optional — minimizes friction while capturing key sentiment data.
+- +10 IHS points per reflection incentivizes the habit of post-trade analysis.
+- Journal entry auto-creation means the user doesn't need a separate journaling step.
+- Lesson link creates a closed loop: trade → reflect → learn → trade better next time.
+- Edge case: User taps "Bo qua" → no reflection saved, no IHS points, no journal entry.
+- Edge case: Multiple full sells in quick succession → reflections queued, shown one at a time.
+- Edge case: Network error during save → toast error, sheet stays open, user can retry.
+- Edge case: Lesson linked is one the user already completed → still shown (reinforcement is valuable).
+
+---
+
 ## 3. Error / Offline Flows
 
 ### Offline State Flow
@@ -1281,6 +1552,19 @@ Empty Alerts (Profile > Alerts) →
 | 2FA OTP (success) | Home | Fade (replace stack) | — |
 | 2FA OTP (cancel) | Welcome | Fade (replace stack) | — |
 | 2FA OTP (expired) | Login | Fade (replace stack) | — |
+| Onboarding complete (zero trades) | First Trade Guided (Screen 37) | Fade (replace stack) | -- |
+| First Trade Guided | Portfolio | Fade (replace stack) | -- |
+| First Trade Guided (skip) | Home | Fade (replace stack) | -- |
+| Home / Notification | Daily Challenge (Screen 38) | Push (slide left) | Left to Right |
+| Daily Challenge | Back | Pop (slide right) | Right to Left |
+| Home / Discover | Daily Puzzle (Screen 39) | Push (slide left) | Left to Right |
+| Daily Puzzle | Stock Detail (stock link tap) | Push (slide left) | Left to Right |
+| Profile / Home | IHS Dashboard (Screen 40) | Push (slide left) | Left to Right |
+| IHS Dashboard | Discover (weakest CTA) | Tab switch (fade) | -- |
+| Profile | DNA Card (Screen 41) | Push (slide left) | Left to Right |
+| DNA Card | Share Sheet (native) | Native share sheet | -- |
+| Sell fill (full exit) | Reflection Sheet (Screen 42B) | Slide up (half sheet) | Bottom to Top |
+| Reflection Sheet | Lesson Detail (link tap) | Push (slide left) | Left to Right |
 | Any sheet | Dismiss | Slide down | Top → Bottom |
 
 ---
@@ -1308,6 +1592,11 @@ paave://auth/2fa                  → 2FA OTP Verification screen
 paave://health-check              → Portfolio Health Check report
 paave://challenge                 → Current Weekly Challenge detail
 paave://milestone/{id}            → Milestone Achievement card
+paave://first-trade               → First Trade Guided Experience (Screen 37)
+paave://daily-challenge            → Daily Challenge (Screen 38, current phase)
+paave://daily-puzzle               → Stock Ticker Daily Puzzle (Screen 39)
+paave://health-score               → Investment Health Score Dashboard (Screen 40)
+paave://dna-card                   → Monthly DNA Card (Screen 41)
 ```
 
 ---
@@ -1331,6 +1620,14 @@ paave://milestone/{id}            → Milestone Achievement card
 | Tap | Thumbs up/down on AI card | Submit rating |
 | Back gesture (iOS) | Any pushed screen | Pop back |
 | Back gesture (iOS) | Order placement (during pre-trade card) | Cancel order |
+| Tap | Challenge option pill | Select answer (single, radio) |
+| Tap | Puzzle hint reveal link | Show next hint |
+| Tap | Puzzle grid cell | Select ticker + auto-submit |
+| Tap | IHS dimension bar | Show dimension detail tooltip |
+| Tap | IHS sparkline data point | Show week score tooltip |
+| Tap | DNA Card share CTA | Open native share sheet |
+| Tap | Reflection Q1 button | Select sentiment (single, radio) |
+| Swipe down | Reflection sheet | Dismiss (same as skip) |
 | Double tap | Chart area | Reset zoom |
 | Pinch | Chart area | Zoom in/out (V2: read-only) |
 
@@ -1359,6 +1656,13 @@ Investment disclaimer state:  Per screen type per session (reset on new session 
 Post creation draft:          Not persisted — lost if sheet closed before publish
 Notification preferences:     Persisted on user profile (per FR-52)
 Trader Score / Tier:          Persisted server-side; tier only increases (per BR-25)
+First Trade Guided shown:     Persisted permanently; fires once for zero-trade accounts only
+Daily Challenge answer:       Persisted server-side per day; no re-answer after submit
+Daily Puzzle played:          Persisted server-side per day; result viewable after play
+IHS score history:            Persisted server-side; 12-week rolling window
+DNA Card monthly data:        Computed server-side; one card per calendar month
+Trade reasoning (Part A):     Persisted with trade record server-side
+Reflection data (Part B):     Persisted with trade record server-side; IHS points awarded once
 ```
 
 ---
