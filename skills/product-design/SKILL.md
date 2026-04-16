@@ -7,7 +7,15 @@ The clarification workshop is **mandatory BEFORE design** to prevent requirement
 
 ---
 
-# 🧠 DESIGN PRINCIPLE (NON-NEGOTIABLE)
+# 🧠 DESIGN PRINCIPLES (NON-NEGOTIABLE)
+
+> **Simple, logical, and intuitive to use — without compromising security.**
+
+This is the north star for every design decision. Every screen, flow, and interaction must be:
+- **Simple** — minimum steps, minimum cognitive load, one primary action per screen
+- **Logical** — flows follow user mental models, navigation is predictable, state transitions are clear
+- **Intuitive** — zero learning curve for core actions, affordances are obvious, no hidden functionality
+- **Secure** — biometric auth, encrypted data, age gating, disclaimers — security is built into the UX, never bolted on as friction
 
 > No UI is created until business + logic + UX are aligned.
 
@@ -283,6 +291,7 @@ Run the Final Delivery Checklist. If any box is unchecked → resolve before del
 
 > Design is not UI.
 > Design is alignment → flow → structure → behavior.
+> Simple, logical, and intuitive to use — without compromising security.
 
 ---
 
