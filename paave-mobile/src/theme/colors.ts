@@ -1,26 +1,33 @@
 /**
  * Paave Design System — Color Tokens
- * Source: design-system.md Section 2
- * Dark-mode-first palette
+ * Updated to match Figma v2 reference (energetic navy + periwinkle palette)
  */
 
 export const Colors = {
   bg: {
-    primary: '#0D1117',
-    secondary: '#161B22',
-    card: '#1F2937',
-    cardHover: '#263244',
+    primary: '#0B1326',    // deep navy (was #0D1117)
+    secondary: '#0F1829',
+    card: '#222A3D',       // blue-tinted dark (was #1F2937)
+    cardDeep: '#131B2E',   // deeper card (T&C sections, social bg)
+    cardHover: '#2D3449',
     overlay: 'rgba(0,0,0,0.60)',
-    skeleton: '#1F2937',
-    skeletonShine: '#2D3748',
+    skeleton: '#222A3D',
+    skeletonShine: '#2D3449',
   },
 
   accent: {
-    primary: '#3B82F6',
-    primaryHover: '#2563EB',
-    primarySubtle: 'rgba(59,130,246,0.15)',
-    secondary: '#06B6D4',
-    secondarySubtle: 'rgba(6,182,212,0.15)',
+    // Periwinkle family — matches reference gradient
+    primary: '#ADC6FF',            // periwinkle (text/icon accent)
+    primaryDeep: '#4D8EFF',        // deep blue (gradient end)
+    primaryHover: '#4D8EFF',
+    primarySubtle: 'rgba(173,198,255,0.10)',
+    // Gradient for CTA buttons — 168° from light to deep
+    ctaGradientStart: '#ADC6FF',
+    ctaGradientEnd: '#4D8EFF',
+    ctaText: '#002E6A',            // dark navy text on gradient button
+    // Cyan accent for step badges, timers
+    cyan: '#4CD7F6',
+    cyanSubtle: 'rgba(76,215,246,0.10)',
   },
 
   semantic: {
@@ -28,25 +35,26 @@ export const Colors = {
     positiveSubtle: 'rgba(16,185,129,0.15)',
     negative: '#EF4444',
     negativeSubtle: 'rgba(239,68,68,0.15)',
-    neutral: '#9CA3AF',
+    neutral: '#C2C6D6',
     warning: '#F59E0B',
     warningSubtle: 'rgba(245,158,11,0.15)',
   },
 
   text: {
-    primary: '#F9FAFB',
-    secondary: '#9CA3AF',
-    tertiary: '#6B7280',
-    inverse: '#0D1117',
-    accent: '#3B82F6',
+    primary: '#DAE2FD',    // blue-tinted white (was #F9FAFB)
+    secondary: '#C2C6D6',  // muted blue-grey (was #9CA3AF)
+    tertiary: '#424754',   // label/hint (was #6B7280)
+    inverse: '#002E6A',    // dark navy — on gradient buttons
+    accent: '#ADC6FF',     // periwinkle links
+    accentCyan: '#4CD7F6', // cyan step badges
     positive: '#10B981',
     negative: '#EF4444',
   },
 
   border: {
-    default: '#374151',
-    subtle: '#1F2937',
-    focus: '#3B82F6',
+    default: '#2D3449',    // (was #374151)
+    subtle: '#222A3D',
+    focus: '#ADC6FF',      // periwinkle focus ring
     error: '#EF4444',
   },
 
@@ -58,8 +66,8 @@ export const Colors = {
 
   tier: {
     t1: '#10B981',
-    t2: '#3B82F6',
-    t3: '#06B6D4',
+    t2: '#ADC6FF',
+    t3: '#4CD7F6',
     t4: '#F59E0B',
     t5: '#8B5CF6',
     t6: '#EF4444',
@@ -68,30 +76,29 @@ export const Colors = {
   sentiment: {
     bull: '#10B981',
     bear: '#EF4444',
-    neutral: '#9CA3AF',
+    neutral: '#C2C6D6',
     bullBg: 'rgba(16,185,129,0.15)',
     bearBg: 'rgba(239,68,68,0.15)',
-    neutralBg: 'rgba(156,163,175,0.15)',
+    neutralBg: 'rgba(194,198,214,0.15)',
   },
 
-  /** Gamification extras */
   xp: {
-    barFill: '#3B82F6',
-    barTrack: '#1F2937',
+    barFill: '#ADC6FF',
+    barTrack: '#222A3D',
   },
 
   streak: {
     active: '#F59E0B',
-    frozen: '#06B6D4',
+    frozen: '#4CD7F6',
   },
 
   chat: {
-    userBg: '#3B82F6',
-    userText: '#FFFFFF',
-    aiBg: '#1F2937',
-    aiText: '#F9FAFB',
-    disclaimerBg: 'rgba(107,114,128,0.1)',
-    sourceText: '#9CA3AF',
+    userBg: '#ADC6FF',
+    userText: '#002E6A',
+    aiBg: '#222A3D',
+    aiText: '#DAE2FD',
+    disclaimerBg: 'rgba(66,71,84,0.1)',
+    sourceText: '#C2C6D6',
   },
 } as const;
 
