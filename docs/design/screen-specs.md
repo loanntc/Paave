@@ -7,6 +7,331 @@
 
 ---
 
+## Screen 0a — Register (Sign Up)
+
+### Screen Overview
+```
+Screen: Register
+User:   New user creating an account
+Goal:   Create account via email/password or social login, then route to Onboarding
+Trigger: "Đăng ký" from Splash or "Đăng ký ngay" from Login
+```
+
+### Layout
+```
+Header:     Status bar + decorative glow (no nav bar)
+Main:       Scrollable — logo, heading, form fields, social login
+Bottom:     "Đã có tài khoản? Đăng nhập" link
+```
+
+### Decorative Header
+```
+Height:     200px
+Element:    Elliptical gradient glow, accent-primary, opacity 0.15
+            centered-x, top: -40px, 300×200px
+            Creates subtle branded atmosphere without occupying usable space
+```
+
+### Logo + Heading
+```
+Logo:       48×48px, radius-full, gradient-accent-glow bg, "P" monogram 24px white
+            x: 25px, y: 68px
+
+Title:      "Tạo tài khoản" — text-display-md (28px, weight 800), text-primary
+            x: 25px, y: 132px
+
+Subtitle:   "Bắt đầu hành trình đầu tư cùng Paave"
+            text-body-md (14px), text-secondary
+            x: 25px, y: 168px
+```
+
+### Form Fields
+```
+All fields: mx: 25px, width: 343px
+
+Field 1 — Email (mt: 32px from subtitle):
+  Label:      "Email" — text-body-sm (13px, weight 500), text-secondary, mb: 8px
+  Input:
+    Height:   56px
+    Width:    343px
+    Background: bg-card (#1F2937)
+    Border:   border (#30363D) 1px, radius-md (12px)
+    Focus:    border-focus (#3B82F6) 2px
+    Padding:  horizontal 16px
+    Placeholder: "you@example.com" — text-tertiary, 16px
+    Text:     text-primary, 16px
+    Keyboard: email-address
+
+Field 2 — Password (mt: 16px):
+  Label:      "Mật khẩu" — same style as Email label
+  Input:      Same style as Email
+    Placeholder: "Tối thiểu 8 ký tự"
+    Keyboard: default, secureTextEntry
+    Right icon: eye/eye-off toggle, 20px, text-secondary, 44×44px touch
+
+Field 3 — Confirm Password (mt: 16px):
+  Label:      "Xác nhận mật khẩu"
+  Input:      Same style
+    Placeholder: "Nhập lại mật khẩu"
+    Keyboard: default, secureTextEntry
+
+Password requirements hint (below confirm field, mt: 8px):
+  "≥ 8 ký tự, gồm chữ và số"
+  text-caption (12px), text-tertiary
+```
+
+### Terms Checkbox
+```
+mt: 20px, mx: 25px
+
+Row:
+  Checkbox: 20×20px, radius-sm (4px), border 1.5px
+    Unchecked: bg-card, border
+    Checked: accent-primary bg, white checkmark icon 12px
+  Text (ml: 8px):
+    "Tôi đồng ý với " + "Điều khoản" (accent-primary, underline) + " và " + "Chính sách bảo mật" (accent-primary, underline)
+    text-body-sm (13px), text-secondary
+```
+
+### Register CTA
+```
+mt: 24px, mx: 25px
+
+Button:
+  Width:    343px
+  Height:   52px
+  Radius:   radius-lg (16px)
+  Enabled:  accent-primary bg, #FFFFFF text, "Tạo tài khoản"
+  Disabled: bg-card, text-tertiary (when form incomplete or terms unchecked)
+  Text:     16px, weight 700
+```
+
+### Divider
+```
+mt: 24px, mx: 25px
+
+Row:  Line — "hoặc" — Line
+Line: flex-1, height 1px, border-subtle
+Text: "hoặc" — text-caption (12px), text-secondary, mx: 16px
+```
+
+### Social Login Buttons
+```
+mt: 24px, mx: 25px, gap: 12px
+
+Google button:
+  Width:    343px
+  Height:   52px
+  Background: bg-card
+  Border:   border 1px, radius-lg (16px)
+  Content:  Google "G" icon 20px + "Tiếp tục với Google" text-body-md (14px, weight 500), text-primary
+  Gap:      12px between icon and text
+
+Apple button:
+  Same dimensions and style
+  Content:  Apple  icon 20px + "Tiếp tục với Apple"
+```
+
+### Bottom Link
+```
+Position: bottom: 32px + safe-area, centered
+Text:     "Đã có tài khoản? " (text-secondary) + "Đăng nhập" (accent-primary, weight 600)
+          text-body-sm (13px)
+Tap → navigate to Login screen
+```
+
+### Interaction Rules
+```
+Email field:       validate email format on blur
+Password field:    show/hide toggle, validate ≥8 chars with letter+number on blur
+Confirm field:     validate matches password on blur
+Terms checkbox:    must be checked to enable CTA
+CTA tap:           POST /auth/register → show loading → on success → Onboarding Step 1
+Google tap:        OAuth flow → on success → Onboarding Step 1 (skip password fields)
+Apple tap:         Apple Sign-In → on success → Onboarding Step 1
+"Đăng nhập" tap:  navigate to Login screen
+```
+
+### States
+```
+Default:      Empty form, CTA disabled
+Filling:      Fields active, validation feedback on blur
+Valid:        All fields valid + terms checked, CTA enabled
+Loading:      CTA shows spinner, all inputs disabled
+Error:        Field-level red border + error message below field
+              "Email đã được sử dụng" / "Mật khẩu không khớp" / "Mật khẩu quá ngắn"
+Success:      Navigate to Onboarding Step 1
+Network err:  Toast "Không thể kết nối. Thử lại."
+```
+
+### Dev Handoff Specs
+```
+Form validation:    Validate on blur, not on every keystroke
+Password strength:  ≥8 chars + at least 1 letter + 1 number (FR-AUTH-01)
+Email format:       Standard RFC 5322 regex
+Social login:       Google: expo-auth-session or @react-native-google-signin
+                    Apple: @invertase/react-native-apple-authentication
+Error animation:    Shake input (translateX ±4px, 3 cycles, 300ms) + red border
+Keyboard avoidance: KeyboardAvoidingView, behavior: 'padding' (iOS)
+```
+
+### QA Tests
+```
+[ ] CTA disabled until all fields valid + terms checked
+[ ] Email validation error shows on invalid format
+[ ] Password requirements hint visible
+[ ] Password show/hide toggle works
+[ ] Confirm password mismatch error shows
+[ ] Duplicate email error from API displayed
+[ ] Google OAuth flow completes and routes to Onboarding
+[ ] Apple Sign-In flow completes and routes to Onboarding
+[ ] "Đăng nhập" link navigates to Login screen
+[ ] Keyboard avoidance doesn't obscure fields
+[ ] Loading state disables all inputs
+```
+
+---
+
+## Screen 0b — Login (Sign In)
+
+### Screen Overview
+```
+Screen: Login
+User:   Returning user signing in
+Goal:   Authenticate via email/password or social login, route to Home
+Trigger: "Đăng nhập" from Splash or Register
+```
+
+### Layout
+```
+Header:     Status bar + decorative glow
+Main:       Scrollable — logo, heading, form fields, forgot password, social login
+Bottom:     "Chưa có tài khoản? Đăng ký ngay" link
+```
+
+### Decorative Header
+```
+Same as Register screen — elliptical accent-primary glow
+```
+
+### Logo + Heading
+```
+Logo:       Same as Register (48×48px branded logo)
+
+Title:      "Chào mừng trở lại" — text-display-md (28px, weight 800), text-primary
+            x: 25px, y: 132px
+
+Subtitle:   "Đăng nhập để tiếp tục đầu tư"
+            text-body-md (14px), text-secondary
+```
+
+### Form Fields
+```
+All fields: mx: 25px, width: 343px
+
+Field 1 — Email (mt: 40px from subtitle):
+  Label:      "Email" — text-body-sm (13px, weight 500), text-secondary, mb: 8px
+  Input:
+    Height:   56px
+    Width:    343px
+    Background: bg-card (#1F2937)
+    Border:   border (#30363D) 1px, radius-md (12px)
+    Focus:    border-focus (#3B82F6) 2px
+    Padding:  horizontal 16px
+    Placeholder: "you@example.com"
+    Keyboard: email-address
+
+Field 2 — Password (mt: 16px):
+  Label:      "Mật khẩu"
+  Input:      Same style as Email
+    Placeholder: "Nhập mật khẩu"
+    secureTextEntry: true
+    Right icon: eye/eye-off toggle
+```
+
+### Forgot Password
+```
+mt: 12px, mx: 25px, align: left
+
+Text: "Quên mật khẩu?" — text-body-sm (13px, weight 500), accent-primary
+Tap → navigate to Forgot Password flow (V1: deep link to web reset)
+```
+
+### Login CTA
+```
+mt: 24px, mx: 25px
+
+Button:
+  Width:    343px
+  Height:   52px
+  Radius:   radius-lg (16px)
+  Enabled:  accent-primary bg, #FFFFFF text, "Đăng nhập"
+  Disabled: bg-card, text-tertiary (when fields empty)
+  Text:     16px, weight 700
+```
+
+### Divider + Social Login
+```
+Same layout as Register screen:
+  "hoặc" divider
+  Google button: "Tiếp tục với Google"
+  Apple button:  "Tiếp tục với Apple"
+```
+
+### Bottom Link
+```
+Position: bottom: 32px + safe-area, centered
+Text:     "Chưa có tài khoản? " (text-secondary) + "Đăng ký ngay" (accent-primary, weight 600)
+          text-body-sm (13px)
+Tap → navigate to Register screen
+```
+
+### Interaction Rules
+```
+CTA tap:           POST /auth/login → loading → on success → Home (replace stack)
+Google/Apple tap:  OAuth → on success → Home (or Onboarding if profile incomplete)
+"Quên mật khẩu":  Navigate to password reset flow
+"Đăng ký ngay":   Navigate to Register screen
+```
+
+### States
+```
+Default:      Empty form, CTA disabled
+Filling:      At least 1 field has text
+Valid:        Both fields non-empty, CTA enabled
+Loading:      CTA shows spinner, inputs disabled
+Error:        "Email hoặc mật khẩu không đúng" — toast or inline error
+Locked:       "Quá nhiều lần thử. Thử lại sau 5 phút." after 5 failed attempts
+Success:      Navigate to Home
+Network err:  Toast "Không thể kết nối. Thử lại."
+```
+
+### Dev Handoff Specs
+```
+Auth API:           POST /auth/login { email, password }
+Rate limiting:      5 attempts per 5 minutes, lock UI + show countdown
+Token storage:      SecureStore (expo-secure-store) for JWT
+Social login:       Same providers as Register
+Auto-fill:          Support iOS AutoFill / Android Autofill for email + password
+Biometric:          V1: not included (V2 roadmap)
+```
+
+### QA Tests
+```
+[ ] CTA disabled when either field empty
+[ ] Successful login navigates to Home
+[ ] Wrong credentials show error message
+[ ] 5 failed attempts trigger lockout with countdown
+[ ] Google OAuth flow works
+[ ] Apple Sign-In flow works
+[ ] "Quên mật khẩu?" navigates to reset flow
+[ ] "Đăng ký ngay" navigates to Register screen
+[ ] Password show/hide toggle works
+[ ] Keyboard avoidance works correctly
+```
+
+---
+
 ## Screen 1 — Splash Screen
 
 ### Screen Overview
@@ -89,19 +414,19 @@ Status bar:          Light content (white icons) on dark background
 
 ---
 
-## Screen 2 — Onboarding (3 Steps)
+## Screen 2 — Onboarding (2 Steps)
 
 ### Screen Overview
 ```
-Screen: Onboarding (Step 1, 2, 3)
+Screen: Onboarding (Step 1, 2)
 User:   New user, first launch only
-Goal:   Capture nationality, market preference, name in ≤60 seconds
+Goal:   Capture nationality and name in ≤60 seconds
 ```
 
 ### Layout (All Steps)
 ```
 Background:  bg-primary
-Top:         Progress indicator (3 dots), centered, top: 56px + safe-area
+Top:         Progress indicator (2 dots), centered, top: 56px + safe-area
 Center:      Step content (varies per step)
 Bottom:      Primary CTA button, 16px from bottom nav area
              Back arrow (top-left, 44×44px touch) — hidden on step 1
@@ -109,7 +434,7 @@ Bottom:      Primary CTA button, 16px from bottom nav area
 
 ### Progress Indicator
 ```
-Component:  3 dots, horizontal, centered
+Component:  2 dots, horizontal, centered
 Dot size:   8×8px (inactive), 24×8px pill shape (active), radius-full
 Gap:        8px between dots
 Inactive:   bg-card (#1F2937)
@@ -153,27 +478,7 @@ CTA Button (Primary):
   Shadow:         shadow-glow-accent when enabled
 ```
 
-### STEP 2 — Market Preference
-
-```
-Layout:
-  Back button:    Top-left, 44×44px, icon: arrow-left 20px, text-secondary
-  Question:       "Bạn quan tâm thị trường nào?"
-  Sub-label:      "Có thể chọn nhiều" — text-caption (12px), text-secondary, mt: 4px
-  Options:        4 cards, multi-select, mt: 32px
-  CTA:            "Tiếp theo →", bottom: 40px + safe-area
-
-Options (multi-select cards):
-  "🇻🇳 Thị trường Việt Nam (HOSE / HNX)"
-  "🇰🇷 Thị trường Hàn Quốc (KOSPI / KOSDAQ)"
-  "🇺🇸 Thị trường Mỹ (NYSE / NASDAQ)"
-  "🌏 Tất cả thị trường"
-
-Multi-select rule: "Tất cả thị trường" is mutually exclusive with others
-CTA enabled: when ≥ 1 option selected
-```
-
-### STEP 3 — Name Entry
+### STEP 2 — Name Entry
 
 ```
 Layout:
@@ -212,16 +517,16 @@ Option tap         → Immediate selection (no delay), card border animates
 Multi-select tap   → Toggle on/off (150ms transition)
 Back button tap    → Slide right to previous step
 CTA disabled       → Show tooltip/shake animation if tapped
-CTA enabled tap    → Slide left to next step (or enter app on step 3)
-Keyboard on step 3 → CTA button moves above keyboard (KeyboardAvoidingView)
+CTA enabled tap    → Slide left to next step (or enter app on step 2)
+Keyboard on step 2 → CTA button moves above keyboard (KeyboardAvoidingView)
 ```
 
 ### States
 ```
 Default:  Step shown with animated entry from right (350ms ease-decelerate)
-Loading:  (step 3 only) Brief spinner on CTA while saving profile
+Loading:  (step 2 only) Brief spinner on CTA while saving profile
 Error:    Input validation: name cannot be only spaces → show "Vui lòng nhập tên hợp lệ" below input
-Success:  Step 3 CTA → flash success (100ms), then transition to Home
+Success:  Step 2 CTA → flash success (100ms), then transition to Home
 ```
 
 ### Edge Cases
@@ -255,13 +560,12 @@ CTA button:
 ### QA Tests
 ```
 [ ] Step 1: CTA disabled until selection made
-[ ] Step 2: Multi-select works; "All" deselects others
-[ ] Step 3: CTA disabled when input empty or only whitespace
-[ ] Step 3: CTA enabled after ≥ 1 non-whitespace character
+[ ] Step 2: CTA disabled when input empty or only whitespace
+[ ] Step 2: CTA enabled after ≥ 1 non-whitespace character
 [ ] Back button: returns to correct previous step
 [ ] Step 1 back button: hidden
 [ ] Progress dots: correctly reflect current step
-[ ] Keyboard: does not obscure CTA in step 3
+[ ] Keyboard: does not obscure CTA in step 2
 [ ] Onboarding skipped on return visit
 [ ] Error message shown for invalid name
 ```

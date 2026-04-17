@@ -107,22 +107,21 @@
 - **V2 Update:** Language detection now also feeds FR-LANG-01 (Language Selection).
 - **Key Rules:** Detection is read-only at registration start; does not change device settings.
 - **Acceptance Criteria:**
-  - Given device locale `vi` → Vietnam pre-selected on Market Preference screen.
+  - Given device locale `vi` → Vietnam selected as default nationality.
   - Given device locale `en-US` → Global pre-selected.
 - **Edge Cases:** No locale set (custom ROMs) → defaults to Global.
 - **Priority:** P0
 
 ---
 
-#### FR-04 — Market Preference Selection
+#### FR-04 — Market Preference Selection *(Deprecated — V1/V2)*
 
-- **Actor:** New User
-- **Description:** Market Preference screen with three options: Vietnam (HoSE/HNX), Korea (KRX), Global. User selects exactly one; pre-populated from FR-03.
-- **Key Rules:** Exactly one selection required to proceed.
-- **Acceptance Criteria:**
-  - Given user taps "Korea" → Korea highlighted, others deselected, Continue enabled.
-- **Edge Cases:** User does not tap any option → Continue button disabled.
-- **Priority:** P0
+- **Actor:** N/A
+- **Description:** Market preference selection has been removed from the onboarding flow. All users are defaulted to Vietnam (HoSE/HNX) as the sole supported market in V1/V2. No user-facing selection is presented.
+- **Key Rules:** `market_preference` is system-set to `VN` on account creation. Not user-configurable in V1/V2.
+- **Acceptance Criteria:** N/A — preference set automatically on registration.
+- **Edge Cases:** N/A
+- **Priority:** Deprecated
 
 ---
 
@@ -175,11 +174,11 @@
 #### FR-08 — Onboarding Progress Indicator
 
 - **Actor:** New User
-- **Description:** Step indicator during registration flow. Steps: Data Consent → Market Selection → Account Details → Verify Email (4 steps in V2).
-- **V2 Update:** Step count updated from 3 to 4 to include Data Consent step (FR-LEGAL-03).
+- **Description:** Step indicator during registration flow. Steps: Data Consent → Account Details → Verify Email (3 steps in V2). Market Selection step removed; VN market is default.
+- **V2 Update:** Market Selection step removed. Step count is 3: Data Consent → Account Details → Verify Email.
 - **Key Rules:** Step indicator always visible during registration; not shown on Login screen.
 - **Acceptance Criteria:**
-  - Given user on Account Details step → step 3 of 4 highlighted.
+  - Given user on Account Details step → step 2 of 3 highlighted.
 - **Edge Cases:** None.
 - **Priority:** P0
 
@@ -307,10 +306,10 @@
 #### FR-18 — Market Filter on Discover
 
 - **Actor:** Registered User
-- **Description:** Market toggle (Vietnam | Korea | Global) above theme chips. Default matches user's market preference. Session-level; does not update profile.
+- **Description:** Market toggle (Vietnam | Korea | Global) above theme chips. Default is Vietnam (VN). Session-level; does not update profile.
 - **Key Rules:** Switching market resets theme filter to "All."
 - **Acceptance Criteria:**
-  - Given KR user switches to Vietnam filter → Vietnam stocks shown, theme resets to All.
+  - Given user switches to Korea filter → Korea stocks shown, theme resets to All.
 - **Edge Cases:** None.
 - **Priority:** P0
 
@@ -516,10 +515,10 @@
 #### FR-36 — Markets Screen Layout
 
 - **Actor:** Registered User
-- **Description:** Tabbed interface: Vietnam | Korea | Global. Default tab matches user's market preference. Investment disclaimer shown on first view per session (FR-LEGAL-01).
+- **Description:** Tabbed interface: Vietnam | Korea | Global. Default tab is Vietnam (VN). Investment disclaimer shown on first view per session (FR-LEGAL-01).
 - **Key Rules:** Disclaimer shown on first view of each tab per session.
 - **Acceptance Criteria:**
-  - Given KR user → Korea tab active by default.
+  - All users → Vietnam tab active by default.
 - **Edge Cases:** None.
 - **Priority:** P0
 
@@ -667,7 +666,7 @@
 #### FR-48 — User Profile Screen
 
 - **Actor:** Registered User
-- **Description:** Profile screen: display name, masked email, nationality, market preference. Sub-links: Notification Settings, Language, Change Password, App Settings, Help & Support, Log Out.
+- **Description:** Profile screen: display name, masked email, nationality. Sub-links: Notification Settings, Language, Change Password, App Settings, Help & Support, Log Out.
 - **V2 Update:** Language Settings link added (FR-LANG-01). Trader Tier badge + XP shown on profile (FR-GAME-01/FR-GAME-02).
 - **Key Rules:** Email partially masked: `lo***@gmail.com`.
 - **Acceptance Criteria:**
@@ -680,7 +679,7 @@
 #### FR-49 — Edit Profile
 
 - **Actor:** Registered User
-- **Description:** Edit display name and market preference. Email not editable in V2. Market preference change updates Home and Markets default.
+- **Description:** Edit display name. Email and market preference not editable in V2 (market is fixed to VN).
 - **Key Rules:** Display name 2–100 chars, Unicode.
 - **Acceptance Criteria:**
   - Given display name updated → Profile reflects new name; Home hero greeting updated.
@@ -1414,7 +1413,7 @@
 
 | Rule ID | Description |
 |---------|-------------|
-| BR-01 | A user can have a maximum of 1 market preference at any time. Changing preference immediately updates all preference-driven UI. |
+| BR-01 | All users default to Vietnam (VN) as their market preference. Market preference is not user-configurable in V1/V2. |
 | BR-02 | A user can add a maximum of 100 stocks to their watchlist. Attempting to add a 101st stock shows an error: "Watchlist full. Remove a stock to add another." |
 | BR-03 | A user can set a maximum of 1 price alert per stock. Setting a new alert for a stock with an existing alert overwrites the previous alert. |
 | BR-04 | Price alert notifications are one-time triggers. Once triggered and notification sent, the alert is automatically deactivated. |
@@ -1427,7 +1426,7 @@
 | BR-11 | Watchlist movement notifications capped at 3 per user per day. Top 3 selected by highest absolute daily change percentage. |
 | BR-12 | Login locked for 15 minutes after 5 consecutive failed attempts. Timer resets after successful login. |
 | BR-13 | Email OTP valid for 10 minutes, single-use. New OTP request immediately invalidates existing OTP. |
-| BR-14 | Monetary values displayed in user's preferred currency: VND (VN), KRW (KR), USD (Global). Virtual portfolio balance displayed in VND with currency equivalent for KR/Global users. |
+| BR-14 | All monetary values displayed in VND. Virtual portfolio balance denominated in VND. |
 | BR-15 | Discover feed must display minimum 10 cards before scroll. Fewer than 10 available → show all without infinite scroll. |
 | BR-16 | Feature tier (LEARN_MODE / FULL_ACCESS) evaluated server-side on every session init. Client cannot self-upgrade feature tier. |
 | BR-17 | Paper portfolio starting balance: VND 500,000,000. Reset restores to exactly this amount. |
@@ -1451,12 +1450,12 @@ This matrix links each functional requirement to the BRD business objectives it 
 
 | BRD Objective | Description | Linked FRs |
 |---------------|-------------|------------|
-| BO-01 | Acquire Gen Z users in VN and KR through a low-barrier, mobile-first onboarding | FR-01, FR-02, FR-03, FR-04, FR-05, FR-06, FR-07, FR-08, FR-AGE-01, FR-AGE-03, FR-LEGAL-03, FR-LANG-01 |
+| BO-01 | Acquire Gen Z users in VN and KR through a low-barrier, mobile-first onboarding | FR-01, FR-02, FR-03, FR-05, FR-06, FR-07, FR-08, FR-AGE-01, FR-AGE-03, FR-LEGAL-03, FR-LANG-01 |
 | BO-02 | Drive daily active usage through market data and personalized home screen | FR-09, FR-10, FR-11, FR-12, FR-13, FR-14, FR-36, FR-37, FR-38, FR-39, FR-40, FR-41 |
 | BO-03 | Build investing confidence via safe, gamified paper trading simulation | FR-PT-01, FR-PT-02, FR-PT-03, FR-PT-04, FR-PT-05, FR-PT-06, FR-GAME-01, FR-GAME-02, FR-GAME-03, FR-GAME-04, FR-GAME-05, FR-35 |
 | BO-04 | Deliver AI-powered financial education contextually and without intimidation | FR-AI-01, FR-AI-02, FR-AI-03, FR-AI-04, FR-AI-05, FR-AI-06, FR-AI-07, FR-LANG-02 |
 | BO-05 | Grow a Gen Z investing community through social features and social proof | FR-SOC-01, FR-SOC-02, FR-SOC-03, FR-SOC-04, FR-SOC-05, FR-16, FR-GAME-02 |
-| BO-06 | Serve both VN and KR markets with locale-appropriate content and data | FR-03, FR-04, FR-37, FR-38, FR-LANG-01, FR-LANG-02, FR-AI-03, FR-PT-01 |
+| BO-06 | Serve VN market with locale-appropriate content and data (KR planned for V3) | FR-03, FR-37, FR-LANG-01, FR-LANG-02, FR-AI-03, FR-PT-01 |
 | BO-07 | Maintain regulatory compliance and user trust through transparent legal practices | FR-LEGAL-01, FR-LEGAL-02, FR-LEGAL-03, FR-AGE-01, FR-AGE-02, FR-AGE-03, FR-PT-06, BR-19, BR-21, BR-22 |
 | BO-08 | Retain users through personalized notifications, alerts, and weekly engagement hooks | FR-42, FR-43, FR-44, FR-45, FR-46, FR-47, FR-52, FR-AI-05, FR-AI-07, FR-GAME-04, FR-GAME-05 |
 | BO-09 | Support age-appropriate feature access and protect underage users | FR-AGE-01, FR-AGE-02, FR-AGE-03, FR-AGE-04, BR-16, BR-28 |

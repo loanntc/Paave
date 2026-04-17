@@ -603,7 +603,8 @@
 | Field | Type | Rules | Error Message |
 |-------|------|-------|---------------|
 | display_name | string | Required; 2–100 characters; Unicode letters, spaces, hyphens, apostrophes | "Name must be 2–100 characters" |
-| market_preference | enum | Required; one of: `VN`, `KR`, `GLOBAL` | "Please select a valid market" |
+
+> **Note:** Market preference is fixed to `VN` and is not user-editable in V1/V2.
 
 ### 4.9 Paper Trading Order Validation
 
@@ -2308,7 +2309,7 @@ Parental consent token expired:
 | email | VARCHAR(254) | NOT NULL, UNIQUE | Lowercase stored |
 | password_hash | VARCHAR(72) | NOT NULL | bcrypt output |
 | nationality | VARCHAR(5) | NOT NULL | `VN`, `KR`, `OTHER` |
-| market_preference | VARCHAR(10) | NOT NULL | `VN`, `KR`, `GLOBAL` |
+| market_preference | VARCHAR(10) | NOT NULL, DEFAULT 'VN' | Fixed to `VN` in V1/V2; not user-editable |
 | dob_encrypted | BYTEA | NOT NULL | AES-256-GCM encrypted; never plaintext |
 | feature_tier | VARCHAR(20) | NOT NULL | `PENDING_CONSENT`, `LEARN_MODE`, `FULL_ACCESS` |
 | status | VARCHAR(30) | NOT NULL | `PENDING_VERIFICATION`, `ACTIVE`, `LOCKED`, `DELETED` |
