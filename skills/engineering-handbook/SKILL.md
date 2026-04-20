@@ -1,6 +1,15 @@
 ---
 name: engineering-handbook
-description: "How We Think, Build, and Ship > A training document for engineers joining this team — written from 20+ years of doing this wrong, then right. > Read this once. Then keep it open."
+description: >
+  Engineering standards, practices, and culture for this team. Consult this skill whenever
+  an engineer asks about: how to write or structure code, PR best practices, code review
+  (as author or reviewer), testing strategy, CI/CD pipeline, error handling, database
+  operations, async patterns, security practices, logging/observability, working with AI
+  coding tools, what is or isn't a non-negotiable, how to handle a production incident,
+  or any question about engineering role expectations. Also trigger for questions like
+  "is this PR ready?", "how should I review this?", "what's the right way to handle X?",
+  "what does our team expect from engineers?", or "how do we do X here?". If it sounds
+  like an engineer asking for guidance — use this skill.
 ---
 
 ## Table of Contents
@@ -13,6 +22,10 @@ description: "How We Think, Build, and Ship > A training document for engineers 
 6. [CI/CD — Automated Quality Gates](#6-cicd--automated-quality-gates)
 7. [Self-Review Checklist Before Every PR](#7-self-review-checklist-before-every-pr)
 8. [Non-Negotiables vs Flexible Zones](#8-non-negotiables-vs-flexible-zones)
+9. [Code Review — As the Reviewer](#9-code-review--as-the-reviewer)
+10. [Observability & Logging Standards](#10-observability--logging-standards)
+11. [Security Baseline](#11-security-baseline)
+12. [Working with AI Coding Tools](#12-working-with-ai-coding-tools)
 
 ---
 
@@ -271,6 +284,9 @@ def transfer_funds(from_id: int, to_id: int, amount: Decimal) -> None:
 - Long-running reads → consider read replicas
 - N+1 query → always solve it (use `SELECT IN`, eager loading, or batch)
 - Migrations must be backwards compatible — deploy code first, then migrate
+- Never DROP a column or table in the same release as the code change that removes its usage — do it in a follow-up release
+- Every migration must have a rollback plan; destructive migrations require explicit team sign-off
+- Test migrations on a production-size data clone before running on production
 
 ---
 
@@ -495,9 +511,16 @@ npm test -- --testNamePattern="applies discount"
 
 ### Coverage Expectations
 
-- **Minimum:** 80% line coverage on business logic
-- **Target:** 90%+ on critical paths (payments, auth, data mutations)
-- **Never:** Chase 100% coverage by testing boilerplate — it's noise
+| Code category | Minimum | Target |
+|---|---|---|
+| General business logic | 80% | 85% |
+| Payment, auth, data mutations | 95% | 100% |
+| Utilities / helpers | 70% | 80% |
+| Boilerplate / config / generated code | exempt | exempt |
+
+- **Never** chase 100% by testing boilerplate — coverage on meaningless code is noise that masks real gaps
+- Coverage gates are enforced in CI — a PR that drops coverage below threshold will not merge
+- High coverage ≠ good tests. A test that asserts nothing can achieve 100% coverage. Write assertions that would actually catch regressions.
 
 ```bash
 # Coverage report shows uncovered lines
@@ -599,7 +622,28 @@ feature branch
                                     → Deploy to production (manual approval)
 ```
 
+
 **Never deploy on Friday afternoon. Never skip staging.**
+
+### Hotfix Process (production is on fire)
+
+When production is broken and the normal pipeline is too slow:
+
+```
+hotfix/incident-description branch (from main)
+    → Fix scoped to the minimum change that resolves the incident
+        → CI must still pass (no exceptions)
+            → Fast-track review: 1 approver minimum, synchronous if needed
+                → Merge to main → Deploy to production
+                    → Cherry-pick or merge back to develop immediately
+```
+
+**Even in a hotfix:**
+- CI must pass — no merge if tests are red
+- At least 1 reviewer (can be async or synchronous, use your judgment)
+- Write a post-mortem within 48 hours: what broke, why, how we prevent it
+
+> The fire is stressful. Skipping process makes the next fire worse.
 
 ### Environment Variables in CI
 
@@ -672,6 +716,8 @@ Run through this **before** you request review. Every item. Every time.
 | No Friday afternoon production deploys | Protect everyone's weekend; reduce blast radius |
 | PRs require at least one review | Knowledge sharing and catching blind spots |
 | Self-review before requesting review | Respect for the reviewer's time |
+| No PII or sensitive data in logs or error messages | Data privacy — logs are often accessible beyond production team |
+| No merging your own PR without a second set of eyes | Blind spots are real; no one is exempt |
 
 ### 🟡 Prefer these, but I'll listen to a good counter-argument
 
@@ -692,6 +738,300 @@ Run through this **before** you request review. Every item. Every time.
 
 ---
 
+
+---
+
+## 9. Code Review — As the Reviewer
+
+Code review is not a gatekeeping ritual. It is the team's primary mechanism for knowledge sharing, catching blind spots, and maintaining collective ownership of the codebase.
+
+### Your mindset as reviewer
+
+- You are a collaborator, not a judge. Your job is to make the code better and help the author grow — not to catch them out.
+- Assume good intent. If something looks wrong, ask first — "Did you consider X?" beats "This is wrong."
+- Distinguish between blocking issues and preferences. Use labels if your team has them.
+
+### What you are responsible for
+
+| Your job | Not your job |
+|---|---|
+| Correctness of the logic | Reformatting (linter's job) |
+| Security and edge cases | Rewriting in your style |
+| Whether it's testable and tested | Finding every possible improvement |
+| Whether you understand it | Approving if you genuinely don't |
+
+### Reviewer checklist
+
+**Understanding**
+- [ ] Do I understand what this PR is trying to do?
+- [ ] Is there a design doc or ticket that gives context I should read first?
+
+**Correctness**
+- [ ] Does the logic actually solve the stated problem?
+- [ ] Are edge cases and error paths handled?
+- [ ] Could this break existing behaviour?
+
+**Security & Data**
+- [ ] Are inputs validated at boundaries?
+- [ ] Could any of this expose sensitive data (in logs, errors, responses)?
+- [ ] Are there obvious injection or authorization issues?
+
+**Maintainability**
+- [ ] Will a future engineer understand this without the author present?
+- [ ] Is complexity justified, or is there a simpler approach?
+- [ ] Is test coverage adequate and meaningful?
+
+### Giving feedback that lands
+
+```
+❌ "This is wrong."
+✅ "This will fail when `items` is an empty array — we'd get a divide-by-zero. 
+    Could we guard with an early return?"
+
+❌ "I wouldn't do it this way."
+✅ "This works! I've found [alternative] easier to extend when new cases come in 
+    — worth considering, but not blocking."
+
+❌ "Needs more tests."
+✅ "Could we add a test for the case where the user has no active subscription? 
+    That path leads to a DB write and I want to make sure it's covered."
+```
+
+### Turnaround expectations
+
+- PRs awaiting review should be addressed within **1 business day**.
+- If you cannot review in time, say so — don't let PRs sit silently.
+- If a PR is too large to review properly, it is acceptable to ask the author to split it.
+
+> **Rule:** An approval means you are co-responsible for what merges. Don't rubber-stamp.
+
+---
+
+## 10. Observability & Logging Standards
+
+If you can't tell what your code is doing in production, you don't own your code — you just wrote it.
+
+### Log levels — use them correctly
+
+| Level | When to use | Example |
+|---|---|---|
+| `ERROR` | Something failed that requires attention or action | Payment charge failed, DB connection lost |
+| `WARN` | Something unexpected happened but we recovered | Retry succeeded on attempt 2, config fallback used |
+| `INFO` | Normal significant events in the lifecycle | Order created, user authenticated, service started |
+| `DEBUG` | Detailed flow useful during development | Function entered, intermediate values, query params |
+
+**Rules:**
+- `ERROR` and `WARN` should be actionable — if no one needs to act on it, lower the level
+- `DEBUG` must never run in production unless you have dynamic log levels
+- Never log in a tight loop — it will destroy performance and flood your log aggregator
+
+### Structured logging
+
+Always log as structured data (JSON), never free-form strings:
+
+```typescript
+// ❌ Bad — unqueryable, hard to parse
+logger.info(`User ${userId} placed order ${orderId} for $${amount}`);
+
+// ✅ Good — structured, queryable, consistent
+logger.info('order.created', {
+  userId,
+  orderId,
+  amount,
+  currency,
+  durationMs: Date.now() - startTime,
+});
+```
+
+### What to log — and what never to log
+
+**Always log:**
+- Service startup with config summary (no secrets)
+- Incoming requests (method, path, response status, duration)
+- All ERROR and WARN conditions with enough context to reproduce
+- Key business events (order created, payment processed, user registered)
+
+**Never log:**
+- Passwords, tokens, API keys — in any form
+- Full credit card numbers, CVVs
+- PII: full names + identifiers together, email + sensitive context, national ID numbers
+- Raw request bodies from untrusted input (log shape, not values)
+
+```typescript
+// ❌ Never
+logger.info('User login', { email, password });
+
+// ✅ Safe
+logger.info('User login attempt', { userId, email: maskEmail(email), success: true });
+```
+
+### Correlation IDs
+
+Every request entering your system should carry a correlation ID through all downstream calls. This is non-negotiable for debugging distributed systems.
+
+```typescript
+// Middleware: assign or propagate
+app.use((req, res, next) => {
+  req.correlationId = req.headers['x-correlation-id'] || generateId();
+  res.setHeader('x-correlation-id', req.correlationId);
+  next();
+});
+
+// Every log call downstream includes it
+logger.info('payment.initiated', { correlationId: req.correlationId, orderId });
+```
+
+### Alerting baseline
+
+Every production service should have alerts on:
+- Error rate spike (> baseline + N%)
+- P95 response time threshold breach
+- Service health check failure
+- Key business metric anomaly (zero orders in 10 minutes is a signal)
+
+---
+
+## 11. Security Baseline
+
+Security is not a feature sprint. It's the floor every feature is built on.
+
+### Input validation (recap + extension)
+
+Covered in §4.4. The rule: validate at every trust boundary — not just the API layer.
+
+Additional rules:
+- Never use raw string concatenation to build SQL queries — ever
+- Treat data from your own DB as untrusted when it crosses a service boundary
+- File uploads: validate MIME type server-side (not just extension), scan if feasible, store outside webroot
+
+### Authentication & authorization
+
+```typescript
+// ❌ Bad — trusting user-supplied ID
+async function getOrder(req) {
+  return db.orders.find(req.body.orderId); // anyone can request any order
+}
+
+// ✅ Good — enforce ownership
+async function getOrder(req) {
+  const order = await db.orders.find(req.params.orderId);
+  if (!order || order.userId !== req.user.id) {
+    throw new ForbiddenError();
+  }
+  return order;
+}
+```
+
+**Rules:**
+- Always check authorization, not just authentication — "logged in" ≠ "allowed"
+- Use short-lived tokens (JWTs: 15–60 min access token, longer refresh token)
+- Never store tokens in `localStorage` if XSS is a concern — use `httpOnly` cookies
+- Rotate secrets regularly; have a process to do so without downtime
+
+### Dependency security
+
+```bash
+# Run regularly, and in CI
+npm audit
+pip-audit
+
+# Do not ignore high/critical findings without a documented decision
+```
+
+- Pin dependency versions in production (`package-lock.json`, `poetry.lock`)
+- Review what a new dependency does before adding it — supply chain attacks are real
+- Remove unused dependencies
+
+### OWASP Top 10 — quick reference
+
+Every engineer should know these exist. For each one we touch:
+
+| Risk | Our mitigation |
+|---|---|
+| Injection (SQL, command) | Parameterized queries, never string concat |
+| Broken authentication | Short-lived tokens, secure storage, MFA where applicable |
+| Sensitive data exposure | Encrypt at rest + in transit, never log PII |
+| Broken access control | Ownership checks on every resource fetch |
+| Security misconfiguration | Config review in PR, no default credentials, secrets manager |
+| XSS | Sanitize output, CSP headers, `httpOnly` cookies |
+| Using components with known vulnerabilities | `npm audit` / `pip-audit` in CI |
+
+When in doubt: consult OWASP directly at owasp.org.
+
+### Principle of least privilege
+
+- Service accounts get only the permissions they need — no admin by default
+- DB users per service: the order service should not have credentials to the auth DB
+- API tokens scoped to the minimum required operations
+
+---
+
+## 12. Working with AI Coding Tools
+
+AI coding tools (Copilot, Claude, Cursor, etc.) are now part of how we work. They are powerful, and they introduce new failure modes we need to be deliberate about.
+
+### The core rule
+
+**AI-generated code is your code the moment you accept it.** You are responsible for it. The tool is not.
+
+This means:
+- You must understand every line before committing it — "the AI wrote it" is not a valid explanation in a code review
+- AI suggestions must pass through the same self-review checklist (§7) as anything else you write
+- If you don't understand what the code does, don't commit it — ask, research, or rewrite it
+
+### What AI tools are good at
+
+- Boilerplate and scaffolding (test factories, CRUD endpoints, config files)
+- Translating your intent into a first draft quickly
+- Spotting syntax issues and common patterns
+- Writing test cases when you describe the behaviour
+- Explaining unfamiliar code
+
+### Where AI tools commonly fail
+
+- Business rule correctness — it doesn't know your domain
+- Security nuance — it will write plausible-looking but subtly insecure code
+- Edge cases specific to your data or system
+- Knowing which of your internal patterns to follow
+- Anything that requires context beyond the current file
+
+### Rules for AI-assisted development
+
+```
+✅ Use AI to accelerate first drafts — then own and verify the result
+✅ Use AI to write tests — then verify the tests actually test the right thing
+✅ Use AI to explain unfamiliar code — then verify the explanation
+✅ Commit AI-generated code the same way you commit your own: reviewed and understood
+
+❌ Do not commit code you cannot explain line by line
+❌ Do not use AI to bypass the design-before-coding step (§2) — thinking is still your job
+❌ Do not paste sensitive data, credentials, or private business logic into external AI tools
+❌ Do not let AI-assisted speed become a reason to skip self-review
+```
+
+### Prompting for better output
+
+When using AI for code tasks, be specific about constraints:
+
+```
+✅ "Write a TypeScript function that validates a Vietnamese phone number (10 digits, 
+    starts with 0). Use zod. Throw a ValidationError on failure. Include 3 test cases."
+
+❌ "Write a phone validator"
+```
+
+The more context and constraints you give, the closer the output will be to production-ready.
+
+### On AI and code reviews
+
+If a reviewer suspects a block of code was AI-generated and not properly understood:
+- They may ask the author to explain any section
+- "I'm not sure, the AI generated it" means the PR is not ready
+- This is not punitive — it's the same standard we hold for all code
+
+> AI tools raise the ceiling of what you can build. They don't lower the bar for what you ship.
+
+
 ## Final Word
 
 The difference between engineers who plateau and engineers who compound is simple:
@@ -704,4 +1044,4 @@ That's it. That's the whole game.
 
 ---
 
-*Last updated: April 2026 | Owner: Tech Lead | Feedback: open a PR against this document*
+*Last updated: April 2026 (v2) | Owner: Tech Lead | Feedback: open a PR against this document*

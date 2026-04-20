@@ -1,406 +1,277 @@
 ---
 name: business-analyst
-description: "produce BRD, FRD, SRD that are unambiguous, testable, and developer-ready"
+description: >
+  Produce BRD, FRD, and SRD documents that are unambiguous, testable, and developer-ready.
+  Use this skill whenever the user asks to: write or review requirements, create a BRD/FRD/SRD,
+  document a feature or system, define business rules, write acceptance criteria, map user flows,
+  perform gap analysis, convert a brief/idea/interview into structured documentation, or review
+  existing docs for completeness. Also trigger for phrases like "document this feature", "write
+  requirements for", "help me spec this out", "what are the requirements for", "review this FRD",
+  "create a product spec", or any request involving product/system documentation regardless of
+  domain. Domains include: Fintech/Securities, EdTech, SaaS, E-commerce, Environmental, Spa &
+  Self-care, and any general software product.
 ---
-
 
 # GOLDEN RULE
 
-> If a developer asks questions, your doc is unclear.
-> If QA guesses behavior, your doc is incomplete.
-
-A document is good only if:
-
-- A developer can build WITHOUT asking questions
-- A QA can test WITHOUT assumptions
-- Another BA/AI can extend WITHOUT confusion
+A document is **good** only when:
+- A **developer can build WITHOUT asking questions**
+- A **QA can test WITHOUT assumptions**
+- Another **BA/AI can extend WITHOUT confusion**
 
 ---
 
-# TEAM ARCHITECTURE
+# OPERATING MODE
 
-This skill operates as a multi-agent team led by a **Lead Business Analyst** who briefs, deploys, reviews, and synthesizes output from four specialist agents.
+## Step 1 — Identify what's needed
 
----
+Before producing anything, determine:
+1. **Which document(s)** does the user need? (BRD / FRD / SRD — or all three)
+2. **What domain** is this? → Load the relevant domain pattern from `references/domain-patterns.md`
+3. **What inputs exist?** (user brief, existing doc, interview notes, Figma link, FRD in another language, etc.)
 
-## Lead Business Analyst (Main Agent)
+> **Produce only what is requested.** If the user asks for just an FRD, produce only the FRD.
+> After delivery, optionally note which companion documents are missing and offer to produce them.
 
-**Role:** Orchestrator, reviewer, and final author.
+## Step 2 — Clarify before writing
 
-**Responsibilities:**
+Ask the minimum necessary questions to fill critical gaps. Do not write until you have:
+- The business goal or problem being solved
+- The primary actors/users
+- Any known constraints (regulatory, technical, timeline)
 
-1. Read and interpret the user's request — identify scope, domain, and ambiguity
-2. Brief the team with a clear problem statement before deploying any agent
-3. Critically review all specialist outputs — reject vague, untestable, or incomplete work
-4. Fix gaps flagged by the QA Validator before finalizing
-5. Synthesize the final BRD + FRD + SRD package with traceability matrix
+If the input is rich enough (e.g. a detailed brief or an uploaded document), skip to writing directly and flag assumptions inline.
 
-**Validation gate before delivery:**
+## Step 3 — Produce the document(s)
 
-- Can a developer build this without asking a single question?
-- Can QA write test cases directly from the FRD and SRD?
-- Does every requirement trace from a business goal to a test case?
+Output as **Markdown** in chat. Follow the strict templates below.
 
-If any answer is no — the document is not done.
+## Step 4 — Self-validate before delivering
 
----
-
-## Specialist Agents
-
-Deploy via the Agent tool. Read each agent's contract carefully — inputs and outputs are strict.
+Run the checklist in Section 7 before presenting the output.
 
 ---
 
-### Agent 1: Requirements Collector
+# BRD — BUSINESS REQUIREMENT DOCUMENT
 
-**Icon:** 📋
-**Deploy:** Step 2 (blocking — all other agents depend on this output)
+## Objective
+Define **WHY we build this** and **WHAT success looks like**. No technical details.
 
-**Mission:** Extract and structure all business requirements from the user's request.
-
-**Input:** Raw user request + Lead BA's problem briefing
-
-**Output (strict structure):**
+## Template
 
 ```
-PROBLEM STATEMENT
-- Current situation: [specific, observable facts]
-- Pain points: [measurable impacts, not feelings]
+# BRD: [Feature / Project Name]
+Version: x.x | Date: YYYY-MM-DD | Author: [name]
 
-BUSINESS OBJECTIVES
-- Objective 1: [verb + measurable outcome + timeframe]
-- Objective 2: ...
+## 1. Problem Statement
+Current situation:
+- [Describe the pain point with concrete data if available]
 
-KPIs
-- KPI 1: [metric + baseline + target]
-- KPI 2: ...
+Problem caused:
+- [Impact: time lost, errors, revenue affected, compliance risk, etc.]
 
-SCOPE
-  In Scope:
-  - [explicit list]
-  Out of Scope:
-  - [explicit list — what will NOT be built]
+## 2. Business Objectives
+- [Objective 1 — measurable]
+- [Objective 2 — measurable]
 
-STAKEHOLDERS
-- [Role]: [what they need from this system]
+## 3. KPIs (MANDATORY — must be measurable)
+| KPI | Baseline | Target |
+|-----|----------|--------|
+| [metric] | [current] | [goal] |
+
+## 4. Scope
+### In Scope
+- [item]
+
+### Out of Scope
+- [item]
+
+## 5. Stakeholders
+| Role | Name / Team | Responsibility |
+|------|-------------|----------------|
+| Product Owner | | Approves requirements |
+| Business User | | Provides domain input |
+| Tech Lead | | Feasibility review |
+
+## 6. Assumptions & Dependencies
+- [assumption or dependency]
 ```
 
-**Quality rule:** Zero vague words allowed.
-
-| Banned | Required replacement |
-|--------|----------------------|
-| fast | "processes X records in Y seconds" |
-| easy | "completes in N steps with no training required" |
-| scalable | "supports up to N concurrent users" |
-| robust | "handles X error types with defined recovery behavior" |
-| seamless | [delete — not a requirement] |
-
-If the user's request contains vague language, the Requirements Collector must convert it to measurable terms or flag it as a clarification gap.
+## BRD Quality Rules
+- No technical implementation details
+- No vague words ("fast", "easy", "better") — replace with measurable terms
+- Every objective must have a corresponding KPI
 
 ---
 
-### Agent 2: Logic Architect
+# FRD — FUNCTIONAL REQUIREMENT DOCUMENT
 
-**Icon:** 🔧
-**Deploy:** Step 3 (parallel with System Spec Writer)
+## Objective
+Define **WHAT the system does from the user's perspective**.
 
-**Input:** Requirements Collector output
-
-**Mission:** Translate requirements into a complete Functional Requirement Document.
-
-**Output (strict structure):**
+## Template
 
 ```
-FEATURE OVERVIEW
-Feature: [name]
-Actor: [who performs this action]
-Goal: [what they accomplish]
+# FRD: [Feature Name]
+Version: x.x | Date: YYYY-MM-DD | Linked BRD: [ref]
 
-FUNCTIONAL REQUIREMENTS
-FR-01 [Feature Name]
-  Actor: [role]
-  Description: [one clear action]
-  Input: [field / type / constraint]
-  Output: [what the system returns]
-  Preconditions: [what must be true before this runs]
+## 1. Feature Overview
+| Field | Value |
+|-------|-------|
+| Feature | [name] |
+| Primary Actor | [role] |
+| Goal | [what the actor wants to achieve] |
+| Trigger | [what initiates this flow] |
 
-FR-02 ...
+## 2. Functional Requirements
 
-BUSINESS RULES
-BR-01: [rule stated as a constraint — testable]
-BR-02: ...
+### FR-[NN]: [Requirement Name]
+- **Actor**: [who]
+- **Description**: [what the system does]
+- **Input**: [data, format, constraints]
+- **Output**: [result, format, destination]
+- **Precondition**: [what must be true before]
+- **Postcondition**: [what is true after]
 
-ACCEPTANCE CRITERIA
+[Repeat for each requirement, numbered sequentially]
+
+## 3. Business Rules (SEPARATE — never embed in FR)
+| ID | Rule | Violation Behavior |
+|----|------|--------------------|
+| BR-01 | [rule] | [what happens if violated] |
+
+## 4. Acceptance Criteria
+[Use Given/When/Then for each FR]
+
 Given [precondition]
 When [action]
-Then [expected outcome — specific, no "should"]
+Then [expected outcome]
 
-EDGE CASES
-- [scenario]: [expected system behavior]
-- [scenario]: [expected system behavior]
+## 5. Edge Cases (MANDATORY)
+| Case | Expected Behavior |
+|------|-------------------|
+| [edge case] | [system response] |
+
+## 6. UI/UX Notes (if applicable)
+- [screen behavior, validation messages, empty states]
 ```
 
-**Numbering:** FR-01, FR-02... and BR-01, BR-02... must be sequential and never reused.
-
-**Quality rule:** Each FR must be independently testable. No FR may bundle two distinct behaviors — split them. No hidden assumptions. If a rule applies to multiple FRs, extract it into a Business Rule.
+## FRD Quality Rules
+- Each FR must be independently testable
+- Business Rules go in Section 3 only — never embedded inside FR descriptions
+- No combined logic: one FR = one behavior
+- No hidden assumptions — if it's not written, it doesn't exist
 
 ---
 
-### Agent 3: System Spec Writer
+# SRD — SYSTEM REQUIREMENT DOCUMENT
 
-**Icon:** ⚙️
-**Deploy:** Step 3 (parallel with Logic Architect)
+## Objective
+Define **HOW the system behaves internally** — logic, data, integrations, error handling.
 
-**Input:** Requirements Collector output + (if available) Logic Architect draft
-
-**Mission:** Translate functional requirements into a complete System Requirement Document.
-
-**Output (strict structure):**
+## Template
 
 ```
-SYSTEM FLOW
-Step 1: [actor or system] [action] → [result]
-Step 2: ...
-(every branch must be explicitly stated — no "otherwise" without definition)
+# SRD: [Feature Name]
+Version: x.x | Date: YYYY-MM-DD | Linked FRD: [ref]
 
-DATA HANDLING RULES
-- Storage: [where, how long, what happens after expiry]
-- Volume limits: [max rows, max file size, max concurrent operations]
-- Encoding: [format]
-- Retention: [policy]
+## 1. System Flow
+[Numbered step-by-step, including decision points]
+1. [step]
+2. [IF condition] → [branch A] / [branch B]
+3. [step]
 
-VALIDATION LOGIC
-| Field | Rule | Error Message (exact string) |
-|-------|------|------------------------------|
-| [field] | [rule] | "[exact message shown to user]" |
+## 2. Data Model / Handling Rules
+| Field | Type | Constraint | Notes |
+|-------|------|------------|-------|
+| [field] | [type] | [rule] | |
 
-API CONTRACTS
-Endpoint: [METHOD /path/v1/resource]
-Request:
-  Headers: [required headers]
-  Body: { [field]: [type, required/optional, constraints] }
-Response (success):
-  Status: [code]
-  Body: { [field]: [type] }
-Response (error):
-  Status: [code]
-  Body: { "error": "[code]", "message": "[exact string]" }
+Storage rules: [retention, encoding, partitioning]
 
-ERROR HANDLING LOGIC
-- [Error condition]: [exact system behavior — rollback / partial / skip / retry]
-- [Error condition]: ...
+## 3. Validation Logic
+| Field | Rule | Error Code | Error Message |
+|-------|------|------------|---------------|
+| [field] | [rule] | [E-xxx] | [user-facing message] |
+
+## 4. API Contract (if applicable)
+### [METHOD] [/endpoint/path]
+Request:  { "field": "type" }
+Response (success): { "field": "value" }
+Response (error): { "error_code": "E-xxx", "message": "..." }
+
+## 5. Integration Points
+| System | Direction | Protocol | Data Exchanged |
+|--------|-----------|----------|----------------|
+| [system] | IN/OUT | REST/MQ/etc | [payload] |
+
+## 6. Error Handling Matrix
+| Scenario | System Action | User Message | Retry? |
+|----------|--------------|--------------|--------|
+| Validation fail | Reject record | [message] | No |
+| Partial failure | Return mixed result | [message] | Manual |
+| System error | Rollback + alert | [message] | Auto |
+
+## 7. Non-Functional Requirements
+| Attribute | Requirement |
+|-----------|-------------|
+| Performance | [e.g., p95 < 2s for 10k records] |
+| Availability | [e.g., 99.9% uptime] |
+| Security | [e.g., JWT auth, field-level encryption] |
+| Compliance | [e.g., Thong tu 27/2020, PDPA, PCI-DSS] |
 ```
 
-**Quality rule:** Remove ALL ambiguity. Every field in a validation table must have an exact error message string. Every API response must specify both success and error shapes. Every branch in the system flow must have a defined outcome.
+## SRD Quality Rules
+- Zero ambiguity: every branch must be defined
+- Every error must have a code, message, and handling action
+- Must align 1:1 with FRD — every FR should map to SRD logic
 
 ---
 
-### Agent 4: QA Validator
+# TRACEABILITY MATRIX
 
-**Icon:** 🧪
-**Deploy:** Step 4 (after both Logic Architect and System Spec Writer complete)
+Every item must trace end-to-end:
 
-**Input:** All three documents — BRD draft, FRD, SRD
+`BRD Goal → FRD Feature → SRD Logic → Test Case`
 
-**Mission:** Review all documents for gaps, conflicts, and missing traceability. Do not produce new requirements — only validate and report.
+Include this table at the end of any full-suite delivery:
 
-**Checks to perform:**
-
-| Check | Pass condition |
-|-------|----------------|
-| Every FR has at least one acceptance criterion | All FRs covered |
-| Every BR has a validation rule in the SRD | All BRs covered |
-| Every edge case has a defined handler in the SRD | All edge cases covered |
-| Every business objective maps to at least one FR | No orphan objectives |
-| Every FR maps to at least one SRD logic entry | No orphan features |
-| No vague language in any document | Zero instances found |
-| API contracts include both success and error responses | All endpoints covered |
-| Validation table has exact error message strings | No "[message]" placeholders |
-
-**Output format:**
-
-```
-QA REPORT
-Status: PASS | FAIL
-
-Gaps found:
-- [Document section] → [specific issue] → [what is missing]
-- ...
-
-Conflicts found:
-- [FR-XX] contradicts [BR-XX] because [reason]
-- ...
-
-Traceability gaps:
-- BRD Objective [N] has no corresponding FR
-- FR-[XX] has no SRD logic entry
-- ...
-```
-
-If Status is PASS — Lead BA proceeds to synthesis.
-If Status is FAIL — Lead BA fixes all listed gaps before finalizing.
-
----
-
-# WORKFLOW
-
-```
-Step 1: UNDERSTAND
-  Lead BA reads the request
-  Identifies: domain, actors, core problem, scope signals
-  Writes internal brief: "We are building X for Y to solve Z"
-
-Step 2: REQUIREMENTS (blocking)
-  Deploy: Requirements Collector
-  Wait for output before proceeding
-  Lead BA reviews: reject if vague words remain
-
-Step 3: DESIGN (parallel)
-  Deploy simultaneously:
-    → Logic Architect       (builds FRD from requirements)
-    → System Spec Writer    (builds SRD from requirements)
-  Both agents receive the Requirements Collector output as input
-
-Step 4: VALIDATE
-  Deploy: QA Validator
-  Input: BRD draft + FRD + SRD
-  Wait for QA Report
-
-Step 5: FIX + SYNTHESIZE
-  If QA Status = FAIL:
-    Lead BA fixes all gaps directly
-    Re-validates mentally against QA checklist
-  Compile final package:
-    → BRD (Section 1)
-    → FRD (Section 2)
-    → SRD (Section 3)
-    → Traceability Matrix (Section 4)
-```
-
----
-
-# FINAL DELIVERY FORMAT
-
-Every output from this skill must follow this exact structure.
-
----
-
-## SECTION 1: BRD — Business Requirement Document
-
-### 1.1 Problem Statement
-
-```
-Current situation: [specific facts]
-Pain points: [measurable impacts]
-```
-
-### 1.2 Business Objectives
-
-```
-- [Measurable objective 1]
-- [Measurable objective 2]
-```
-
-### 1.3 KPIs
-
-```
-- [Metric]: [baseline] → [target]
-```
-
-### 1.4 Scope
-
-**In Scope:**
-- [item]
-
-**Out of Scope:**
-- [item]
-
-### 1.5 Stakeholders
-
-| Role | Need |
-|------|------|
-| [Role] | [What they need from this system] |
-
----
-
-## SECTION 2: FRD — Functional Requirement Document
-
-### 2.1 Feature Overview
-
-### 2.2 Functional Requirements (FR-01, FR-02...)
-
-### 2.3 Business Rules (BR-01, BR-02...)
-
-### 2.4 Acceptance Criteria (Given/When/Then)
-
-### 2.5 Edge Cases
-
----
-
-## SECTION 3: SRD — System Requirement Document
-
-### 3.1 System Flow (step-by-step, every branch defined)
-
-### 3.2 Data Handling Rules
-
-### 3.3 Validation Logic Table (field / rule / exact error message)
-
-### 3.4 API Contracts (endpoint + request + success response + error response)
-
-### 3.5 Error Handling Logic
-
----
-
-## SECTION 4: Traceability Matrix
-
-| BRD Objective | FRD Feature | SRD Logic | Test Case |
-|---------------|-------------|-----------|-----------|
-| [Objective 1] | [FR-01]     | [SRD 3.1 Step X] | [scenario] |
-| [Objective 2] | [FR-02, FR-03] | [SRD 3.3 row Y] | [scenario] |
-
-Every row must be complete. A blank cell means the document is incomplete.
+| BRD Objective | FRD Feature | SRD Section | Test Case |
+|---------------|-------------|-------------|-----------|
+| [goal] | FR-[NN] | §[x.x] | TC-[NN] |
 
 ---
 
 # ANTI-AMBIGUITY RULES
 
-These apply to all agents and all sections. Lead BA enforces at synthesis.
-
-**Banned phrases and their replacements:**
-
-| Never write | Write instead |
-|-------------|---------------|
-| "fast" | "processes N records within X seconds" |
-| "easy to use" | "user completes task in N steps without training" |
-| "should work" | "must [specific behavior]" |
-| "handle errors" | "[specific error]: [specific system action]" |
-| "as needed" | [define the condition explicitly] |
-| "etc." | [list everything — no open-ended lists in specs] |
-| "TBD" | [block delivery until defined] |
-
-**One logic = one requirement.** If a sentence contains "and" connecting two behaviors, split it into two FRs.
-
-**Every limit must be explicit:** file size, row count, timeout duration, retry count, session length.
-
-**Every condition must have both branches:** if valid → [behavior], if invalid → [behavior].
+| Bad | Good |
+|-----|------|
+| "System should be fast" | "p95 response time < 2s under 500 concurrent users" |
+| "Validate the data" | "FR-02: Validate email format against RFC 5322 regex" |
+| "Handle errors gracefully" | "On DB timeout: rollback transaction, return E-503, retry once after 3s" |
+| "Easy to use" | "New user completes onboarding in < 3 minutes (measured by session analytics)" |
 
 ---
 
-# QUALITY GATES (MANDATORY BEFORE DELIVERY)
+# SELF-VALIDATION CHECKLIST
 
-Lead BA runs this checklist before outputting anything:
+Run this before delivering any document:
 
-- [ ] Zero vague words in any document
-- [ ] Every FR has an acceptance criterion in Given/When/Then format
-- [ ] Every BR appears in SRD validation logic
-- [ ] Every edge case has a defined system response
-- [ ] Every API endpoint has a success AND error response shape
-- [ ] Every error message is an exact string, not a description
-- [ ] Traceability matrix is fully populated — no blank cells
-- [ ] QA Validator returned PASS (or all FAIL items were fixed)
+- [ ] Can a developer build this without asking a single question?
+- [ ] Can QA write test cases directly from this document?
+- [ ] Are all business rules isolated and numbered (BR-xx)?
+- [ ] Are all edge cases listed with explicit system behavior?
+- [ ] Are all limits defined (size, count, format, time)?
+- [ ] Are all error states defined with codes and messages?
+- [ ] Does every requirement trace back to a business objective?
+- [ ] Are there any vague words remaining? ("fast", "easy", "etc.", "TBD")
 
-If any box is unchecked — do not deliver. Fix it first.
+If any box is unchecked → fix before delivering.
 
 ---
 
-**End of Business Analyst Skill — Multi-Agent Edition**
+# DOMAIN PATTERNS
+
+For domain-specific terminology, compliance requirements, common actors, and feature patterns,
+read `references/domain-patterns.md` and apply the relevant section.
+
+Domains covered: Fintech/Securities · EdTech · SaaS · E-commerce · Environmental · Spa & Self-care

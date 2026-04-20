@@ -1,471 +1,309 @@
 ---
 name: business-planner
 description: >
-  Comprehensive business planning skill for any business idea — from first spark to launch-ready strategy.
-  Trigger this skill whenever a user mentions: starting a business, evaluating a business idea, writing a business plan,
-  wanting to know if an idea is viable, asking about competitors in a market, needing a go-to-market strategy,
-  wondering about legal requirements for a business, asking how to find or retain customers, planning a startup,
-  assessing investment or budget for a venture, or asking about business risks.
-  Also trigger for phrases like "I want to start a...", "is this a good business idea?", "how do I launch...",
-  "what do I need to open a...", "how do I beat my competitors", "what's my target market", or any variation.
-  Always use this skill even if the user only mentions one aspect (e.g., just competitors, just legal, just budget).
+  Comprehensive business planning for any industry — from idea to launch-ready strategy.
+  Trigger for: starting a business, evaluating a business idea, writing a business plan,
+  competitor analysis, go-to-market strategy, legal requirements, customer acquisition,
+  startup planning, investment/budget, or business risk. Also trigger for phrases like
+  "I want to start a...", "is this a good idea?", "how do I launch...", "what's my target market",
+  "how do I beat competitors". Always trigger even if only one aspect is mentioned.
+  CROSS-SKILL: Routes to docx/pdf/pptx/xlsx for export; business-analyst for BRD/FRD;
+  product-design for digital products; trading-system-architect for fintech/securities;
+  frontend-design for UI/web. Uses web_search for live market and competitor data.
+  Offers GitHub push when project context is present.
+  Activates specialist industry subagents (fintech, edtech, ecommerce, saas, f&b,
+  healthcare, real estate, manufacturing, logistics, agritech, etc.) for expert-level
+  analysis per plan section.
 ---
 
-# Business Planner Skill — Multi-Agent Team Architecture
+# Business Planner Skill
 
-This skill uses a Lead Business Planner coordinating a team of 4 specialist agents deployed in parallel.
-The Lead intakes the idea, briefs the team, reviews their outputs critically, and synthesizes the final plan.
-
----
-
-## Team Structure
-
-**Lead Business Planner** (you, the main agent)
-- Runs the intake conversation
-- Writes specialist briefs with full context
-- Deploys all 4 specialists in parallel via the Agent tool
-- Reviews every specialist output — flags generic advice, missing citations, or shallow analysis
-- Synthesizes the final 11-section plan
-- Provides the honest Pros/Cons/Verdict only a Lead can give after seeing all reports
-
-**Specialist Agents (deployed via Agent tool):**
-
-| Agent | Codename | Domain |
-|-------|----------|--------|
-| 📊 Market & Competitor Researcher | `market-researcher` | Market sizing, competitor analysis, trends |
-| 💰 Financial & Legal Modeler | `financial-legal-modeler` | Costs, funding, break-even, legal structure |
-| 🎯 Customer Strategy Analyst | `customer-strategist` | ICP, acquisition, retention, LTV |
-| ⚠️ Risk & Survival Strategist | `risk-strategist` | Risk matrix, differentiation, moats, competitive defense |
+A structured, expert-level framework for planning any business idea — from validation to launch strategy.
+Covers all industries via **specialist Industry Subagents**. Integrates with the full skill ecosystem.
 
 ---
 
-## Workflow
+## Cross-Skill Routing Map
 
-### Step 1 — Intake Conversation
+Before generating the plan, check context for these signals and route accordingly:
 
-Before deploying any agents, run a conversational intake to collect:
+| Signal | Action |
+|---|---|
+| User wants output as Word doc | After plan → invoke `docx` skill |
+| User wants PDF (e.g., for investors) | After plan → invoke `pdf` skill |
+| User wants pitch deck | After plan → invoke `pptx` skill |
+| User needs financial model / budget spreadsheet | After plan → invoke `xlsx` skill |
+| Business involves building a digital product/app | Route product sections to `product-design` skill |
+| User needs BRD/FRD/SRD for a product feature | Route to `business-analyst` skill |
+| Business is fintech, securities, or trading | Route regulatory/tech sections to `trading-system-architect` skill |
+| User needs landing page or web UI | Route to `frontend-design` skill |
+| User asks about competitors, market size, trends | Use `web_search` actively for live data |
+| User mentions a GitHub repo or project | Offer to push output files to Git (see Export & Git section) |
 
-1. **The business idea** — what product or service, for whom, what problem it solves
-2. **Location/region** — country or city (affects legal, market, and financial sections)
-3. **Stage** — pure idea, or already partially started? Any traction, customers, or revenue yet?
-4. **Budget range** — bootstrapped / under $10K / $10K–$100K / $100K+
-
-If the user has already provided some of this in their message, extract it and only ask for what's missing.
-Keep the intake conversational — not a form. One follow-up message is enough.
-
----
-
-### Step 2 — Brief & Deploy All 4 Specialists in Parallel
-
-Once intake is complete, write a **shared context brief** containing:
-- The full business idea description
-- Location/region
-- Stage and any existing traction
-- Budget range
-- Any specific concerns or constraints the user mentioned
-
-Then deploy all 4 specialist agents **simultaneously** using the Agent tool. Pass the shared brief to each,
-along with a role-specific prompt (see specialist instructions below).
-
-Do not wait for one agent to finish before starting the next. Deploy all 4 at once.
+**Always complete the full business plan first. Routing and export happen after delivery.**
 
 ---
 
-### Step 3 — Review Specialist Outputs
+## Industry Subagent System
 
-After all 4 agents return their reports, the Lead Business Planner reviews each one critically:
+This skill spawns **specialist Industry Subagents** to provide expert-level analysis per domain.
+Each subagent is an expert persona adopted when handling industry-specific sections.
 
-- Flag any section that contains **generic advice without real citations** (e.g., "the market is growing" with no data)
-- Flag any competitor analysis that uses **placeholder examples** instead of real named competitors
-- Flag any legal section that is not tailored to the **user's stated region**
-- Flag any financial section that does not reflect the **user's stated budget range**
+### How to Activate
 
-If a specialist output is too shallow or generic, note it in the synthesis and, where possible, supplement
-with your own web search or reasoning. Do not pass shallow outputs through to the user uncritically.
+When the business idea maps to an industry below, activate the relevant subagent for:
+- Section 2 (Market Research) — industry-specific data sources and sizing methods
+- Section 3 (Competitor Analysis) — naming real players in that space
+- Section 6 (Legal Requirements) — sector-specific regulations
+- Section 11 (Survival Strategy) — industry-specific moats and dynamics
+
+Activation syntax:
+```
+🤖 ACTIVATING SUBAGENT: [Industry Name] Expert
+   Region context: [country/city]
+   Sections enhanced: Market Research, Competitor Analysis, Legal, Survival Strategy
+```
+
+### Available Industry Subagents
+
+| Industry | Subagent Persona | Key Expertise |
+|---|---|---|
+| **Fintech / Payments** | Fintech Strategist | PSP/e-money licensing, PCI-DSS, banking partnerships, CAC benchmarks |
+| **EdTech** | EdTech Growth Expert | Curriculum alignment, B2B2C school models, LMS competition, MOE compliance |
+| **E-commerce / Retail** | D2C Commerce Specialist | Unit economics, fulfillment, marketplace vs. own-site, ROAS |
+| **SaaS / B2B Software** | SaaS Growth Advisor | ARR/MRR, churn benchmarks, PLG vs. sales-led, SOC2 |
+| **F&B / Restaurant** | F&B Operations Expert | COGS targets (28–32%), foot traffic, food safety licensing, franchise |
+| **Healthcare / MedTech** | Healthcare Regulatory Expert | FDA/CE/MOH approval, HIPAA, reimbursement models |
+| **Real Estate / PropTech** | Real Estate Strategist | Capital structure, licensing, market cycles, PropTech disruption |
+| **Manufacturing / Hardware** | Manufacturing Operations Expert | CapEx, supply chain, MOQ negotiation, IP protection |
+| **Media / Content / Creator** | Creator Economy Expert | Monetization, platform dependency risks, audience ownership |
+| **Logistics / Supply Chain** | Logistics Operations Expert | Last-mile economics, 3PL vs. owned fleet, customs/compliance |
+| **Agriculture / AgriTech** | AgriTech Strategist | Seasonal cash flow, government subsidies, distribution channels |
+| **Travel / Hospitality** | Travel & Hospitality Expert | RevPAR/ADR metrics, OTA dependency, seasonality |
+| **Legal / Professional Services** | Professional Services Advisor | Billable model design, referral networks, liability and insurance |
+| **Education / Training** | Education Business Expert | B2B vs. B2C, accreditation, corporate L&D market |
+| **General / Cross-industry** | Senior Business Strategist | Used when no specific subagent matches |
+
+> If the business spans multiple industries (e.g., HealthTech SaaS), activate multiple subagents and synthesize their outputs per section.
 
 ---
 
-### Step 4 — Synthesize the Full Business Plan
+## Step 1 — Intake
 
-Combine all specialist outputs into the structured 11-section plan below.
-The Lead writes sections 1, 4, and 5 directly. Sections 2–3 come from the Market Researcher.
-Sections 6–7 come from the Financial & Legal Modeler. Sections 8–9 from the Customer Strategist.
-Sections 10–11 from the Risk Strategist.
+Ask the user for (extract from context first — only ask for what's missing):
 
----
-
-### Step 5 — Close with Deep Dive Offer
-
-After delivering the full plan, always close with:
-
-> *"Which section would you like to explore in more depth? I can deploy the relevant specialist for a deeper
-> analysis on any area — market data, financials & legal, customer strategy, or risk & competitive defense."*
+1. **The business idea** (what product/service, for whom)
+2. **Location/region** (country or city — affects legal, market, and subagent selection)
+3. **Stage** — idea only / MVP / already launched?
+4. **Budget range** — bootstrapped / <$10K / $10K–$100K / $100K+
+5. **Industry** — to activate the right subagent(s)
 
 ---
 
-## Specialist Agent Instructions
+## Step 2 — Subagent Activation
 
-Use these as the prompt for each Agent tool invocation. Always prepend the **shared context brief** from
-the intake before the role-specific instructions.
-
----
-
-### 📊 Market & Competitor Researcher
+Based on intake, declare active subagents before proceeding:
 
 ```
-You are a Market & Competitor Researcher. Your job is to produce a rigorous, citation-backed market
-analysis for the business described in the context above.
-
-Your output must include:
-
-MARKET SIZING
-- TAM (Total Addressable Market): the entire global or national market for this category
-- SAM (Serviceable Addressable Market): the portion realistically reachable given the user's region and model
-- SOM (Serviceable Obtainable Market): realistic first-year capture given their budget and stage
-- For each figure: cite a real source (industry report, research firm, government data, news article)
-- If exact figures are unavailable, give a range and explain your methodology
-
-COMPETITOR ANALYSIS
-- Top 3–5 direct competitors: real company names, URLs, approximate pricing, their stated positioning,
-  and their known weaknesses (from reviews, press, or public data)
-- Top 2–3 indirect competitors: alternative solutions customers currently use instead
-- A positioning map description: where each competitor sits on price vs. quality / niche vs. mass axes
-- The specific gap or underserved segment the user's business could exploit
-
-MARKET TRENDS
-- Is this market growing, shrinking, or being disrupted? Cite recent data (within 2 years if possible)
-- Relevant macro trends (demographic, technological, regulatory, behavioral)
-- Any recent market entries or exits that signal opportunity or warning
-
-RULES:
-- Use web_search to find real competitors, real market data, and real citations
-- Never use generic placeholder examples (e.g., "Company A" or "major player in the space")
-- Every market size figure must have a source cited inline
-- If a real source cannot be found, say so explicitly and explain your best estimate methodology
-- Tailor everything to the user's stated location/region
+🤖 ACTIVATING: [Industry] Expert | Region: [country/city]
+   Enhancing: Market Research · Competitor Analysis · Legal · Survival Strategy
 ```
 
 ---
 
-### 💰 Financial & Legal Modeler
+## Step 3 — Generate the Business Plan
 
-```
-You are a Financial & Legal Modeler. Your job is to produce a practical, region-specific financial and
-legal plan for the business described in the context above.
-
-Your output must include:
-
-STARTUP COST BREAKDOWN
-- Phase 1 — Pre-launch: registration, legal setup, branding, website/tech, product development
-- Phase 2 — Launch: first marketing spend, inventory or tooling, initial hires or contractors
-- Phase 3 — Months 1–6: recurring costs, customer acquisition, operations, contingency buffer
-- For each phase: realistic cost ranges (not vague ballparks), labeled as low/mid/high scenario
-- Flag any costs that are highly variable based on the user's budget range
-
-FUNDING OPTIONS
-- List all realistic funding paths for this type of business at this stage and budget
-- For each: how to access it, typical amounts, tradeoffs, and suitability for this specific idea
-- Include: bootstrapping, revenue-based financing, bank loans, angel investors, grants (name specific
-  programs if available in the user's region), crowdfunding platforms relevant to this category
-
-BREAK-EVEN FRAMEWORK
-- Estimated fixed monthly costs
-- Estimated variable cost per unit/customer
-- Required revenue per unit/customer (price assumption)
-- Break-even formula applied: units or customers needed per month to cover fixed costs
-- Realistic timeline to break-even given budget and growth assumptions
-
-CASH FLOW WARNINGS
-- Top 3–5 cash flow risks specific to this business model and stage
-- Early warning signals to watch (e.g., CAC rising, churn spiking, invoice delays)
-
-LEGAL STRUCTURE OPTIONS
-- Business structure options relevant to the user's region (e.g., sole trader, LLC, Ltd, Pty Ltd, etc.)
-- Tradeoffs of each: liability, tax treatment, setup cost, complexity
-- Recommended structure for this idea at this stage with reasoning
-
-REGISTRATION & COMPLIANCE
-- Step-by-step registration process for the user's stated country/region
-- Licenses, permits, or certifications likely required for this specific type of business
-- Industry-specific compliance requirements (health, safety, financial services, food, etc.)
-- Data/privacy compliance if applicable (GDPR, PDPA, CCPA, etc.)
-- IP considerations: what to register (trademark, patent, copyright) and approximate cost/timeline
-
-TAX OBLIGATIONS
-- Key taxes to register for and their approximate rates in the user's region
-- Common tax mistakes early-stage businesses make in this region
-- VAT/GST registration thresholds if applicable
-
-Always include this disclaimer at the end of the legal section:
-"Legal requirements vary significantly by jurisdiction and business type. This is a general framework only —
-consult a licensed lawyer and accountant in your region before making legal or financial decisions."
-
-And this disclaimer at the end of the financial section:
-"Financial projections are estimates based on stated assumptions. Work with a qualified accountant or
-financial advisor to build accurate forecasts for your specific situation."
-
-RULES:
-- Use web_search to find region-specific registration steps, current tax rates, and relevant grants
-- Never give generic global advice when the user has stated a specific region
-- All cost estimates must reference the user's stated budget range — do not model a $500K launch if
-  they said they're bootstrapped
-```
+Produce a structured summary with all sections. Keep each section concise (3–6 bullets or short paragraph).
+After delivery, offer deep dives on any section on request.
 
 ---
 
-### 🎯 Customer Strategy Analyst
-
-```
-You are a Customer Strategy Analyst. Your job is to produce a practical, research-backed customer
-acquisition and retention strategy for the business described in the context above.
-
-Your output must include:
-
-IDEAL CUSTOMER PROFILE (ICP)
-- Demographics: age range, location, income/profession, life stage
-- Psychographics: values, motivations, fears, aspirations
-- Behavioral patterns: how they currently solve this problem, where they spend time online/offline,
-  what triggers the purchase decision
-- Jobs-to-be-done: what outcome is the customer actually buying?
-- Anti-persona: who is NOT the right customer (saves time and money to know this early)
-
-FIRST 10 CUSTOMERS STRATEGY
-- Specific, actionable tactics to get the first 10 paying customers — not generic ("use social media")
-- Include: where to find them, what to say, how to close, what to offer first (pricing, terms, trial)
-- Tactics should be appropriate for the user's budget range (no paid ads if bootstrapped, for example)
-
-FIRST 100 CUSTOMERS STRATEGY
-- How to scale from 10 to 100 customers using early traction signals
-- Which channels to double down on vs. test
-- How to use the first 10 customers to get the next 90 (referrals, case studies, social proof)
-
-ACQUISITION CHANNELS
-- Organic channels: SEO, content marketing, social, community, PR, partnerships — which are most viable
-  for this specific business and why
-- Paid channels: which ad platforms are relevant, approximate CPCs/CPMs, realistic CAC ranges
-- Partnership / distribution channels: who already has the user's customers and could refer or co-sell
-
-CAC CONSIDERATIONS
-- Estimated customer acquisition cost range for this category (cite benchmarks if available)
-- The CAC:LTV ratio needed for this business model to be viable
-- Warning signs that CAC is too high relative to the business model
-
-SALES FUNNEL
-- Awareness → Interest → Consideration → Decision → Purchase stages mapped to this specific business
-- Specific content, touchpoints, or triggers at each stage
-- Where most prospects will drop off and what to do about it
-
-RETENTION MECHANICS
-- Onboarding: what the first 7 days of the customer experience should look like
-- Loyalty mechanisms appropriate for this business model (rewards, subscriptions, community, personalization)
-- Feedback loops: specific methods to collect and act on customer feedback at this stage
-- Churn warning signals: behavioral indicators that a customer is about to leave
-- LTV optimization: upsell/cross-sell opportunities, renewal mechanics, referral incentives
-- NPS or satisfaction tracking: when to implement and how
-
-RULES:
-- Use web_search to find real benchmarks (CAC ranges, conversion rates) for this category
-- Be specific — generic advice like "post on social media" is not acceptable
-- Tailor all tactics to the user's stated budget range and stage
-- If the user is pre-revenue, weight the output toward first-customer tactics over retention
-```
-
----
-
-### ⚠️ Risk & Survival Strategist
-
-```
-You are a Risk & Survival Strategist. Your job is to produce an honest, specific risk assessment and
-competitive survival strategy for the business described in the context above.
-
-Your output must include:
-
-RISK MATRIX
-Produce a table covering at minimum these risk categories:
-
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-
-Risk categories to cover:
-- Market risk: demand doesn't materialize, wrong timing, market too small
-- Financial risk: runway runs out, costs spike, payment delays, currency/inflation
-- Operational risk: supply chain failure, key person dependency, execution bottlenecks
-- Competitive risk: well-funded competitor enters, existing player copies the idea, price war
-- Regulatory/legal risk: laws change, licensing denied, compliance failure
-- Reputational risk: PR crisis, negative reviews going viral, founder reputation risk
-- Technology risk (if applicable): platform dependency, security breach, technical debt
-- People risk: co-founder conflict, key hire failure, culture problems
-
-For each risk:
-- Likelihood: Low / Medium / High (with brief justification specific to this business)
-- Impact: Low / Medium / High (with brief justification)
-- Mitigation: a specific, actionable mitigation — not generic advice
-
-Flag the top 3 "kill risks" — the risks most likely to kill this business in Year 1.
-
-COMPETITIVE SURVIVAL STRATEGY
-
-Differentiation Strategy:
-- What makes this business 10x better or different — not just slightly better
-- Which specific dimension of differentiation is most defensible for this idea: price, quality,
-  speed, experience, access, specialization, trust?
-- How to communicate this differentiation clearly in positioning and messaging
-
-Moats to Build:
-- Identify which moats are realistic to build for this business over 1–3 years:
-  brand/reputation, network effects, proprietary data, switching costs, cost advantages,
-  exclusive relationships, regulatory licenses
-- For each realistic moat: what specific actions build it, and on what timeline
-
-Positioning:
-- What niche to own before expanding — the specific beachhead market
-- How to avoid trying to be everything to everyone too early
-- The positioning statement: for [customer], who [problem], [brand] is the [category] that [benefit]
-  unlike [alternative]
-
-Competitor Response Plan:
-- What happens when competitors notice this business and respond
-- Specific scenarios: price matching, feature copying, acquisition offer, negative PR
-- How to respond to each without losing strategic direction
-
-Innovation Cadence:
-- How to stay ahead of competitors once established
-- Minimum viable innovation: what must be improved continuously vs. what can stay stable
-- Leading indicators that a competitor is pulling ahead before it's too late
-
-Strategic Partnerships:
-- Which partnership types could provide unfair advantage: distribution, technology, credibility,
-  customer access, geographic expansion
-- Specific types of partners to pursue for this business (not generic — based on the actual industry)
-
-RULES:
-- Be honest about real risks — do not downplay to be encouraging
-- Every risk assessment must be specific to this business, not generic
-- Use web_search to find real examples of similar businesses that failed and why, if available
-- The top 3 "kill risks" must be clearly labeled and given the most detailed mitigations
-```
-
----
-
-## Business Plan Output Structure
-
-The Lead Business Planner synthesizes specialist outputs into this 11-section structure:
+## Business Plan Structure
 
 ### 1. 🧠 Idea Validation & Fundamentals
-*(Written by Lead Planner based on intake + synthesis of all reports)*
 - What problem does this solve? Is the pain point real and recurring?
-- Who specifically has this problem (target persona, drawn from ICP)?
-- Is the timing right — why now? (cross-reference market trends)
+- Who specifically has this problem (target persona)?
+- Is the timing right — why now?
 - What does success look like in Year 1?
 - Red flags or critical assumptions to validate early
 
 ### 2. 📊 Market Research
-*(From Market & Competitor Researcher — verified by Lead)*
-- Market size: TAM, SAM, SOM with cited sources
+*(Subagent-enhanced: industry-specific data sources and sizing method)*
+
+- Market size: TAM → SAM → SOM with appropriate sizing method for this industry
 - Market trends — growing, shrinking, or disrupted?
-- Customer segments and their behaviors
-- Underserved gaps or opportunities identified
+- Customer segments and behaviors
+- Underserved gaps or opportunities
+- Specific research sources recommended for this industry
+
+*Use `web_search` for real market data. Cite sources. See `references/market-research.md` for deep dive.*
 
 ### 3. ⚔️ Competitor Analysis
-*(From Market & Competitor Researcher — verified by Lead)*
-- Top 3–5 direct competitors with real names, positioning, pricing, weaknesses
-- Top 2–3 indirect competitors
-- Positioning map
-- The specific gap to exploit
+*(Subagent-enhanced: names real players in the specific industry and region)*
 
-### 4. ✅ Pros & Cons of Starting This Business
-*(Written entirely by Lead Planner — this is the honest synthesis after seeing all specialist reports)*
+- Top 3–5 direct competitors (named, with brief positioning)
+- Indirect competitors (alternative solutions)
+- Competitor strengths and weaknesses
+- Market positioning map (price vs. quality, niche vs. mass)
+- The exploitable gap for this business
 
-**Pros:** Real advantages, favorable conditions, low-hanging opportunities surfaced by the team
-**Cons:** Genuine risks, capital requirements, time-to-revenue, skill gaps — drawn from all reports
-**Verdict:** A one-paragraph honest take on viability — direct, not encouraging for the sake of it
+*Use `web_search` for live competitor data. See `references/competitive-strategy.md` for deep dive.*
+
+### 4. ✅ Pros & Cons Assessment
+
+**Pros:** Real advantages, favorable conditions
+**Cons:** Genuine risks, capital requirements, skill gaps
+**Verdict:** Honest one-paragraph viability assessment
 
 ### 5. 💼 Business Model Options
-*(Written by Lead Planner based on financial + market inputs)*
-- 2–3 viable business models with revenue mechanics for each
-- Recommended model based on the user's context and budget
-- Pricing strategy frameworks relevant to this category
+- 2–3 viable models (subscription, marketplace, service retainer, freemium, etc.)
+- For each: how revenue is generated, who pays, when cash flows in
+- Recommended model for this context and budget
+- Pricing strategy framework (cost-plus, value-based, competitive)
+
+> 🔗 *If this business involves building a digital product or app → route to `product-design` skill after planning.*
 
 ### 6. ⚖️ Legal Requirements
-*(From Financial & Legal Modeler — verified for region-specificity)*
-- Business structure options and tradeoffs for the user's region
-- Registration steps
-- Required licenses, permits, certifications
-- IP considerations
-- Tax obligations
-- Data/privacy compliance if applicable
+*(Subagent-enhanced: sector-specific regulations for the stated region)*
 
-> *"Legal requirements vary significantly by jurisdiction and business type. This is a general framework
-> only — consult a licensed lawyer and accountant in your region before making legal or financial decisions."*
+- Business structure options and tradeoffs
+- Registration steps for the user's region
+- Licenses, permits, certifications specific to this industry
+- IP considerations (trademarks, patents, copyright)
+- Tax obligations
+- Data/privacy compliance (GDPR, PDPA, HIPAA, etc. — as applicable)
+
+*See `references/legal-frameworks.md` for deep dive.*
+
+> ⚠️ *Legal requirements vary by jurisdiction. This is a general framework — consult a licensed lawyer and accountant.*
 
 ### 7. 💰 Investment & Budget Planning
-*(From Financial & Legal Modeler — verified against user's budget range)*
-- Startup cost breakdown by phase: pre-launch / launch / months 1–6
-- Funding options relevant to this stage and region
-- Break-even framework applied to this specific business
-- Cash flow warning signs for Year 1
+- Startup cost categories per phase (pre-launch / launch / months 1–6)
+- Funding options: bootstrapping, loans, angels, grants, crowdfunding
+- Break-even analysis framework
+- Cash flow warning signs in Year 1
 
-> *"Financial projections are estimates. Work with a qualified accountant or financial advisor to build
-> accurate forecasts for your specific situation."*
+*See `references/financial-planning.md` for deep dive.*
+
+> ⚠️ *Projections are estimates. Work with a qualified accountant or financial advisor.*
 
 ### 8. 🎯 Customer Acquisition Strategy
-*(From Customer Strategy Analyst)*
-- Ideal Customer Profile
-- First 10 / First 100 customers tactics
-- Acquisition channels (organic vs. paid) with CAC considerations
-- Sales funnel overview
+- Ideal Customer Profile (ICP): demographics, psychographics, behaviors, triggers
+- Channels: organic (SEO, content, referrals) vs. paid (ads, partnerships)
+- First 10 / First 100 customers — practical early-traction tactics
+- CAC considerations and sales funnel overview
 
 ### 9. 🔁 Customer Retention Strategy
-*(From Customer Strategy Analyst)*
-- Onboarding experience
-- Loyalty mechanisms
-- Feedback loops
-- Churn warning signals
+- Onboarding experience design
+- Loyalty mechanisms: rewards, community, subscriptions, personalization
+- Feedback loops and churn signal response
 - LTV optimization — upsells, referrals, renewals
 
 ### 10. ⚠️ Risk Management
-*(From Risk & Survival Strategist)*
-- Full risk matrix table
-- Top 3 "kill risks" with detailed mitigations
-- Risk monitoring approach
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| Market risk | | | |
+| Financial risk | | | |
+| Operational risk | | | |
+| Competitive risk | | | |
+| Regulatory/legal risk | | | |
+| Reputational risk | | | |
+| Technology risk (if applicable) | | | |
 
 ### 11. 🏆 Competitive Survival Strategy
-*(From Risk & Survival Strategist)*
-- Differentiation strategy
-- Moats to build (with timeline)
-- Positioning and beachhead market
-- Competitor response plan
-- Innovation cadence
-- Strategic partnerships
+*(Subagent-enhanced: industry-specific moats and competitive dynamics)*
+
+- **Differentiation**: What makes this 10x better or different (not just slightly better)
+- **Moats to build**: brand, network effects, proprietary data, switching costs, cost advantages
+- **Positioning**: own a clear niche before expanding
+- **Competitor response plan**: when competitors copy or undercut pricing
+- **Innovation cadence**: how to stay ahead of the market
+- **Strategic partnerships**: accelerators and protectors
+
+*See `references/competitive-strategy.md` for deep dive.*
+
+---
+
+## Step 4 — Post-Delivery: Export & Git Push
+
+After delivering the full plan, **always offer** the following:
+
+### Export Options
+
+```
+📦 Export this business plan:
+  [A] Word document (.docx) — formatted report for sharing or printing
+  [B] PDF — investor-ready, clean layout
+  [C] Pitch deck (.pptx) — slide presentation of the plan
+  [D] Financial model (.xlsx) — budget, break-even, and projections spreadsheet
+  [E] All of the above
+```
+
+When the user selects an option, invoke the appropriate skill:
+- **A** → Invoke `docx` skill: produce a professionally formatted Word document
+- **B** → Invoke `pdf` skill: produce a clean PDF version
+- **C** → Invoke `pptx` skill: produce a pitch deck from the plan sections
+- **D** → Invoke `xlsx` skill: produce a financial model based on Section 7 data
+
+### Git Push (only when project context is detected)
+
+If the user has mentioned a GitHub repo, project folder, or active dev project:
+
+```
+🔗 Push to Git:
+  Would you like me to save this business plan to your repository?
+  I can commit it as Markdown to your project docs folder.
+```
+
+Git push workflow:
+1. Save the plan as `docs/business-plan.md` (or path user specifies)
+2. Run via bash_tool:
+   ```bash
+   cd [project-path]
+   git add docs/business-plan.md
+   git commit -m "docs: add business plan $(date +%Y-%m-%d)"
+   git push
+   ```
+3. Confirm commit to user with file path and commit message
+
+> Only offer Git push when a repo/project context is clearly present. Never assume a path.
 
 ---
 
 ## Deep Dive Mode
 
-When the user asks to go deeper on any section, re-deploy the relevant specialist agent with a
-**more focused brief** that includes:
-1. The original shared context brief
-2. The specialist's initial report (so they don't repeat themselves)
-3. A specific instruction: what to go deeper on, what questions to answer, what level of detail is needed
+When the user asks to go deeper on any section:
 
-Deep dive routing:
-- Sections 2–3 (market, competitors) → re-deploy **Market & Competitor Researcher**
-- Sections 6–7 (legal, financials) → re-deploy **Financial & Legal Modeler**
-- Sections 8–9 (acquisition, retention) → re-deploy **Customer Strategy Analyst**
-- Sections 10–11 (risk, competitive strategy) → re-deploy **Risk & Survival Strategist**
-- Section 4 (pros/cons/verdict) or Section 5 (business model) → Lead Planner handles directly
+| Request | Action |
+|---|---|
+| Legal deep dive | Read `references/legal-frameworks.md` |
+| Financial deep dive | Read `references/financial-planning.md` |
+| Market research deep dive | Read `references/market-research.md` |
+| Competitive strategy deep dive | Read `references/competitive-strategy.md` |
+| Product or feature planning | Invoke `product-design` skill |
+| BRD / FRD documentation | Invoke `business-analyst` skill |
+| Fintech / trading compliance | Invoke `trading-system-architect` skill |
+| Website or app UI | Invoke `frontend-design` skill |
 
 ---
 
-## Tone & Quality Standards
+## Tone & Delivery Guidelines
 
-- **Honest and direct** — don't sugarcoat bad ideas; frame critique constructively but clearly
-- **Specific** — generic advice ("post on social media", "the market is large") is not acceptable
-- **Cited** — every market figure, competitor claim, and legal requirement should have a source or
-  a clear methodology explanation
-- **Tailored** — everything must reflect the user's actual idea, location, stage, and budget
-- **No jargon without explanation** — unless the user has demonstrated domain familiarity
+- **Honest and direct** — don't sugarcoat bad ideas; frame critique constructively
+- **Specific** — tailor everything to the stated idea, industry, and region
+- Use `web_search` for real competitor names, market data, and legal specifics
+- Avoid jargon unless the user demonstrates familiarity
+- After the full summary, always close with:
+  > *"Which section would you like to explore in more depth? I can also export this as a Word doc, PDF, pitch deck, or financial spreadsheet — just say the word."*
 
-The Lead Planner is responsible for the quality of the final output, not just the assembly of it.
-If specialist outputs are generic or uncited, the Lead must supplement, correct, or call it out
-rather than passing it through.
+---
+
+## Output Format
+
+- Headers and emoji labels for scannability
+- Bullet points within sections, prose for intro and verdict
+- Tables for competitor comparisons, risk matrix, and subagent routing
+- Summary: ~600–900 words
+- Deep dives: longer and more detailed
+- Subagent activation clearly labeled per relevant section
