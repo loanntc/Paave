@@ -1,12 +1,12 @@
 # FRD — Functional Requirement Document
-## Paave — Gen Z Fintech Investing App (V2)
+## Paave — Vietnam Gen Z Paper-Trading & Social Investing App (V2.2)
 
-**Document version:** 2.0
-**Date:** 2026-04-14
+**Document version:** 2.2
+**Date:** 2026-04-20
 **Author:** Business Analysis Team
 **Status:** Approved for Development
-**Linked BRD:** BRD.md v2.0
-**Previous version:** FRD v1.0
+**Linked BRD:** BRD.md v2.2
+**Supersedes:** FRD v2.1 (2026-04-20)
 
 ---
 
@@ -14,55 +14,80 @@
 
 1. [Feature Overview](#feature-overview)
 2. [Functional Requirements — Core (FR-01 to FR-53)](#functional-requirements--core)
-   - [FR-01 to FR-08: Onboarding](#onboarding)
+   - [FR-01 to FR-08.2: Onboarding — includes multi-method signup (FR-04.1, FR-05..FR-05.5) + industrial preferences (FR-08.1) + investment goal (FR-08.2), new in v2.2](#onboarding)
    - [FR-09 to FR-14: Home Screen](#home-screen)
    - [FR-15 to FR-22: Discover / Trending Feed](#discover--trending-feed)
    - [FR-23 to FR-29: Stock Detail](#stock-detail)
    - [FR-30 to FR-35: Portfolio Tracking](#portfolio-tracking)
-   - [FR-36 to FR-41: Markets Module](#markets-module)
+   - [FR-36 to FR-41: Markets Module — VN primary, KR + Global reference-only (v2.2)](#markets-module)
    - [FR-42 to FR-47: Notifications](#notifications)
-   - [FR-48 to FR-53: User Account](#user-account)
+   - [FR-48 to FR-53: User Account — includes Linked Providers panel FR-49.1 (v2.2)](#user-account)
 3. [Module A: Age Gate (FR-AGE-01 to FR-AGE-04)](#module-a-age-gate)
-4. [Module B: Paper Trading Engine (FR-PT-01 to FR-PT-06)](#module-b-paper-trading-engine)
+4. [Module B: Paper Trading Engine — PRIMARY PILLAR (FR-PT-01 to FR-PT-06)](#module-b-paper-trading-engine)
 5. [Module C: Gamification (FR-GAME-01 to FR-GAME-05)](#module-c-gamification)
-6. [Module D: AI System P0 (FR-AI-01 to FR-AI-03)](#module-d-ai-system-p0)
-7. [Module E: AI System P1 (FR-AI-04 to FR-AI-07)](#module-e-ai-system-p1)
-8. [Module F: Social Features P1 (FR-SOC-01 to FR-SOC-05)](#module-f-social-features-p1)
+6. [Module D: AI Insights P0 (FR-AI-01 to FR-AI-03)](#module-d-ai-system-p0)
+7. [Module E: AI Insights P1 (FR-AI-04 to FR-AI-05)](#module-e-ai-system-p1)
+8. [Module F: Social Trading P1 (FR-SOC-01 to FR-SOC-05)](#module-f-social-features-p1)
 9. [Module G: Language System (FR-LANG-01 to FR-LANG-02)](#module-g-language-system)
 10. [Module H: Legal / Disclaimers (FR-LEGAL-01 to FR-LEGAL-03)](#module-h-legal--disclaimers)
-11. [Business Rules](#business-rules)
-12. [Traceability Matrix](#traceability-matrix)
+11. [Module I: Brokerage Partner Integration — V1.x (FR-BRK-01 to FR-BRK-06)](#module-i-brokerage-partner-integration)
+12. [Business Rules](#business-rules)
+13. [Traceability Matrix](#traceability-matrix)
 
 ---
 
-## V2 Scope Notes
+## V2.1 Scope Notes *(retained — still active)*
 
-- Paper trading is now **core functionality**, not a future add-on. FR-09 Portfolio hero widget (FR-09), FR-30–FR-35 Portfolio Tracking, and FR-08 onboarding now reference paper trading as the primary portfolio experience.
-- The following features previously deferred to V2 **remain deferred**: full social feed (copy trading, following feed), leaderboard v2, Morning Call AI briefing, portfolio sharing, brokerage integration.
-- Real money trading is **not in scope** for V1 or V2. All buy/sell actions are simulated.
+Three framing shifts from v2.0:
+
+- **Paper trading is the product**, not a feature. It is the primary pillar; Module B is the spine of the FRD. All other modules exist to feed, socialize, or graduate out of paper trading.
+- **Social Trading renames Social Features.** Module F is a track-record-visible social-trading layer, not a peer-learning forum. Education ceases to be a first-class module.
+- **Brokerage Partner Integration** is added as Module I (V1.x). Paave remains unlicensed and handles no funds; real trading is executed by licensed securities-company partners on their own infrastructure.
+
+Removed from scope in v2.1 (was in v2.0 Module E / elsewhere):
+- Pre-trade AI risk-score card and suggested position size (FR-AI-04 in v2.0).
+- Personalized learning paths, 90-second micro-lessons, spaced repetition (FR-AI-06 in v2.0).
+- Echo-chamber behavioral detection (subset of FR-AI-07 in v2.0).
+
+Still deferred to V2+: full social feed (copy trading, following feed), leaderboard v2, Morning Call AI briefing, public portfolio sharing, pre-trade AI advisory surfaces.
+
+## V2.2 Scope Notes *(new in v2.2 — additive on top of v2.1)*
+
+Three additive deltas in v2.2:
+
+- **Vietnam Gen Z is the sole PRIMARY persona.** All scope, copy, marketing, personalization defaults, and success metrics are Vietnam-first. KR and US/Global market data remain in V1 **for reference only** — labeled "Reference" in every surface, no SLA, no primary-persona product decisions driven by KR/US needs. KR localization, KR social community, and KR marketing campaigns are deferred to V2+.
+- **Multi-method signup is core V1 scope.** V1 ships with four signup methods on day one: email + password, Google OAuth, Apple OAuth, and Zalo OAuth (BR-SIGNUP-01). New FRs: FR-04.1 Signup Method Selection, FR-05 Email/Password Signup, FR-05.1 Google OAuth, FR-05.2 Apple OAuth, FR-05.3 Zalo OAuth, FR-05.4 Post-Handshake DOB Prompt, FR-05.5 Account Linking. Updates: FR-07 Login routes to the method used at registration; no password is ever set for social-only accounts.
+- **Onboarding collects industrial preferences + investment goal.** Two new steps (FR-08.1 Industrial Preferences multi-select; FR-08.2 Investment Goal single-choice) are inserted between the age-gate routing and the consent screen. These fields seed Discover personalization (BR-ONBOARD-04), weekly challenge difficulty (BR-ONBOARD-05), and home widgets. `onboarded_at` flag flips only when both fields (or explicit "Skip" on preferences) plus goal are persisted.
+
+Deferred to V2+ from v2.2 scope:
+- Additional social providers (Facebook, KakaoTalk, Line, Naver).
+- KR-localized marketing and KR-localized social communities.
+- Document-based KYC at signup (V1.x partner-path only; V2+ for Paave itself).
 
 ---
 
 ## 1. Feature Overview
 
-| Feature | Actor | Goal |
-|---------|-------|------|
-| Onboarding | New User | Complete registration with DOB, market preference, and consent to access the app |
-| Home Screen | Registered User | View paper portfolio summary, market snapshot, trending stocks, and weekly challenge |
-| Discover / Trending Feed | Registered User | Browse curated stock cards with editorial context and social proof |
-| Stock Detail | Registered User | View price data, key stats, community feed, and place paper trades |
-| Portfolio Tracking (Paper) | Registered User | Track virtual holdings, P&L, and trade history |
-| Markets Module | Registered User | Browse VN/KR market data |
-| Notifications | Registered User | Receive price alerts, coaching nudges, and portfolio health updates |
-| User Account | Registered User | Manage profile, language, preferences, and security settings |
-| Age Gate | New User | Enforce age-appropriate feature access based on verified DOB |
-| Paper Trading Engine | LEARN_MODE / FULL_ACCESS User | Simulate market orders and limit orders on HOSE/HNX/KOSPI/KOSDAQ |
-| Gamification | Registered User | Earn XP, advance trader tiers, complete weekly challenges |
-| AI System P0 | Registered User | Post-trade explanations and natural language stock queries |
-| AI System P1 | Registered User | Pre-trade cards, portfolio health checks, personalized learning, behavioral coaching |
-| Social Features P1 | Registered User | Social proof on stocks, per-ticker feed, post creation, follow system |
-| Language System | Registered User | VN/KR/EN language selection with locale-appropriate financial terminology |
-| Legal / Disclaimers | Registered User | Investment disclaimers, AI disclaimers, and data consent |
+| Feature | Pillar | Actor | Goal |
+|---------|-------|-------|------|
+| **Paper Trading Engine** | **PRIMARY** | LEARN_MODE / FULL_ACCESS User | Simulate market and limit orders on HOSE/HNX (VN primary, real-time), KOSPI/KOSDAQ (reference), and global tickers (reference) with virtual funds |
+| **Social Trading** | PRIMARY | Registered User | Follow traders, view per-ticker feeds, share trade receipts, size conviction from community signal |
+| **Multi-Method Signup (v2.2)** | PRIMARY | New User | Register via email/password, Google, Apple, or Zalo; provider verifies identity and Paave auto-creates account using provider display name |
+| **Onboarding Personalization (v2.2)** | PRIMARY | New User | Capture industrial preferences (multi-select) + investment goal (single-choice) to seed Discover personalization and challenge difficulty |
+| Home Screen | Supporting | Registered User | Surface paper portfolio, followed traders, market snapshot, trending stocks |
+| Discover / Trending Feed | Supporting | Registered User | Browse curated stock cards with editorial context, social proof, and preference-weighted ranking |
+| Stock Detail | Supporting | Registered User | View price data, key stats, community feed, and place paper trades |
+| Portfolio Tracking (Paper) | Supporting | Registered User | Track virtual holdings, P&L, and trade history |
+| Markets Module | Supporting | Registered User | Browse VN market data (primary, real-time); KR + Global as **reference only** in V1 |
+| **Brokerage Partner Integration (V1.x)** | PRIMARY (V1.x) | FULL_ACCESS User, Tier 3+, ≥ 30 paper trades | Open a real account at a licensed partner broker; hand off paper strategies into real markets |
+| Notifications | Supporting | Registered User | Receive price alerts, nudges, portfolio health updates |
+| User Account | Supporting | Registered User | Manage profile, language, preferences, linked providers, and security settings |
+| Age Gate | Supporting | New User | Enforce age-appropriate feature access and brokerage eligibility based on verified DOB (post-OAuth mandatory screen for social signups) |
+| Gamification | Supporting | Registered User | Earn XP, advance Trader Tiers, complete weekly challenges |
+| AI Insights P0 | Supporting | Registered User | Post-trade insight cards and natural-language stock queries (ticker/portfolio-scoped) |
+| AI Insights P1 (V1.x) | Supporting | Registered User | Weekly portfolio health check and behavioral nudges |
+| Language System | Supporting | Registered User | VN/KR/EN language selection with locale-appropriate financial terminology (VN is default for VN users) |
+| Legal / Disclaimers | Supporting | Registered User | Investment, AI, paper-trading, minor, and brokerage-partner disclaimers; data consent |
 
 ---
 
@@ -114,59 +139,230 @@
 
 ---
 
-#### FR-04 — Market Preference Selection *(Deprecated — V1/V2)*
+#### FR-04 — Market Preference Selection *(Deprecated — V1 onward)*
 
 - **Actor:** N/A
-- **Description:** Market preference selection has been removed from the onboarding flow. All users are defaulted to Vietnam (HoSE/HNX) as the sole supported market in V1/V2. No user-facing selection is presented.
-- **Key Rules:** `market_preference` is system-set to `VN` on account creation. Not user-configurable in V1/V2.
+- **Description:** Market preference selection has been removed from the onboarding flow. All users are defaulted to Vietnam (HoSE/HNX) as the sole primary market in V1 (BRD §5.1.2). No user-facing selection is presented. KR and Global are surfaced as **reference only** in Markets module — not selectable as a "primary" market.
+- **Key Rules:** `market_preference` is system-set to `VN` on account creation. Not user-configurable in V1.
 - **Acceptance Criteria:** N/A — preference set automatically on registration.
 - **Edge Cases:** N/A
 - **Priority:** Deprecated
 
 ---
 
-#### FR-05 — User Registration (KYC — Lightweight)
+#### FR-04.1 — Signup Method Selection *(new in v2.2)*
 
 - **Actor:** New User
-- **Description:** Collects: Full name, Email, Password, Nationality (pre-filled). Sends verification email on submit.
+- **Description:** Unauthenticated user lands on a "Create account" screen presenting four signup methods: **Continue with Google**, **Continue with Apple** (iOS only; optional on Android), **Continue with Zalo**, **Sign up with email**. Buttons render in the user's language. Tapping a social button launches the provider OAuth flow (FR-05.1/5.2/5.3). Tapping "Sign up with email" routes to FR-05.
+- **Input:** None — button tap only.
+- **Output:** Navigation to the selected signup FR; no account yet created at this step.
+- **Precondition:** User is unauthenticated and has tapped "Create Account" on Welcome (FR-02).
+- **Postcondition:** User enters the chosen signup flow.
+- **V2.2 Update:** This screen is new in v2.2. Replaces the v2.1 flow that routed directly to FR-05 email signup.
+- **Key Rules:**
+  - BR-SIGNUP-01 — all four methods must be present at V1 launch (though Zalo may ship dark if provider approval is delayed).
+  - BR-SIGNUP-02 — on iOS, "Sign in with Apple" must be rendered with equal prominence whenever Google or Zalo is rendered.
+  - BR-SIGNUP-06 — if a provider is unreachable, that button is disabled with a provider-specific label; other methods remain usable.
+- **Acceptance Criteria:**
+  - Given an iOS user lands on the signup method selector → all four buttons render with equal sizing and tap targets.
+  - Given Zalo is experiencing an outage → the Zalo button is disabled and labelled "Zalo sign-in is temporarily unavailable"; other buttons are unaffected.
+  - Given the user taps "Continue with Google" → Google OAuth flow (FR-05.1) launches within 2 seconds.
+- **Edge Cases:**
+  - No network → all buttons disabled; a "Check your connection" banner is shown.
+  - Provider SDK not installed (Zalo app missing) → fallback to web-based OAuth in an in-app browser.
+- **Priority:** P0
+
+---
+
+#### FR-05 — User Registration — Email + Password (Method A)
+
+- **Actor:** New User (Email method)
+- **Description:** Collects: Display name, Email, Password, DOB (day/month/year picker), Nationality (pre-filled). Sends verification email on submit. On success, account is created in `PENDING_VERIFICATION` state and user proceeds to FR-06.
 - **V2 Update:** DOB field added (FR-AGE-01). Data consent screen (FR-LEGAL-03) shown before this step.
+- **V2.2 Update:** This FR now covers only the email/password path. Social methods are FR-05.1 (Google), FR-05.2 (Apple), FR-05.3 (Zalo). Nationality defaults to VN for V1; not user-selectable (see BRD §5.1.2).
 - **Input:**
-  - Full name: 2–100 chars, Unicode-allowed
+  - Display name: 2–50 chars, Unicode-allowed, profanity-filtered
   - Email: RFC 5322, max 254 chars
   - Password: 8–64 chars, ≥1 uppercase, ≥1 lowercase, ≥1 digit, ≥1 special char (`!@#$%^&*`)
-  - Nationality: VN | KR | OTHER
+  - Nationality: system-defaulted to VN (not user-selectable in V1)
   - DOB: date picker (see FR-AGE-01)
-- **Key Rules:** Email uniqueness enforced. DOB required and validated before account created.
+- **Output:** Account row with `signup_method = 'email'`, `status = 'PENDING_VERIFICATION'`, `password_hash = bcrypt(…)`, verification email sent.
+- **Precondition:** User tapped "Sign up with email" on FR-04.1.
+- **Postcondition:** FR-06 is routed (OTP entry screen).
+- **Key Rules:** Email uniqueness enforced. DOB required (BR-AGE-01). Password-hash is bcrypt or argon2id, never plaintext.
 - **Acceptance Criteria:**
   - Given valid form → account created `PENDING_VERIFICATION`, verification email sent within 30s.
-  - Given duplicate email → field error "An account with this email already exists."
+  - Given duplicate email that is ALSO linked to a social account → field error "This email is already registered — try signing in with [provider]" (BR-SIGNUP-08).
+  - Given duplicate email registered via email/password → field error "An account with this email already exists."
 - **Edge Cases:** Email already registered but unverified → resend OTP, navigate to verification screen.
 - **Priority:** P0
 
 ---
 
-#### FR-06 — Email Verification
+#### FR-05.1 — User Registration — Google OAuth (Method B) *(new in v2.2)*
 
-- **Actor:** New User
+- **Actor:** New User (Google method)
+- **Description:** Launches Google OAuth 2.0 flow with scopes `openid email profile`. On successful callback, Paave receives: Google-verified email, display name, avatar URL, Google Sub ID. Account is auto-created using the returned display name as `display_name`. The flow then routes to FR-05.4 (post-handshake DOB prompt).
+- **Input:** User tap on "Continue with Google" from FR-04.1 plus provider-returned token payload.
+- **Output:** Account row with `signup_method = 'google'`, `google_sub = <sub>`, `email = <provider_email>`, `display_name = <provider_name>`, `password_hash = NULL`, `status = 'PENDING_DOB'`.
+- **Precondition:** Google OAuth client is configured and reachable.
+- **Postcondition:** User is routed to FR-05.4 (DOB prompt).
+- **Key Rules:**
+  - BR-SIGNUP-03 — DOB must be collected post-handshake before any other surface.
+  - BR-SIGNUP-07 — OAuth tokens encrypted at rest; never logged.
+  - BR-SIGNUP-09 — only `email`, `profile` scopes requested; no phone, no friends list.
+- **Acceptance Criteria:**
+  - Given user completes Google OAuth → account row inserted with `signup_method='google'` and status `PENDING_DOB`; user lands on FR-05.4.
+  - Given Google returns an email already registered → account-linking flow (FR-05.5) triggers instead of creating a duplicate.
+  - Given Google returns an empty or missing display name → default to `Người dùng ẩn danh` (VN) / `익명 사용자` (KR) / `Anonymous User` (EN), and force edit on FR-05.4.
+- **Edge Cases:**
+  - Google token invalid or expired at callback → return to FR-04.1 with a toast "Sign-in failed. Try again."
+  - User cancels Google consent screen → return to FR-04.1 silently.
+  - Google returns email but user denies `profile` → account creation fails; toast "Paave needs access to your name to continue."
+- **Priority:** P0
+
+---
+
+#### FR-05.2 — User Registration — Apple OAuth (Method C) *(new in v2.2)*
+
+- **Actor:** New User (Apple method)
+- **Description:** Launches "Sign in with Apple" flow using Apple's native authentication. On successful callback, Paave receives: Apple Sub ID (stable), display name (first/last from Apple, only on first sign-in), email (which may be a **private relay** address). Account is auto-created using the Apple-returned display name. The flow then routes to FR-05.4.
+- **Input:** User tap on "Continue with Apple" from FR-04.1 plus Apple credential payload.
+- **Output:** Account row with `signup_method = 'apple'`, `apple_sub = <sub>`, `email = <relay_or_real_email>`, `email_is_relay = true|false`, `display_name = <provider_name>`, `password_hash = NULL`, `status = 'PENDING_DOB'`.
+- **Precondition:** Apple Developer Program + Sign in with Apple capability registered for Paave's bundle ID.
+- **Postcondition:** User is routed to FR-05.4 (DOB prompt).
+- **Key Rules:**
+  - BR-SIGNUP-02 — on iOS, Apple sign-in button is mandatory alongside Google/Zalo.
+  - BR-SIGNUP-05 — account linking keyed by Apple Sub ID, not email (because email may be a private relay).
+  - BR-SIGNUP-07 — Apple identity token encrypted at rest; never logged.
+  - Paave must store the private relay email verbatim and send transactional mail to it as-is (Apple forwards).
+- **Acceptance Criteria:**
+  - Given user completes Apple OAuth → account row inserted with `signup_method='apple'`, `email_is_relay` set correctly, `status='PENDING_DOB'`; user lands on FR-05.4.
+  - Given Apple returns a private relay email → email is stored; subsequent transactional emails succeed via Apple's relay service.
+  - Given user later signs in with a different provider → account-linking (FR-05.5) uses the Apple Sub ID, not the relay email.
+- **Edge Cases:**
+  - Apple returns no name (second-time sign-in after initial first-name consent) → Paave uses the stored name; if none, prompts user to enter one in FR-05.4.
+  - Relay email bounces → fall back to in-app messaging for critical notifications (RISK-20).
+  - User revokes Apple sign-in in iOS Settings → on next launch, the account is locked into "re-authenticate with Apple" state.
+- **Priority:** P0 (iOS), P1 (Android — Apple sign-in is optional on Android)
+
+---
+
+#### FR-05.3 — User Registration — Zalo OAuth (Method D) *(new in v2.2, VN-critical)*
+
+- **Actor:** New User (Zalo method)
+- **Description:** Launches Zalo OAuth 2.0 flow using Zalo Open Platform SDK or web fallback. On successful callback, Paave receives: Zalo user ID (`id`), display name (`name`), avatar URL (`picture`). Email may or may not be returned. Account is auto-created using the Zalo-returned display name. If email is not returned, FR-05.4 additionally requires the user to enter an email for account recovery.
+- **Input:** User tap on "Continue with Zalo" from FR-04.1 plus Zalo credential payload.
+- **Output:** Account row with `signup_method = 'zalo'`, `zalo_id = <id>`, `email = <zalo_email_or_null>`, `display_name = <provider_name>`, `password_hash = NULL`, `status = 'PENDING_DOB'` (if email returned) or `'PENDING_DOB_AND_EMAIL'` (if no email).
+- **Precondition:** Zalo Open Platform business account approved and OAuth client credentials provisioned.
+- **Postcondition:** User is routed to FR-05.4 (DOB prompt + optional email step).
+- **Key Rules:**
+  - BR-SIGNUP-01 — Zalo is a required V1 method (may ship dark if Zalo approval delayed; see RISK-17).
+  - BR-SIGNUP-03 — DOB must be collected post-handshake.
+  - BR-SIGNUP-09 — only `id`, `name`, `picture` scopes requested; no phone, no friends, no address.
+- **Acceptance Criteria:**
+  - Given user completes Zalo OAuth with email → account row inserted with `signup_method='zalo'`, `email` populated, `status='PENDING_DOB'`.
+  - Given user completes Zalo OAuth without email → status `PENDING_DOB_AND_EMAIL`; FR-05.4 shows email field as required.
+  - Given Zalo returns an email that conflicts with an existing Paave account → account-linking flow (FR-05.5).
+- **Edge Cases:**
+  - Zalo native app not installed → fallback to in-app browser web OAuth.
+  - Zalo provider 5xx at exchange → show "Zalo sign-in temporarily unavailable"; user returns to FR-04.1.
+  - Zalo display name contains banned characters (profanity list, unicode obfuscation) → force user to edit on FR-05.4 before proceeding.
+- **Priority:** P0
+
+---
+
+#### FR-05.4 — Post-Handshake DOB Prompt (Social Signups) *(new in v2.2)*
+
+- **Actor:** New User (Google / Apple / Zalo method) with account in `PENDING_DOB` or `PENDING_DOB_AND_EMAIL` state
+- **Description:** Mandatory, non-skippable screen shown immediately after any social OAuth handshake completes. User enters DOB (day/month/year picker). Display name (pre-filled from provider) is editable here. For Zalo-no-email state, user also enters an email. On submit, DOB drives age-gate routing (FR-AGE-02/03/04) and the account transitions from `PENDING_DOB` to `ACTIVE` (for 18+) or `PARENTAL_CONSENT_PENDING` / `LEARN_MODE` per age.
+- **Input:**
+  - DOB: date picker (day, month, year). Validated to be a real date and not in the future.
+  - Display name: 2–50 chars, editable, profanity-filtered.
+  - Email (Zalo-no-email path only): RFC 5322, max 254 chars.
+- **Output:** Account transitions to age-appropriate state; routes to FR-08.1 (industrial preference).
+- **Precondition:** Account row exists in `PENDING_DOB` or `PENDING_DOB_AND_EMAIL`.
+- **Postcondition:** DOB persisted; age-gate state set; next step is FR-08.1.
+- **Key Rules:**
+  - BR-AGE-01 — DOB is required regardless of signup method.
+  - BR-SIGNUP-03 — this screen is non-skippable, non-dismissible; force-quit-and-reopen returns here.
+  - BR-AGE-03 — if DOB < 16, route to parental consent (FR-AGE-03).
+- **Acceptance Criteria:**
+  - Given user enters DOB = 22 years old → account transitions to `ACTIVE` + FULL_ACCESS; routed to FR-08.1.
+  - Given user enters DOB = 16 years old → account transitions to `ACTIVE` + LEARN_MODE; routed to FR-08.1.
+  - Given user enters DOB = 14 years old → account transitions to `PARENTAL_CONSENT_PENDING`; routed to FR-AGE-03 (parental consent flow).
+  - Given user force-quits mid-screen → re-opening the app routes back to this exact screen (state-persistent).
+  - Given Zalo path with no email → email field is shown and required; submit fails if missing.
+- **Edge Cases:**
+  - User enters a future DOB → inline error "Please enter a valid date of birth."
+  - User backgrounds the app mid-entry for > 24h → session may need re-auth via the same provider; DOB entry resumes on return.
+  - Display name edit resolves to empty after profanity filter → user must enter a new name; submit disabled.
+- **Priority:** P0
+
+---
+
+#### FR-05.5 — Account Linking on Email/Provider Conflict *(new in v2.2)*
+
+- **Actor:** New User whose OAuth handshake returns an email that matches an existing Paave account
+- **Description:** When a social OAuth handshake (FR-05.1/5.2/5.3) returns an email that already exists on a Paave account (email/password or another social provider), Paave does **not** create a second account. Instead, it displays an account-linking screen: "An account with this email already exists. Sign in with [original method] to link this [new provider] to your account." On successful authentication against the original method, the new provider is linked (sub ID stored, `signup_method` unchanged, linked_providers set updated). For Apple private-relay, linking keys on Apple Sub ID rather than email (BR-SIGNUP-05).
+- **Input:**
+  - Existing account credentials (email/password OR re-auth via original provider).
+  - New provider credentials (already received).
+- **Output:** Linked account — no new row in `users`; `linked_providers` JSON column updated with the new provider's sub ID; user proceeds to Home (or to DOB prompt if the original account was also `PENDING_DOB`).
+- **Precondition:** Social OAuth returned an email that exists in `users.email`.
+- **Postcondition:** New provider linked; no duplicate account created.
+- **Key Rules:**
+  - BR-SIGNUP-04 — zero duplicate accounts created under conflict.
+  - BR-SIGNUP-05 — Apple linking keyed by Apple Sub ID, not email (private relay).
+  - BR-SIGNUP-08 — if user later tries email/password on a social-only account, they are shown a "Sign in with [provider]" redirect (no password prompt, no reset).
+  - RISK-23 — linking does not merge Trader Tier scores; the linked provider adopts the existing account's Tier.
+- **Acceptance Criteria:**
+  - Given email `x@ex.com` exists (email/password) and user signs up via Google with same email → account-linking prompt shown; after password verification, Google is added to `linked_providers`; no duplicate row.
+  - Given Apple private-relay signup followed by Google signup with Apple's real email → linking not triggered by email match (relay breaks it); uses alternate contact verification.
+  - Given user abandons the linking prompt → no linking occurs; on next sign-in, user is prompted again.
+- **Edge Cases:**
+  - User forgets the original-account password → password-reset flow available from the linking prompt.
+  - User tries to link same provider twice (same Google account to two different Paave accounts) → rejected; the Google sub ID is already bound elsewhere.
+  - Original account is in `PARENTAL_CONSENT_PENDING` → linking blocked until consent completes.
+- **Priority:** P0
+
+---
+
+#### FR-06 — Email Verification (Email/Password method only)
+
+- **Actor:** New User (Email method)
 - **Description:** 6-digit OTP sent to email; valid 10 minutes; resend after 60-second cooldown; max 5 attempts before 15-minute lockout.
+- **V2.2 Update:** This FR applies only to Method A (email/password). Social OAuth methods (FR-05.1/5.2/5.3) use the provider's verification and do NOT run this step.
 - **Key Rules:** New OTP immediately invalidates previous OTP.
 - **Acceptance Criteria:**
-  - Given correct OTP within 10 minutes → account `ACTIVE`, navigate to Home.
+  - Given correct OTP within 10 minutes → account `ACTIVE`, routed to FR-08.1.
   - Given 5th incorrect attempt → "Too many attempts. Please try again in 15 minutes."
 - **Edge Cases:** OTP in spam → hint shown below input field.
 - **Priority:** P0
 
 ---
 
-#### FR-07 — Login
+#### FR-07 — Login (Multi-Method)
 
 - **Actor:** Returning User
-- **Description:** Email + password authentication. JWT access token (1h), refresh token (30d). Generic error on failure (no email/password differentiation).
-- **Key Rules:** 5 consecutive failures → 15-minute lockout.
+- **Description:** Login screen offers: email/password form AND "Continue with Google / Apple / Zalo" buttons. The system routes the user to whichever method matches their account. If a user attempts email/password on a social-only account, response is a redirect: "This account was created with [provider]. Sign in with [provider]." (BR-SIGNUP-08, no password prompt, no reset offer).
+- **V2.2 Update:** Social sign-in is a V1 launch feature, not a V1.1 deferral. Removes the prior "Social login (Google, Apple) planned for V1.1" language.
+- **Input:**
+  - Email/password (Method A): email + password
+  - Google/Apple/Zalo (Methods B/C/D): provider token from re-authentication
+- **Key Rules:**
+  - JWT access token (1h), refresh token (30d).
+  - 5 consecutive failures on email/password → 15-minute lockout.
+  - BR-SIGNUP-08 — social-only accounts never receive a password prompt.
 - **Acceptance Criteria:**
-  - Given valid credentials → Home screen, valid session.
-  - Given 5th failed attempt → account locked 15 minutes.
-- **Edge Cases:** `PENDING_VERIFICATION` account → "Please verify your email to continue."
+  - Given email/password valid → Home screen.
+  - Given email/password submitted for a Google-only account → 200 with redirect "Sign in with Google"; no lockout counter increment.
+  - Given Google re-auth succeeds → Home screen.
+  - Given 5th failed email/password attempt → account locked 15 minutes.
+- **Edge Cases:**
+  - `PENDING_VERIFICATION` account → "Please verify your email to continue."
+  - `PENDING_DOB` account (social signup abandoned at DOB) → routed to FR-05.4.
+  - Provider outage at login time → same provider's button disabled with label; user sees "Try another method" if available.
 - **Priority:** P0
 
 ---
@@ -174,12 +370,63 @@
 #### FR-08 — Onboarding Progress Indicator
 
 - **Actor:** New User
-- **Description:** Step indicator during registration flow. Steps: Data Consent → Account Details → Verify Email (3 steps in V2). Market Selection step removed; VN market is default.
-- **V2 Update:** Market Selection step removed. Step count is 3: Data Consent → Account Details → Verify Email.
+- **Description:** Step indicator during registration flow. Visible on every onboarding screen.
+- **V2.2 Update:** Step count is **6** (for social signups) or **6** (for email signups):
+  - Email: Data Consent → Account Details → Verify Email → DOB *(same form, not separate step)* → Industrial Preferences → Investment Goal
+  - Social: Method Selection → Provider Handshake → DOB (+ optional email) → Industrial Preferences → Investment Goal → Consent
+  - The indicator shows `step X of 6` at all times.
 - **Key Rules:** Step indicator always visible during registration; not shown on Login screen.
 - **Acceptance Criteria:**
-  - Given user on Account Details step → step 2 of 3 highlighted.
+  - Given user on DOB step post-Google-handshake → "step 3 of 6" highlighted.
+  - Given user on Investment Goal step → "step 5 of 6" highlighted.
 - **Edge Cases:** None.
+- **Priority:** P0
+
+---
+
+#### FR-08.1 — Industrial / Sector Preferences *(new in v2.2)*
+
+- **Actor:** New User post-DOB (both email and social paths)
+- **Description:** Multi-select screen titled "What do you want to follow?" (localized). User selects ≥ 0 and ≤ 10 sectors from the enum list: Banking, Real Estate, Tech, Consumer, Energy, Healthcare, Industrials, Materials, Utilities, Retail. Each option is a chip with a localized label. A secondary "Skip for now" action is present; selecting Skip persists an empty array and shows a dismissible notice that Discover personalization will be generic until preferences are added.
+- **Input:** Zero or more sector enum values.
+- **Output:** `users.industrial_prefs = <array of enum values>`, persisted before next screen.
+- **Precondition:** Account is in `ACTIVE` state post-DOB (or `LEARN_MODE`).
+- **Postcondition:** Routes to FR-08.2 (investment goal).
+- **Key Rules:**
+  - BR-ONBOARD-01 — enum values only; freeform disallowed; max 10.
+  - BR-ONBOARD-03 — labels localized in vi/ko/en; DB stores canonical English slug.
+  - BR-ONBOARD-04 — Discover ranker uses this array.
+- **Acceptance Criteria:**
+  - Given user selects `[Banking, Tech, Consumer]` → `industrial_prefs` persisted with those three enum values; next step is FR-08.2.
+  - Given user selects 11 sectors → 11th tap is rejected with inline hint "You can select up to 10."
+  - Given user taps "Skip for now" → empty array persisted; degradation notice shown for 5 seconds; routed to FR-08.2.
+  - Given user selects at least one sector → "Continue" button becomes enabled.
+- **Edge Cases:**
+  - User backgrounds mid-selection → returning restores selected state from local draft.
+  - User changes language mid-screen → chip labels update immediately without losing selection.
+- **Priority:** P0
+
+---
+
+#### FR-08.2 — Investment Goal *(new in v2.2)*
+
+- **Actor:** New User post-FR-08.1
+- **Description:** Single-choice screen titled "What are you here for?" (localized). User selects exactly one of the six options: **Learn & explore** (`learn_explore`), **Grow savings** (`grow_savings`), **Beat inflation** (`beat_inflation`), **High returns** (`high_returns`), **Long-term wealth** (`long_term_wealth`), **Just for fun** (`just_for_fun`). "Skip" is NOT available — goal is mandatory.
+- **Input:** Exactly one enum value.
+- **Output:** `users.investment_goal = <enum>`, persisted. Sets `onboarded_at = now()` if all prior required fields are persisted.
+- **Precondition:** FR-08.1 completed.
+- **Postcondition:** `onboarded_at` flipped; routes to FR-LEGAL-03 consent (if not already shown) or Home.
+- **Key Rules:**
+  - BR-ONBOARD-02 — mandatory, single-choice enum.
+  - BR-ONBOARD-03 — labels localized in vi/ko/en.
+  - BR-ONBOARD-05 — challenge seeder uses this goal.
+- **Acceptance Criteria:**
+  - Given user selects `high_returns` → goal persisted; `onboarded_at` set; routed to Home.
+  - Given user taps "Continue" without selecting → button disabled; inline hint "Please choose one."
+  - Given user changes language mid-screen → option labels update immediately, selection retained.
+- **Edge Cases:**
+  - User selects, then changes selection before continuing → only the final selection is persisted.
+  - User force-quits before continuing → returning routes back to this screen with no selection (no partial persist).
 - **Priority:** P0
 
 ---
@@ -515,47 +762,55 @@
 #### FR-36 — Markets Screen Layout
 
 - **Actor:** Registered User
-- **Description:** Tabbed interface: Vietnam | Korea | Global. Default tab is Vietnam (VN). Investment disclaimer shown on first view per session (FR-LEGAL-01).
-- **Key Rules:** Disclaimer shown on first view of each tab per session.
+- **Description:** Tabbed interface: **Vietnam (Primary)** | Korea (Reference) | Global (Reference). Default tab is Vietnam. Investment disclaimer shown on first view per session (FR-LEGAL-01). The Korea and Global tab titles render a persistent "Reference" chip; tapping the chip opens a tooltip explaining that KR and Global data are not SLA-backed in V1.
+- **V2.2 Update:** Tab labels updated to explicitly mark VN as PRIMARY and KR + Global as REFERENCE. KR/Global tabs each show a "Reference data" banner at the top of the tab content (BRD §5.1.8, BR-ONBOARD-08).
+- **Key Rules:** Disclaimer shown on first view of each tab per session. "Reference" chip is non-dismissible.
 - **Acceptance Criteria:**
   - All users → Vietnam tab active by default.
+  - Korea tab renders with "Reference" chip next to the tab title and a "Reference data — may be delayed" banner at the top of the tab content.
+  - Tapping the Reference chip opens a tooltip: "KR data in V1 is sourced from web search and may be delayed. Real-time KR data ships in V2."
 - **Edge Cases:** None.
 - **Priority:** P0
 
 ---
 
-#### FR-37 — Vietnam Market (Real-Time)
+#### FR-37 — Vietnam Market (Real-Time, **PRIMARY**)
 
 - **Actor:** Registered User
-- **Description:** HoSE/HNX real-time data. VN-Index summary, HNX-Index summary, Top 5 Gainers, Top 5 Losers, Top 5 Most Active. Data refreshes every 30 seconds during market hours.
-- **Key Rules:** Market hours: 09:00–15:00 ICT, Mon–Fri. Holiday calendar maintained server-side.
+- **Description:** HoSE/HNX real-time data. VN-Index summary, HNX-Index summary, Top 5 Gainers, Top 5 Losers, Top 5 Most Active. Data refreshes every 30 seconds during market hours. **Only market with a data SLA in V1** (≤ 15 seconds from exchange tick; BO-06).
+- **V2.2 Update:** VN marked as the sole SLA-backed market. Copy reinforces primary status.
+- **Key Rules:** Market hours: 09:00–15:00 ICT, Mon–Fri. Holiday calendar maintained server-side. Data latency ≤ 15 seconds.
 - **Acceptance Criteria:**
   - Given 10:30 AM ICT weekday → live VN-Index, 5 gainers, 5 losers, 5 most active shown; data ≤30s old.
   - Given 4:00 PM ICT → "Market Closed" badge; next open time shown.
-- **Edge Cases:** Feed outage → cached data with banner; VN-Index null → "—" with error banner.
+- **Edge Cases:** Feed outage → cached data with banner "Live data temporarily unavailable — showing last known"; VN-Index null → "—" with error banner.
 - **Priority:** P0
 
 ---
 
-#### FR-38 — Korea Market
+#### FR-38 — Korea Market (**Reference Only**)
 
 - **Actor:** Registered User
-- **Description:** KOSPI + KOSDAQ indices, Top 5 Gainers, Top 5 Losers. Data sourced from web search / model knowledge (not real-time feed for V1/V2). Delay disclaimer always visible.
-- **Key Rules:** Disclaimer banner: "Data may be delayed up to 24 hours. Real-time data coming soon."
+- **Description:** KOSPI + KOSDAQ indices, Top 5 Gainers, Top 5 Losers. Data sourced from web search / model knowledge (not real-time feed for V1). **Persistent "Reference" banner** visible at the top of the tab content at all times: "Reference data — may be delayed. Real-time KR shipping in V2." Every KR ticker card carries a "Reference" chip.
+- **V2.2 Update:** All KR screens explicitly labeled "Reference" (BRD §5.1.8). No SLA promise in V1 (BO-06).
+- **Key Rules:** Disclaimer banner: "Reference data — may be delayed." Non-dismissible. Paper trading on KR tickers uses best-available price with a visible "Estimated price" label at order confirmation (BR-PT-04).
 - **Acceptance Criteria:**
-  - Given Korea tab opened → disclaimer banner visible; KOSPI and KOSDAQ values shown.
+  - Given Korea tab opened → disclaimer banner visible at top; KOSPI and KOSDAQ values shown; every ticker card has "Reference" chip.
+  - Tapping "Reference" chip → tooltip explaining V1 sourcing.
 - **Edge Cases:** Data unavailable → "Data temporarily unavailable. Please check back later."
-- **Priority:** P0
+- **Priority:** P1 (demoted from P0 in v2.2 — KR is reference-only in V1)
 
 ---
 
-#### FR-39 — Global Market Overview
+#### FR-39 — Global Market Overview (**Reference Only**)
 
 - **Actor:** Registered User
-- **Description:** 6 index cards: S&P 500, Nasdaq, Dow Jones, FTSE 100, Nikkei 225, DAX. Web search / model knowledge. Delay disclaimer always visible.
-- **Key Rules:** Disclaimer banner shown; values formatted per locale.
+- **Description:** 6 index cards: S&P 500, Nasdaq, Dow Jones, FTSE 100, Nikkei 225, DAX. Web search / model knowledge. **Persistent "Reference" banner** visible at the top of the tab content at all times. Every Global ticker card carries a "Reference" chip.
+- **V2.2 Update:** Global marked as reference-only in V1 (BRD §5.1.8). No SLA promise.
+- **Key Rules:** Disclaimer banner shown; values formatted per locale. Non-dismissible.
 - **Acceptance Criteria:**
-  - Given Global tab → 6 index cards with daily change; disclaimer visible.
+  - Given Global tab → 6 index cards with daily change; "Reference data" banner visible.
+  - Every Global ticker card displays "Reference" chip.
 - **Edge Cases:** Partial data → show available indices; missing → "—."
 - **Priority:** P1
 
@@ -653,7 +908,7 @@
 
 - **Actor:** Registered User
 - **Description:** Notification inbox in Profile. All notification types stored 30 days in reverse chronological order. Unread: bold. Tapping: mark read + navigate to relevant screen. Entries >30 days auto-deleted.
-- **Key Rules:** All notification types stored: price alerts, market open/close, watchlist movements, AI coaching (FR-AI-07), portfolio health (FR-AI-05).
+- **Key Rules:** All notification types stored: price alerts, market open/close, watchlist movements, AI behavioral nudges (FR-AI-05), portfolio health (FR-AI-04).
 - **Acceptance Criteria:**
   - Given 2 price alert notifications → both appear in inbox; unread shown in bold.
 - **Edge Cases:** Inbox empty → "No notifications yet."
@@ -666,11 +921,14 @@
 #### FR-48 — User Profile Screen
 
 - **Actor:** Registered User
-- **Description:** Profile screen: display name, masked email, nationality. Sub-links: Notification Settings, Language, Change Password, App Settings, Help & Support, Log Out.
+- **Description:** Profile screen: display name, masked email, nationality, **linked providers list (v2.2)**, industrial preferences, investment goal. Sub-links: Notification Settings, Language, **Linked Providers (v2.2)**, Change Password *(email-only accounts)*, App Settings, Help & Support, Log Out.
 - **V2 Update:** Language Settings link added (FR-LANG-01). Trader Tier badge + XP shown on profile (FR-GAME-01/FR-GAME-02).
-- **Key Rules:** Email partially masked: `lo***@gmail.com`.
+- **V2.2 Update:** New rows surface linked providers (Google / Apple / Zalo) and preference-edit shortcuts (industrial preferences + investment goal). "Change Password" only shown for accounts that have an email/password method; hidden for social-only accounts.
+- **Key Rules:** Email partially masked: `lo***@gmail.com`. For Apple private-relay emails, shown as `••••••@privaterelay.appleid.com`.
 - **Acceptance Criteria:**
   - Given user navigates to Profile → trader tier badge and XP total visible alongside account details.
+  - Given user is social-only (no email/password) → "Change Password" link is hidden.
+  - Given user has Google + Zalo linked → both show under "Linked Providers" with a disconnect button (disabled if removing would leave 0 methods).
 - **Edge Cases:** None.
 - **Priority:** P0
 
@@ -679,23 +937,48 @@
 #### FR-49 — Edit Profile
 
 - **Actor:** Registered User
-- **Description:** Edit display name. Email and market preference not editable in V2 (market is fixed to VN).
-- **Key Rules:** Display name 2–100 chars, Unicode.
+- **Description:** Edit display name. Edit industrial preferences (re-enter FR-08.1 multi-select UI). Edit investment goal (re-enter FR-08.2 single-choice UI). Email and market preference not editable in V1 (market is fixed to VN; email is provider-controlled for social accounts).
+- **V2.2 Update:** Preference and goal now editable from profile (BR-ONBOARD-06). Edits take effect on Discover and challenge seeder within the current session.
+- **Key Rules:** Display name 2–50 chars, Unicode, profanity-filtered. Preference change persists to `industrial_prefs`; goal change persists to `investment_goal`.
 - **Acceptance Criteria:**
   - Given display name updated → Profile reflects new name; Home hero greeting updated.
-- **Edge Cases:** Name with only spaces → reject with "Name cannot be blank."
+  - Given industrial preferences edited from `[Banking]` to `[Banking, Tech, Consumer]` → Discover feed re-ranked on next refresh within session.
+  - Given investment goal changed → next-week's challenge seed uses the new goal.
+- **Edge Cases:** Name with only spaces → reject with "Name cannot be blank." Preferences dropped to 0 items → degradation notice shown.
 - **Priority:** P0
 
 ---
 
-#### FR-50 — Change Password
+#### FR-49.1 — Linked Providers Management *(new in v2.2)*
 
 - **Actor:** Registered User
+- **Description:** Settings screen listing which auth methods are linked to the account. For each provider (email/password, Google, Apple, Zalo), a row shows the provider name, status (Linked / Not linked), and a button (Disconnect if linked, Link if not). Linking adds a new provider (runs that provider's OAuth handshake in link-mode, not signup-mode). Disconnecting removes the provider — blocked if it would leave zero usable methods.
+- **V2.2 Update:** New screen.
+- **Key Rules:**
+  - BR-SIGNUP-04 — no duplicate account creation under linking.
+  - BR-SIGNUP-08 — social-only accounts cannot add email/password without a password-creation flow (V1.1).
+  - Account must always have ≥ 1 usable auth method.
+- **Acceptance Criteria:**
+  - Given account has email/password + Google linked → both rows show "Disconnect" available; disconnecting Google succeeds because email/password remains.
+  - Given account has Google only → disconnect button shows disabled with tooltip "You need at least one sign-in method."
+  - Given user taps "Link Zalo" → Zalo OAuth handshake runs in link-mode; on success, `zalo_id` is added to the current user row (no new row).
+- **Edge Cases:**
+  - Linking a provider whose email conflicts with a different Paave account → rejected with error "This [provider] account is already linked to a different user."
+  - Linking with Apple private-relay → linking keyed on Apple Sub ID.
+- **Priority:** P0
+
+---
+
+#### FR-50 — Change Password *(Email/Password accounts only)*
+
+- **Actor:** Registered User (email/password method linked)
 - **Description:** Current password + new password + confirm new password. All existing refresh tokens invalidated on success. User stays logged in.
+- **V2.2 Update:** Only available to accounts that have an email/password method. Social-only accounts do not see this option (BR-SIGNUP-08).
 - **Key Rules:** New password: same policy as FR-05. Current password must validate.
 - **Acceptance Criteria:**
   - Given valid current and new passwords → password changed; all other sessions invalidated.
   - Given wrong current password → "Current password is incorrect."
+  - Given social-only account attempts to reach this screen via deep link → routed to Profile with a toast "This account uses [provider] — no password to change."
 - **Edge Cases:** New password same as current → "New password must be different from current password."
 - **Priority:** P0
 
@@ -716,8 +999,8 @@
 #### FR-52 — Notification Settings
 
 - **Actor:** Registered User
-- **Description:** Toggle switches for: Price Alerts, Market Open, Market Close, Watchlist Movements, Portfolio Health Check (FR-AI-05), Behavioral Coaching (FR-AI-07). Changes save immediately.
-- **V2 Update:** Two new notification types added (Portfolio Health, Behavioral Coaching).
+- **Description:** Toggle switches for: Price Alerts, Market Open, Market Close, Watchlist Movements, Portfolio Health Check (FR-AI-04), Behavioral Nudges (FR-AI-05). Changes save immediately.
+- **V2.1 Update:** Two AI-sourced notification types retained (Portfolio Health, Behavioral Nudges); pre-trade advisory and personalized-learning notifications removed along with their source features.
 - **Key Rules:** Optimistic toggle; revert on backend failure with toast.
 - **Acceptance Criteria:**
   - Given Portfolio Health toggle switched off → weekly health push not sent.
@@ -746,10 +1029,13 @@
 
 #### FR-AGE-01 — DOB Collection at Registration
 
-- **Actor:** New User
-- **Description:** Date of birth field (date picker) required during registration. Must be ≥16 years old to complete registration. Under 16: show message directing to parent consent flow (FR-AGE-02). DOB stored encrypted at rest.
+- **Actor:** New User (all signup methods)
+- **Description:** Date of birth is required for every signup method. For email/password (FR-05) DOB is collected inside the same form. For social OAuth (FR-05.1/5.2/5.3), DOB is **never trusted from the provider** and is collected in a mandatory post-handshake screen (FR-05.4). Must be ≥ 16 years old to complete registration as an active user; under 16 is routed to parental consent (FR-AGE-02). DOB stored encrypted at rest.
+- **V2.2 Update:** DOB-from-OAuth is explicitly not trusted — BR-AGE-01 + BR-SIGNUP-03 require the post-handshake DOB screen for all social signups. Account state is `PENDING_DOB` until DOB is captured; no app surface outside FR-05.4 is reachable in that state.
 - **Key Rules:**
-  - Minimum age: 16. Calculated as: (today − DOB) ≥ 16 years.
+  - BR-AGE-01 — DOB is required regardless of signup method.
+  - BR-SIGNUP-03 — social OAuth cannot bypass FR-05.4.
+  - Minimum age for active registration: 16. Calculated as: (today − DOB) ≥ 16 years.
   - Ages 13–15: directed to parental consent flow (future implementation).
   - Under 13: registration blocked entirely; "Paave requires users to be at least 13 years old."
   - DOB field: date picker (no free-text); cannot select future dates.
@@ -757,6 +1043,8 @@
 - **Acceptance Criteria:**
   - Given DOB entered making user 17 years old → registration proceeds to FR-AGE-03 LEARN_MODE.
   - Given DOB making user 12 years old → error shown, registration cannot continue.
+  - Given social OAuth succeeds with a provider that returned DOB → Paave ignores the provider DOB and still shows FR-05.4; the field is blank (not pre-filled from OAuth).
+  - Given user force-quits on FR-05.4 → re-opening the app lands back on FR-05.4 (BR-SIGNUP-03).
 - **Edge Cases:** User provides false DOB (can't technically prevent) → legal disclaimer that false DOB entry violates ToS; recourse via account review.
 - **Priority:** P0
 
@@ -815,9 +1103,9 @@
 
 ---
 
-## Module B: Paper Trading Engine
+## Module B: Paper Trading Engine — **PRIMARY PILLAR**
 
-> **Purpose:** Core investment simulation. All users start with a virtual portfolio. Paper trading is the primary portfolio interaction for V2. "Tiền ảo / 가상 자금 / Virtual Funds" label mandatory on all paper trading screens.
+> **Purpose:** The product. All users get a virtual portfolio on account creation and paper trading is the primary way users interact with Paave. Every other module feeds into or off of this one. "Tiền ảo / 가상 자금 / Virtual Funds" label mandatory on all paper trading screens (FR-PT-06). Real-money execution never happens inside Paave — when a paper trader graduates, Module I (Brokerage Partner Integration, V1.x) hands them off to a licensed partner.
 
 ---
 
@@ -847,7 +1135,7 @@
   - Sell: validates holding quantity ≥ requested sell quantity.
   - Market orders always fill (no partial fills in V2 except at balance limit).
   - "Tiền ảo" label visible on order confirmation screen.
-  - AI pre-trade card (FR-AI-04) shown between "Buy" tap and order confirmation.
+  - **v2.1 change:** Pre-trade AI advisory card removed (was FR-AI-04 in v2.0). No AI surface between "Buy" tap and order confirmation — the action is direct.
 - **Acceptance Criteria:**
   - Given user places buy order for 100 VIC shares with sufficient balance → order fills within 15s at snapshot price; holdings updated.
   - Given buy order exceeds virtual balance → error "Insufficient virtual funds."
@@ -986,13 +1274,13 @@
 - **Description:** Composite weekly score computed on Sundays. Formula:
   - Return (40%): paper portfolio weekly return vs. benchmark
   - Consistency (30%): % of days with at least one meaningful action (trade or lesson)
-  - Risk Discipline (20%): absence of flagged behaviors (FOMO, panic sell, overtrading per FR-AI-07)
+  - Risk Discipline (20%): absence of flagged behaviors (FOMO, panic sell, overtrading per FR-AI-05)
   - Activity (10%): raw trade + lesson count for the week
 - **Key Rules:**
   - Score computed every Sunday at midnight UTC.
   - Score displayed on public profile and leaderboard (deferred V2 feature).
   - Weekly score is additive to cumulative score for tier progression.
-  - Behavioral deductions: each FR-AI-07 flag in the week reduces Risk Discipline component by 10 points (max 4 flags = 0 Risk Discipline score for that week).
+  - Behavioral deductions: each FR-AI-05 flag in the week reduces Risk Discipline component by 10 points (max 4 flags = 0 Risk Discipline score for that week).
 - **Acceptance Criteria:**
   - Given user had 5% weekly portfolio return with consistent activity and no flags → high score computed and added to profile.
   - Given Sunday midnight passes → score badge on profile updates.
@@ -1038,9 +1326,9 @@
 
 ---
 
-## Module D: AI System P0
+## Module D: AI Insights P0
 
-> **Purpose:** Core AI features required at launch. Educational and explanatory only. Never provides buy/sell recommendations.
+> **Purpose:** Supporting layer on top of paper trading — never a standalone product surface. AI attaches to a trade, a ticker, or a portfolio. Insights are contextual, never advisory, and never include price targets or position-size suggestions. See BR-AI-01, BR-AI-07.
 
 ---
 
@@ -1089,7 +1377,7 @@
 #### FR-AI-03 — Multilingual AI Routing
 
 - **Actor:** System (AI routing layer)
-- **Description:** System detects user's active language setting (FR-LANG-01) and routes all AI requests (FR-AI-01, FR-AI-02, FR-AI-04–FR-AI-07) to the language-appropriate prompt configuration. AI responses use locale-specific financial terminology (not generic translation). If language changes mid-session, next AI request uses the new language config.
+- **Description:** System detects user's active language setting (FR-LANG-01) and routes all AI requests (FR-AI-01, FR-AI-02, FR-AI-04, FR-AI-05) to the language-appropriate prompt configuration. AI responses use locale-specific financial terminology (not generic translation). If language changes mid-session, next AI request uses the new language config.
 - **Key Rules:**
   - Language routing is server-side; client sends `Accept-Language` header with active language code.
   - Prompt configs maintained per language: `vi`, `ko`, `en` (default fallback: `en`).
@@ -1103,38 +1391,15 @@
 
 ---
 
-## Module E: AI System P1
+## Module E: AI Insights P1 (V1.x)
 
-> **Purpose:** Proactive AI features that deepen engagement and learning. Built on P0 AI infrastructure.
-
----
-
-#### FR-AI-04 — Pre-Trade AI Card
-
-- **Actor:** Registered User (between Buy tap and order confirmation)
-- **Description:** Collapsible card shown between the "Buy" tap on Stock Detail and the order confirmation screen. Content:
-  1. Risk score: 1–10 (10 = highest risk)
-  2. Suggested position size: % of virtual portfolio
-  3. "3 things to know" — key context bullets for this trade
-- **Key Rules:**
-  - Must load within 2 seconds. If timeout: "Analysis skipped — continuing to order." (graceful degradation).
-  - Card is collapsible (default: expanded). User can dismiss; dismiss action logged as "skip."
-  - Skip rate logged per user for model quality tracking.
-  - Disclaimer appended (FR-LEGAL-02).
-  - Content is AI-generated and educational; not a recommendation. Never says "you should buy/sell."
-  - Applies to both market orders (FR-PT-02) and limit orders (FR-PT-03).
-- **Acceptance Criteria:**
-  - Given user taps "Buy" → pre-trade card appears within 2s before confirmation screen.
-  - Given AI service timeout → graceful skip shown; user proceeds to confirmation.
-  - Given card dismissed → skip event logged.
-- **Edge Cases:** User taps back during card display → order cancelled; card dismissed.
-- **Priority:** P1
+> **Purpose:** Two narrow AI surfaces that deepen engagement *with the existing paper portfolio* — nothing more. **v2.1 removed** the pre-trade advisory card (FR-AI-04 in v2.0), personalized learning paths with spaced repetition (FR-AI-06 in v2.0), and echo-chamber behavioral detection.
 
 ---
 
-#### FR-AI-05 — Portfolio Health Check
+#### FR-AI-04 — Portfolio Health Check *(was FR-AI-05 in v2.0)*
 
-- **Actor:** Registered User
+- **Actor:** Registered User with ≥ 1 holding in their paper portfolio
 - **Description:** Weekly push notification every Monday 8AM user's local time: "Your weekly portfolio health check is ready." In-app report card with letter grade (A–F) per dimension:
   - Diversification (are holdings spread across sectors?)
   - Concentration (is any single holding >25% of portfolio?)
@@ -1149,6 +1414,7 @@
   - Report retained for 30 days in Notification History (FR-47).
   - Overall grade = weighted average of 5 dimension grades.
   - Empty portfolio → health check skipped; notification not sent.
+  - Health check analyzes the **paper** portfolio only. V1.x brokerage-linked real balances are never visible to Paave and are never scored.
 - **Acceptance Criteria:**
   - Given user has 5 holdings with high concentration → Concentration grade "D"; overall grade below "B."
   - Given Monday 8AM → push notification delivered; tapping → in-app report card.
@@ -1158,54 +1424,41 @@
 
 ---
 
-#### FR-AI-06 — Personalized Learning Path
+#### FR-AI-05 — Behavioral Nudges *(was FR-AI-07 in v2.0)*
 
 - **Actor:** Registered User
-- **Description:** AI detects knowledge gaps from trade behavior and quiz performance. Triggers contextual 90-second micro-lesson card after relevant trades (e.g., after user buys a growth stock → "Here's how P/E works for growth stocks"). Spaced repetition: resurfaces concepts at Day 7 and Day 30 after initial lesson.
-- **Key Rules:**
-  - Micro-lesson card is non-blocking and dismissible.
-  - Triggered immediately after trade fill (after FR-AI-01 post-trade card if both applicable).
-  - Spaced repetition schedule: Day 7 + Day 30 re-surface via push notification ("Refresh your understanding of P/E ratios — 90 seconds").
-  - Quiz performance: post-lesson quiz (3 questions); incorrect answers tag concept as "needs reinforcement."
-  - Max 1 micro-lesson trigger per trade (not stacked).
-  - Language per FR-AI-03.
-  - XP: +25 on lesson completion (FR-GAME-01).
-- **Acceptance Criteria:**
-  - Given user buys a high-P/E stock for the first time → P/E micro-lesson card appears after post-trade AI card.
-  - Given lesson completed → XP increments by 25; Day 7 resurface scheduled.
-  - Given Day 7 reminder arrives → user taps → lesson re-shown.
-- **Edge Cases:** User already completed this lesson at a high quiz score → lesson not re-triggered for this concept.
-- **Priority:** P1
-
----
-
-#### FR-AI-07 — Behavioral Coaching
-
-- **Actor:** Registered User
-- **Description:** System detects behavioral patterns and delivers non-judgmental coaching nudges:
+- **Description:** System detects behavioral patterns and delivers non-judgmental nudges:
   - **FOMO buy**: stock up >5% in 3 days + user buys + stock was not on user's watchlist prior → nudge: "Heads up — this stock has moved fast recently. Here's what to consider."
   - **Panic sell**: stock down >4% + user places sell order → nudge: "Market drops happen. Here's a framework for thinking through sell decisions."
   - **Overtrading**: >5 paper trades in a single day → nudge: "You've been active today. Frequent trading can be costly — here's why."
   - **Concentration creep**: single holding reaches >25% of portfolio → nudge: "One stock is now a large part of your portfolio. Here's what diversification means."
 - **Key Rules:**
-  - Toast notification format: non-judgmental, educational framing. Never says "don't do this."
-  - Max 1 coaching nudge per user per calendar day (user's local timezone).
+  - Toast notification format: non-judgmental, peer-tone (BR-AI-05). Never says "don't do this."
+  - Max 1 nudge per user per calendar day (user's local timezone).
   - User rates each nudge: "Helpful" / "Not helpful." Rating stored for model quality.
-  - Coaching flags logged for Trader Score Risk Discipline component (FR-GAME-03).
+  - Nudge flags logged for Trader Score Risk Discipline component (FR-GAME-03).
   - Nudges delivered as in-app toast (not push notifications) — surfaced immediately on action detection.
-  - Coaching togglable in FR-52 Notification Settings.
+  - Togglable in FR-52 Notification Settings.
+  - Echo-chamber nudges (was in v2.0) are removed — overlap with the social-trading layer and had a high false-positive rate.
 - **Acceptance Criteria:**
   - Given stock up 6% in 3 days + user buys (not on prior watchlist) → FOMO nudge toast appears within 5s.
   - Given 5 nudges possible in one day → only first one shown; rest suppressed.
-  - Given "Not helpful" tapped → feedback stored; same coaching type reduced in frequency for this user.
+  - Given "Not helpful" tapped → feedback stored; same nudge type reduced in frequency for this user.
 - **Edge Cases:** Multiple behavior patterns triggered simultaneously → highest-priority behavior wins (Concentration > FOMO > Panic > Overtrading).
 - **Priority:** P1
 
 ---
 
-## Module F: Social Features P1
+> **Removed in v2.1 (was in Module E v2.0):**
+> - **FR-AI-04 Pre-Trade AI Card** — risked reading as advisory (conflicts with BR-AI-01); creates friction in the primary paper-trade loop.
+> - **FR-AI-06 Personalized Learning Path** — Paave is not an education product in v2.1; spaced-repetition micro-lessons belong elsewhere.
+> - **Echo-chamber subset of FR-AI-07** — overlaps with social-trading signals (Module F) and was high-false-positive.
 
-> **Purpose:** Community layer to build trust, learning, and engagement. Pseudonymous. No real identity revealed. Deferred social features (copy trading, portfolio sharing, full following feed, Morning Call) remain V3+.
+---
+
+## Module F: Social Trading P1
+
+> **Purpose:** A track-record-visible social-trading layer, not a peer-learning forum. It exists to help users decide what to paper-trade by surfacing who is trading what with what conviction and what PnL% history. Pseudonymous — no real identity revealed, no absolute VND/KRW amounts shown. Deferred features (real-money copy trading, public portfolio sharing, full following feed, Morning Call) remain V2+.
 
 ---
 
@@ -1333,7 +1586,7 @@
   - English: standard NYSE/NASDAQ terminology ("P/E Ratio", "Market Cap", "Liquidity")
 - **Key Rules:**
   - Terminology mapping table maintained server-side; updatable without app release.
-  - Applies to: Key Stats section, AI responses (FR-AI-01–FR-AI-07), Portfolio dashboard, Discover feed, Markets module.
+  - Applies to: Key Stats section, AI responses (FR-AI-01–FR-AI-05), Portfolio dashboard, Discover feed, Markets module.
   - "Tiền ảo / 가상 자금 / Virtual Funds" label (FR-PT-06) shows trilingual text simultaneously (not language-switched) as a deliberate legal clarity choice.
 - **Acceptance Criteria:**
   - Given VN language active → Key Stats shows "Chỉ số P/E" not "P/E Ratio."
@@ -1372,7 +1625,7 @@
 #### FR-LEGAL-02 — AI Disclaimer on Every Response
 
 - **Actor:** Registered User (consuming AI content)
-- **Description:** All AI outputs — post-trade explanation (FR-AI-01), natural language query (FR-AI-02), pre-trade card (FR-AI-04), portfolio health (FR-AI-05), micro-lesson (FR-AI-06), behavioral coaching (FR-AI-07) — must append the educational disclaimer. Cannot be removed by user settings.
+- **Description:** All AI outputs — post-trade insight (FR-AI-01), natural language query (FR-AI-02), portfolio health check (FR-AI-04), behavioral nudges (FR-AI-05) — must append the educational disclaimer. Cannot be removed by user settings.
 - **Disclaimer text (EN):** "AI-generated content is for educational purposes only. Not financial advice. Do not make investment decisions based solely on this content."
 - **Key Rules:**
   - Disclaimer appears at the bottom of every AI response card/message.
@@ -1409,6 +1662,111 @@
 
 ---
 
+## Module I: Brokerage Partner Integration (V1.x)
+
+> **Purpose:** Bridge a graduated paper trader into a real account at a licensed securities-company partner. Paave never executes orders, holds funds, or stores real balances — it publishes a partner directory and hands users off. Gated tight: 18+, Trader Tier 3+, ≥ 30 paper trades (BR-BRK-02). All surfaces must render BR-DISC-05.
+
+---
+
+#### FR-BRK-01 — Partner Directory
+
+- **Actor:** FULL_ACCESS User who is 18+, Tier 3+, and has ≥ 30 paper trades
+- **Description:** In-app screen listing licensed brokerage partners scoped to the user's market(s). Each partner card shows: partner legal name, license number, supported markets, fee highlights, status (green/amber/red — onboarding availability), and "Open real account" CTA. Sorted by an editorial relevance score; tie-break by partner name alphabetically.
+- **Key Rules:**
+  - VN users see only VN-licensed partners; KR users see only KR-licensed partners; users flagged for both markets see both lists tabbed.
+  - BR-DISC-05 rendered at the top of the screen in the user's active language, with placeholder [Partner] substituted per partner card.
+  - Partners flagged "red" (onboarding paused) still render but with CTA disabled and status string shown.
+  - No partner may appear without satisfying BR-BRK-05 (signed agreement, verified license, callback contract load-tested).
+- **Acceptance Criteria:**
+  - Given a 25-year-old VN user with Tier 4 and 50 paper trades → partner directory reachable from profile; VN partners listed.
+  - Given a 17-year-old Learn Mode user → directory is not reachable and no CTA surfaces anywhere in the app.
+- **Edge Cases:** Empty directory (no partner live) → directory entry point is hidden entirely from the profile.
+- **Priority:** P1 (V1.x)
+
+---
+
+#### FR-BRK-02 — Brokerage CTA Placement
+
+- **Actor:** FULL_ACCESS User meeting BR-BRK-02 eligibility
+- **Description:** "Open real account with partner" CTAs appear contextually: (a) on the Paper Portfolio dashboard header when the user has been Tier 3+ for ≥ 7 days, (b) on Stock Detail pages as a secondary CTA below the paper "Buy" button, (c) in the profile menu. Every CTA tap opens a confirmation sheet with BR-DISC-05 before handoff.
+- **Key Rules:**
+  - CTA impression and tap events are logged for BO-13 measurement.
+  - Ineligible users (under 18, below Tier 3, < 30 paper trades) must never render any of these CTAs at any level of the UI (including markup; not just hidden via CSS).
+  - Confirmation sheet requires an explicit tap on "Continue to [Partner]"; a single-tap launch is not allowed.
+- **Acceptance Criteria:**
+  - Given eligibility met + tap CTA → confirmation sheet with BR-DISC-05 appears; tapping "Continue" transitions to handoff.
+  - Given eligibility not met → CTA not rendered; route direct access returns 404.
+- **Edge Cases:** User's Tier drops below 3 after CTA displayed → on next screen load, CTA no longer rendered.
+- **Priority:** P1 (V1.x)
+
+---
+
+#### FR-BRK-03 — Account-Link Handoff
+
+- **Actor:** Eligible User (via FR-BRK-02)
+- **Description:** Tapping "Continue to [Partner]" launches the partner's onboarding surface — preferably a partner-native deep link on mobile, falling back to an in-app web view with a fixed Paave chrome (close button + partner legal name + BR-DISC-05 pinned bottom). Handoff payload: `{ paave_user_id (opaque), market, optional ticker_context }`. No credentials, no DOB, no email, no paper balances transmitted.
+- **Key Rules:**
+  - Payload schema is whitelisted at the network layer; any extra field is stripped before send. Violations are P0 bugs.
+  - Web-view fallback may not share cookies with the Paave app session.
+  - User can cancel at any time (top-left close) and return to Paave; no ghost state persisted.
+  - On successful partner callback (FR-BRK-05), the user's Paave profile shows a "Linked at [Partner]" badge; on failure, the partner's error message is surfaced verbatim.
+- **Acceptance Criteria:**
+  - Given eligible user confirms handoff → partner flow opens; network audit shows payload = whitelisted fields only.
+  - Given user cancels mid-flow → returned to prior Paave screen; no linked-account record created.
+- **Edge Cases:** Partner deep-link missing on device → fall back to web view; web-view load failure → "Couldn't reach [Partner]. Please try again." No silent retry.
+- **Priority:** P1 (V1.x)
+
+---
+
+#### FR-BRK-04 — Ticker Deep-Link into Partner
+
+- **Actor:** Linked User (completed FR-BRK-03 for a partner)
+- **Description:** On a Stock Detail page for a supported market, a secondary "Open [TICKER] at [Partner]" CTA deep-links the user into the partner's order-entry screen for that ticker. Paave never pre-fills price, quantity, or direction.
+- **Key Rules:**
+  - Only rendered if the user has a linked account for a partner that supports this ticker's market.
+  - BR-DISC-05 rendered on the confirmation sheet before deep-link.
+  - No order payload — only the opaque user ID and ticker symbol.
+  - If partner rejects the deep link (unsupported ticker, maintenance), Paave shows the partner's error verbatim and remains on the Paave screen.
+- **Acceptance Criteria:**
+  - Given linked VN user on a HOSE ticker → deep-link CTA visible; tapping opens partner order-entry screen for that ticker.
+  - Given user not linked → deep-link CTA not rendered.
+- **Edge Cases:** Ticker exists on Paave but not at partner → deep-link CTA not rendered.
+- **Priority:** P1 (V1.x)
+
+---
+
+#### FR-BRK-05 — Partner Callback & Linked-Account Status
+
+- **Actor:** System (Paave backend) receiving callback from partner
+- **Description:** Partner calls back to Paave once account creation succeeds (or definitively fails). Callback payload accepted by Paave: `{ paave_user_id, partner_id, linked_at_timestamp, status (linked/declined), optional_reason_code }`. On `status=linked`, Paave renders the "Linked at [Partner]" badge on the user's profile. Any additional fields (real balance, holdings, real order IDs) must be ignored and logged as a compliance violation.
+- **Key Rules:**
+  - Callback endpoint is partner-authenticated (HMAC or mTLS); rejects unsigned or expired requests.
+  - BR-BRK-07 attribution records (anonymous ticker bucket) are emitted from this handler; real-money amounts must never be written to any Paave table.
+  - Linked-account status is reversible via user action: user can "Unlink" from Settings; Paave sends an unlink event to partner and removes the badge.
+- **Acceptance Criteria:**
+  - Given valid `linked` callback → profile shows "Linked at [Partner]" within 10 seconds.
+  - Given callback containing a `real_balance` field → field is dropped, compliance-violation event logged, status still updated if otherwise valid.
+- **Edge Cases:** Partner sends duplicate callback → idempotent on (paave_user_id, partner_id); first write wins.
+- **Priority:** P1 (V1.x)
+
+---
+
+#### FR-BRK-06 — Paper-to-Real Attribution (Anonymous)
+
+- **Actor:** System (analytics pipeline)
+- **Description:** For BO-13 measurement only, Paave records whether a newly linked user's callback arrived within 30 days of the linked ticker appearing in that user's paper watchlist or paper portfolio. Attribution records: `{ paave_user_id_hash, partner_id, ticker, linked_at_bucket_hour, prior_paper_signal (watchlist|portfolio|none) }`.
+- **Key Rules:**
+  - No real-money amounts, real order IDs, or partner-side user IDs are stored.
+  - Records are purged after 180 days.
+  - Audit log immutable; quarterly audit by Legal + Engineering confirms BR-BRK-07 compliance.
+- **Acceptance Criteria:**
+  - Given user had TICKER in watchlist + links account at partner → attribution row written with `prior_paper_signal = watchlist`.
+  - Schema audit: no column in attribution table accepts currency or amount-typed values.
+- **Edge Cases:** User unlinks and re-links within 30 days → attribution rows are additive; no overwrite.
+- **Priority:** P1 (V1.x)
+
+---
+
 ## 3. Business Rules
 
 | Rule ID | Description |
@@ -1431,36 +1789,57 @@
 | BR-16 | Feature tier (LEARN_MODE / FULL_ACCESS) evaluated server-side on every session init. Client cannot self-upgrade feature tier. |
 | BR-17 | Paper portfolio starting balance: VND 500,000,000. Reset restores to exactly this amount. |
 | BR-18 | "Tiền ảo / 가상 자금 / Virtual Funds" label is mandatory on all paper trading screens. Cannot be dismissed or hidden. |
-| BR-19 | AI responses must never contain explicit buy/sell recommendations. Language patterns matching "buy X", "sell X", "you should invest in X" are filtered server-side. |
-| BR-20 | Max 1 AI behavioral coaching nudge per user per calendar day (user's local timezone). |
+| BR-19 | AI responses must never contain buy/sell recommendations, price targets, or suggested position sizes. Language patterns matching "buy X", "sell X", "you should invest in X" are filtered server-side. |
+| BR-20 | Max 1 AI behavioral nudge per user per calendar day (user's local timezone). |
 | BR-21 | All AI content must append the educational disclaimer defined in FR-LEGAL-02 in the user's active language. |
 | BR-22 | Data consent (FR-LEGAL-03) checkboxes must not be pre-checked. Consent timestamp and ToS version stored on user record. |
-| BR-23 | Social posts require minimum 1 $TICKER cashtag and 1 sentiment selection before publish. 60-second cancel window enforced. |
+| BR-23 | Social-trading posts require minimum 1 $TICKER cashtag and 1 sentiment selection before publish. 60-second cancel window enforced. |
 | BR-24 | Real name never shown on public social profile unless user explicitly opts in via Settings. Default is pseudonym only. |
 | BR-25 | Trader Tier can only increase, never decrease, regardless of score changes. |
 | BR-26 | Investment disclaimer (FR-LEGAL-01) shown on first view of each screen type per session. Cannot be permanently dismissed. |
-| BR-27 | Behavioral coaching flags (FR-AI-07) are logged to the user's Risk Discipline score component for the weekly Trader Score. |
+| BR-27 | Behavioral nudge flags (FR-AI-05) are logged to the user's Risk Discipline score component for the weekly Trader Score. |
 | BR-28 | Age verified at registration via DOB. Minimum age to register: 16 (or 13 with parental consent, deferred to V3). Under 13: registration blocked entirely. |
+| BR-29 | **AI never stands alone.** No top-level AI-only tab, no standalone chat launcher outside a ticker or portfolio context. (Mirrors BRD BR-AI-07.) |
+| BR-30 | **Paave never executes a real-money securities order.** All real-money execution is performed by the licensed brokerage partner in Module I under the partner's own license. (Mirrors BRD BR-BRK-01.) |
+| BR-31 | **Brokerage CTA eligibility gate:** partner CTAs render only for users 18+, Trader Tier 3+, with ≥ 30 paper trades. Ineligible users never receive the CTA in any surface, including markup. (Mirrors BRD BR-BRK-02.) |
+| BR-32 | **Brokerage handoff payload is whitelisted:** `{ paave_user_id, market, optional ticker_context }`. Any additional field (DOB, email, paper balance, order details) is stripped before send and logged as a P0 compliance violation. (Mirrors BRD BR-BRK-03.) |
+| BR-33 | **Brokerage disclaimer (BR-DISC-05 / FR-LEGAL):** every partner surface renders the partner-handoff disclaimer in the user's language with partner legal name and license number substituted in. Non-dismissible at the CTA moment. |
+| BR-34 | **Anonymous attribution only:** the paper-to-real attribution pipeline stores ticker + timestamp bucket only; never real-money amounts, never partner-side user IDs. (Mirrors BRD BR-BRK-07.) |
+| BR-35 | **Multi-method signup mandatory (v2.2):** V1 ships with four signup methods at launch — email/password, Google, Apple, Zalo. Removing any method in V1 is a P0 release blocker. Zalo may ship dark if provider approval is delayed (RISK-17). (Mirrors BRD BR-SIGNUP-01.) |
+| BR-36 | **Apple parity on iOS (v2.2):** on iOS, "Sign in with Apple" must be rendered with equal prominence whenever Google or Zalo is rendered (App Store Guideline 4.8). Any iOS build without Apple parity is a launch blocker. (Mirrors BRD BR-SIGNUP-02.) |
+| BR-37 | **Post-handshake DOB is non-skippable (v2.2):** social-OAuth accounts are pinned in `PENDING_DOB` state until FR-05.4 is completed. Force-quit-and-reopen returns to FR-05.4. No app surface outside the DOB screen is reachable in `PENDING_DOB`. (Mirrors BRD BR-SIGNUP-03 + BR-AGE-01.) |
+| BR-38 | **No duplicate account on conflict (v2.2):** if a social-OAuth email matches an existing Paave account, Paave does NOT create a second row; FR-05.5 account-linking runs instead. Apple private-relay linking keys on Apple Sub ID. (Mirrors BRD BR-SIGNUP-04 + BR-SIGNUP-05.) |
+| BR-39 | **OAuth provider failure isolation (v2.2):** if a single provider is unreachable, only that provider's button is disabled; other methods remain usable. No silent retry loops; status checked every 60s server-side. (Mirrors BRD BR-SIGNUP-06.) |
+| BR-40 | **OAuth tokens never logged, never displayed (v2.2):** OAuth access and refresh tokens are encrypted at rest and never emitted to application logs, analytics, crash reports, or user-facing surfaces. (Mirrors BRD BR-SIGNUP-07 + BR-PRIV-01.) |
+| BR-41 | **Social-only accounts have no password (v2.2):** FR-07 login rejects password attempts on social-only accounts with a "Sign in with [provider]" redirect — never a password prompt, never a reset link. FR-50 Change Password is hidden for such accounts. (Mirrors BRD BR-SIGNUP-08.) |
+| BR-42 | **Minimal OAuth scope (v2.2):** only email/profile (Google), name/email (Apple), id/name/avatar (Zalo) are requested. No phone, friends list, address, gender, or birthday scope is requested on any provider. Scope review is quarterly. (Mirrors BRD BR-SIGNUP-09.) |
+| BR-43 | **Industrial preferences: enum, multi-select, max 10 (v2.2):** `industrial_prefs` is an array of approved sector enum values (Banking, Real Estate, Tech, Consumer, Energy, Healthcare, Industrials, Materials, Utilities, Retail). No freeform. Min 0 (explicit "Skip" only), max 10. Localized labels via i18n; DB stores canonical English slug. (Mirrors BRD BR-ONBOARD-01 + BR-ONBOARD-03.) |
+| BR-44 | **Investment goal: enum, single-choice, required (v2.2):** `investment_goal` is a non-null enum from `{learn_explore, grow_savings, beat_inflation, high_returns, long_term_wealth, just_for_fun}`. Onboarding cannot complete without it. `onboarded_at` is only set when all required fields (DOB, language, industrial_prefs array, investment_goal, consent) are persisted. (Mirrors BRD BR-ONBOARD-02 + BR-ONBOARD-07.) |
+| BR-45 | **Discover ranking honors preferences (v2.2):** Discover ranker boosts cards matching the user's `industrial_prefs` by a configurable weight. Empty-preference (Skip) path falls back to VN trending (primary), KR/Global as "Reference"-chipped cards further down. (Mirrors BRD BR-ONBOARD-04 + BR-ONBOARD-08.) |
+| BR-46 | **KR + Global are reference-only data in V1 (v2.2):** every KR or Global card/detail page renders a persistent "Reference" chip. Paper trades on KR/Global tickers use best-available price with "Estimated price" label. No SLA. VN is the sole SLA-backed market (BO-06). (Mirrors BRD §5.1.8.) |
 
 ---
 
 ## 4. Traceability Matrix
 
-This matrix links each functional requirement to the BRD business objectives it supports.
+This matrix links each functional requirement to the BRD v2.2 business objectives it supports.
 
 | BRD Objective | Description | Linked FRs |
 |---------------|-------------|------------|
-| BO-01 | Acquire Gen Z users in VN and KR through a low-barrier, mobile-first onboarding | FR-01, FR-02, FR-03, FR-05, FR-06, FR-07, FR-08, FR-AGE-01, FR-AGE-03, FR-LEGAL-03, FR-LANG-01 |
-| BO-02 | Drive daily active usage through market data and personalized home screen | FR-09, FR-10, FR-11, FR-12, FR-13, FR-14, FR-36, FR-37, FR-38, FR-39, FR-40, FR-41 |
-| BO-03 | Build investing confidence via safe, gamified paper trading simulation | FR-PT-01, FR-PT-02, FR-PT-03, FR-PT-04, FR-PT-05, FR-PT-06, FR-GAME-01, FR-GAME-02, FR-GAME-03, FR-GAME-04, FR-GAME-05, FR-35 |
-| BO-04 | Deliver AI-powered financial education contextually and without intimidation | FR-AI-01, FR-AI-02, FR-AI-03, FR-AI-04, FR-AI-05, FR-AI-06, FR-AI-07, FR-LANG-02 |
-| BO-05 | Grow a Gen Z investing community through social features and social proof | FR-SOC-01, FR-SOC-02, FR-SOC-03, FR-SOC-04, FR-SOC-05, FR-16, FR-GAME-02 |
-| BO-06 | Serve VN market with locale-appropriate content and data (KR planned for V3) | FR-03, FR-37, FR-LANG-01, FR-LANG-02, FR-AI-03, FR-PT-01 |
-| BO-07 | Maintain regulatory compliance and user trust through transparent legal practices | FR-LEGAL-01, FR-LEGAL-02, FR-LEGAL-03, FR-AGE-01, FR-AGE-02, FR-AGE-03, FR-PT-06, BR-19, BR-21, BR-22 |
-| BO-08 | Retain users through personalized notifications, alerts, and weekly engagement hooks | FR-42, FR-43, FR-44, FR-45, FR-46, FR-47, FR-52, FR-AI-05, FR-AI-07, FR-GAME-04, FR-GAME-05 |
-| BO-09 | Support age-appropriate feature access and protect underage users | FR-AGE-01, FR-AGE-02, FR-AGE-03, FR-AGE-04, BR-16, BR-28 |
-| BO-10 | Enable stock discovery and research within a curated, editorial-driven feed | FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, FR-27, FR-28 |
+| BO-01 | Acquire 50K Vietnamese Gen Z MAU through a low-barrier, mobile-first onboarding | FR-01, FR-02, FR-03, FR-04.1, FR-05, FR-05.1, FR-05.2, FR-05.3, FR-05.4, FR-05.5, FR-06, FR-07, FR-08, FR-08.1, FR-08.2, FR-AGE-01, FR-AGE-03, FR-LEGAL-03, FR-LANG-01 |
+| BO-02..05 | D7 retention, watchlist adoption, discover engagement, VN-primary concentration (≥ 90% VN MAU, 0 KR campaigns) | FR-09..FR-47, FR-36..FR-41 (VN primary / KR+Global reference only), FR-AGE-*, FR-LANG-* |
+| BO-06 | VN data latency ≤ 15s (VN is only SLA-backed market in V1) | FR-37 (VN real-time), FR-38/39 (KR/Global reference-only, no SLA), BR-46 |
+| BO-07 | Onboarding completion ≥ 75% (including new industrial-pref + goal steps) | FR-04.1, FR-05..FR-05.5, FR-08, FR-08.1, FR-08.2, BR-43, BR-44 |
+| **BO-08** (primary) | **Establish paper trading as the primary loop** (≥ 70% activation, ≥ 3 trades/user/week) | **Module B (FR-PT-01..06)**, FR-35, FR-AI-01 (post-trade insight reward), FR-GAME-01, FR-23..29 Stock Detail |
+| **BO-09** | **Social-trading engagement ≥ 35% + follow adoption ≥ 20%** | **Module F (FR-SOC-01..05)**, FR-16, FR-23..29 Stock Detail |
+| BO-10 | Gamification Tier 2 ≥ 40% | Module C (FR-GAME-01..05), FR-08.2 (goal seeds challenge difficulty via BR-ONBOARD-05) |
+| BO-11 | AI insight card read-through ≥ 55% (supporting, not headline) | Module D (FR-AI-01..03), Module E (FR-AI-04..05), BR-29 |
+| BO-12 | Age 16–17 segment with zero violations | FR-AGE-01..04, FR-05.4 (post-OAuth DOB), FR-LEGAL-01..03, FR-PT-06, BR-28, BR-31, BR-37 |
+| **BO-13** (V1.x) | **Brokerage bridge initiation ≥ 20% of eligible users** | **Module I (FR-BRK-01..06)**, BR-30..34, FR-LEGAL (BR-DISC-05) |
+| **BO-14** (v2.2) | **Multi-method signup (≥ 60% social, Zalo ≥ 25% VN)** | **FR-04.1, FR-05, FR-05.1, FR-05.2, FR-05.3, FR-05.4, FR-05.5**, FR-07, FR-48, FR-49.1, BR-35..42 |
+| **BO-15** (v2.2) | **Onboarding personalization capture ≥ 90%** | **FR-08.1 (industrial preferences), FR-08.2 (investment goal)**, FR-49, BR-43, BR-44 |
+| **BO-16** (v2.2) | **Preference-driven retention lift ≥ 8pp** | FR-08.1, FR-08.2, FR-15..17 (Discover using preferences), FR-GAME-04 (weekly challenge seeded by goal), BR-45 |
 
 ---
 
-*Document end. Proceed to SRD for system logic and API contracts.*
+*Document end. Proceed to SRD for system logic and API contracts. Module I (Brokerage Partner Integration) requires an SRD appendix covering partner-auth, callback idempotency, attribution schema, and payload whitelisting. v2.2 additions require SRD appendices for (a) OAuth client configuration and callback handling for Google / Apple / Zalo, (b) account-linking state machine covering email conflict + Apple private-relay + Zalo-no-email paths, (c) `industrial_prefs` and `investment_goal` schema with Discover-ranker and challenge-seeder integration contracts.*
