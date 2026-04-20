@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  PAAVE — Brand Logo, Style 2: "The Chevron"
+  Version: 1.0 | Date: 2026-04-17
+
+  CONCEPT: "The Chevron Mark"
+  Two bold pill shapes converge at a vanishing point on the right —
+  a road seen in perspective, an arrow of momentum.
+  Wide on the left (where you start), pinched on the right
+  (the focused goal ahead). Every step forward is paved.
+
+  vs Style 1 (The Pave Mark):
+  → Abstract mark vs letter mark
+  → Dynamic forward motion vs stable letter foundation
+  → Lowercase wordmark vs titlecase
+  → Cyan-led glow vs blue-led glow
+  → Tagline focuses on aspiration vs pillars
+-->
+<svg width="1200" height="720" viewBox="0 0 1200 720"
+     xmlns="http://www.w3.org/2000/svg"
+     font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif">
+
+  <defs>
+    <!-- ─── Pill gradient (objectBoundingBox — works at any scale) ─── -->
+    <linearGradient id="pillGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+
+    <!-- Light pill gradient (slightly deeper, readable on white) -->
+    <linearGradient id="pillGradLight" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#0891B2"/>
+    </linearGradient>
+
+    <!-- Wordmark gradient — dark lockup (userSpace: covers "paave" text width) -->
+    <linearGradient id="wordDark" x1="398" y1="0" x2="760" y2="0"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+
+    <!-- Wordmark gradient — light lockup -->
+    <linearGradient id="wordLight" x1="222" y1="0" x2="546" y2="0"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#0891B2"/>
+    </linearGradient>
+
+    <!-- Page background: deep navy -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#070B12"/>
+      <stop offset="100%" stop-color="#0C1520"/>
+    </linearGradient>
+
+    <!-- Soft ambient glow -->
+    <filter id="softGlow" x="-120%" y="-120%" width="340%" height="340%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="32"/>
+    </filter>
+
+    <!-- Tight glow (behind chevron mark elements) -->
+    <filter id="tightGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="14"/>
+    </filter>
+
+    <!-- Card shadow: cyan-tinted for contrast with Style 1 -->
+    <filter id="cardShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="28"
+                    flood-color="#06B6D4" flood-opacity="0.18"/>
+    </filter>
+
+    <!-- Light card shadow -->
+    <filter id="lightShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="18"
+                    flood-color="#0D1117" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!--  SECTION A — PRIMARY DARK LOCKUP (0–480)                        -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+
+  <rect width="1200" height="480" fill="url(#bg)"/>
+
+  <!-- Ambient cyan glow: different from Style 1's blue-dominant glow -->
+  <ellipse cx="210" cy="240" rx="220" ry="200"
+           fill="#06B6D4" opacity="0.05" filter="url(#softGlow)"/>
+
+  <!-- Trailing motion streaks (ultra-subtle horizontal lines) -->
+  <line x1="60" y1="195" x2="370" y2="195" stroke="#06B6D4" stroke-width="0.6" opacity="0.07"/>
+  <line x1="60" y1="275" x2="370" y2="275" stroke="#3B82F6" stroke-width="0.6" opacity="0.07"/>
+
+  <!-- ─── APP ICON — MAIN (280×280, at x=60 y=90, center: 200,230) ─── -->
+
+  <!-- Glow blob behind icon -->
+  <rect x="60" y="90" width="280" height="280" rx="64"
+        fill="#06B6D4" opacity="0.06" filter="url(#softGlow)"/>
+
+  <!-- Icon card -->
+  <rect x="60" y="90" width="280" height="280" rx="64"
+        fill="#161B22" filter="url(#cardShadow)"/>
+
+  <!-- Icon border: subtle cyan tint (differentiates from Style 1's blue border) -->
+  <rect x="60" y="90" width="280" height="280" rx="64"
+        fill="none" stroke="#06B6D4" stroke-width="1.2" opacity="0.22"/>
+
+  <!-- ─── CHEVRON MARK ───
+    Two pill-shaped bars converging at a vanishing point on the right.
+
+    Icon center: (200, 230)
+    Pill: width=174, height=46, rx=23
+
+    Top pill:    rect(113, 184, 174, 46) → center (200, 207)
+                 rotate(-9°) around center (200, 207)
+    Bottom pill: rect(113, 253, 174, 46) → center (200, 276)
+                 rotate(+9°) around center (200, 276)
+
+    Gap analysis (sin9°=0.156, lever=87px, shift=13.6px):
+      Left end — gap between pill bottoms/tops:
+        Top pill left bottom y:   207-13.6+23=216.4
+        Bottom pill left top y:   276+13.6-23=266.6
+        Left gap: 266.6-216.4 = 50.2px  ← wide open
+      Right end — nearly touching:
+        Top pill right bottom y:  207+13.6+23=243.6
+        Bottom pill right top y:  276-13.6-23=239.4
+        Right gap: 239.4-243.6 = -4.2px ← merged (4px overlap → smooth join)
+  -->
+
+  <!-- Glow behind top pill -->
+  <rect x="113" y="184" width="174" height="46" rx="23"
+        fill="#3B82F6" opacity="0.20" filter="url(#tightGlow)"
+        transform="rotate(-9, 200, 207)"/>
+
+  <!-- Glow behind bottom pill -->
+  <rect x="113" y="253" width="174" height="46" rx="23"
+        fill="#06B6D4" opacity="0.20" filter="url(#tightGlow)"
+        transform="rotate(9, 200, 276)"/>
+
+  <!-- Top pill: lean upward-right -->
+  <rect x="113" y="184" width="174" height="46" rx="23"
+        fill="url(#pillGrad)"
+        transform="rotate(-9, 200, 207)"/>
+
+  <!-- Bottom pill: lean downward-right (mirror) -->
+  <rect x="113" y="253" width="174" height="46" rx="23"
+        fill="url(#pillGrad)"
+        transform="rotate(9, 200, 276)"/>
+
+
+  <!-- ─── VERTICAL DIVIDER ─── -->
+  <line x1="392" y1="118" x2="392" y2="342"
+        stroke="#374151" stroke-width="1" opacity="0.30"/>
+
+
+  <!-- ─── WORDMARK ───
+    "paave" — all lowercase, weight 700 (softer than Style 1's 800)
+    Opens up to broader audience; lowercase feels digital-native & Gen Z
+  -->
+  <text x="422" y="237"
+        font-size="108" font-weight="700"
+        fill="url(#wordDark)"
+        dominant-baseline="middle"
+        letter-spacing="-1">paave</text>
+
+  <!-- Tagline: aspirational (vs Style 1's functional pillars) -->
+  <text x="425" y="298"
+        font-size="13.5" font-weight="500"
+        fill="#6B7280" letter-spacing="5.5">PAVE YOUR WAY FORWARD</text>
+
+
+  <!-- ─── BRAND PALETTE ─── -->
+  <text x="425" y="358"
+        font-size="9.5" font-weight="500" fill="#374151" letter-spacing="3">BRAND PALETTE</text>
+
+  <!-- #3B82F6 Electric Blue -->
+  <circle cx="438" cy="388" r="13" fill="#3B82F6"/>
+  <text x="430" y="411" font-size="8.5" font-family="monospace" fill="#4B5563">#3B82F6</text>
+
+  <!-- #06B6D4 Cyan -->
+  <circle cx="486" cy="388" r="13" fill="#06B6D4"/>
+  <text x="478" y="411" font-size="8.5" font-family="monospace" fill="#4B5563">#06B6D4</text>
+
+  <!-- #10B981 Emerald (growth) -->
+  <circle cx="534" cy="388" r="13" fill="#10B981"/>
+  <text x="526" y="411" font-size="8.5" font-family="monospace" fill="#4B5563">#10B981</text>
+
+  <!-- #0D1117 Navy -->
+  <circle cx="582" cy="388" r="13" fill="#0D1117" stroke="#374151" stroke-width="1"/>
+  <text x="574" y="411" font-size="8.5" font-family="monospace" fill="#4B5563">#0D1117</text>
+
+  <!-- #F59E0B Amber (alert/warning) -->
+  <circle cx="630" cy="388" r="13" fill="#F59E0B"/>
+  <text x="622" y="411" font-size="8.5" font-family="monospace" fill="#4B5563">#F59E0B</text>
+
+
+  <!-- ─── STANDALONE APP ICON (right column) ─── -->
+  <text x="896" y="118"
+        font-size="10" font-weight="500" fill="#4B5563" letter-spacing="2.5">APP ICON</text>
+
+  <!-- 200×200 icon at (864,138) → center (964,238) -->
+  <rect x="864" y="138" width="200" height="200" rx="46"
+        fill="#06B6D4" opacity="0.05" filter="url(#softGlow)"/>
+  <rect x="864" y="138" width="200" height="200" rx="46"
+        fill="#161B22" filter="url(#cardShadow)"/>
+  <rect x="864" y="138" width="200" height="200" rx="46"
+        fill="none" stroke="#06B6D4" stroke-width="1" opacity="0.18"/>
+
+  <!--
+    Scaled chevron for 200×200 icon (factor 200/280=0.714)
+    Center: (964, 238)
+    Top pill:    w=124, h=33, rx=16.5 → center (964, 215)
+    Bottom pill: center (964, 261)
+    rect top:    x=964-62=902, y=215-16.5=198.5
+    rect bottom: x=902, y=261-16.5=244.5
+  -->
+  <rect x="902" y="198" width="124" height="33" rx="16.5"
+        fill="url(#pillGrad)"
+        transform="rotate(-9, 964, 214.5)"/>
+  <rect x="902" y="244" width="124" height="33" rx="16.5"
+        fill="url(#pillGrad)"
+        transform="rotate(9, 964, 260.5)"/>
+
+  <text x="912" y="352"
+        font-size="10" font-weight="400" fill="#4B5563" letter-spacing="1">200 × 200</text>
+
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!--  SECTION DIVIDER                                                 -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <line x1="0" y1="480" x2="1200" y2="480" stroke="#1A2030" stroke-width="1"/>
+
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!--  SECTION C — LIGHT BACKGROUND LOCKUP (480–720)                  -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+
+  <rect x="0" y="480" width="1200" height="240" fill="#F7F9FC"/>
+
+  <text x="60" y="510"
+        font-size="10" font-weight="500" fill="#9CA3AF" letter-spacing="2.5">LIGHT BACKGROUND USAGE</text>
+
+  <!-- Light icon: 140×140 at (60,524) → center (130,594) -->
+  <rect x="60" y="524" width="140" height="140" rx="32"
+        fill="#FFFFFF" filter="url(#lightShadow)"/>
+  <rect x="60" y="524" width="140" height="140" rx="32"
+        fill="none" stroke="#E5E7EB" stroke-width="1"/>
+
+  <!--
+    Scaled for 140×140 (factor 0.5)
+    Center: (130, 594)
+    Top pill:    w=87, h=23, rx=11.5 → center (130, 578)
+    Bottom pill: center (130, 610)
+    rect top:    x=130-43.5=86.5, y=578-11.5=566.5
+    rect bottom: x=86.5, y=610-11.5=598.5
+  -->
+  <rect x="86.5" y="566.5" width="87" height="23" rx="11.5"
+        fill="url(#pillGradLight)"
+        transform="rotate(-9, 130, 578)"/>
+  <rect x="86.5" y="598.5" width="87" height="23" rx="11.5"
+        fill="url(#pillGradLight)"
+        transform="rotate(9, 130, 610)"/>
+
+  <!-- Light wordmark -->
+  <text x="222" y="595"
+        font-size="74" font-weight="700"
+        fill="url(#wordLight)"
+        dominant-baseline="middle"
+        letter-spacing="-1">paave</text>
+
+  <text x="224" y="643"
+        font-size="12" font-weight="500"
+        fill="#9CA3AF" letter-spacing="5">PAVE YOUR WAY FORWARD</text>
+
+
+  <!-- ─── MINIMUM SIZE SHOWCASE ─── -->
+  <text x="820" y="510"
+        font-size="10" font-weight="500" fill="#9CA3AF" letter-spacing="2.5">MINIMUM SIZES</text>
+
+  <!-- 32 × 32 -->
+  <rect x="820" y="525" width="32" height="32" rx="7" fill="#161B22"/>
+  <!--  pill: w=19, h=11, rx=5.5, center(836,535.5) / (836,547.5) -->
+  <rect x="826.5" y="529.5" width="19" height="10" rx="5"
+        fill="url(#pillGrad)" transform="rotate(-9, 836, 534.5)"/>
+  <rect x="826.5" y="542.5" width="19" height="10" rx="5"
+        fill="url(#pillGrad)" transform="rotate(9, 836, 547.5)"/>
+  <text x="820" y="570" font-size="9" fill="#9CA3AF">32px</text>
+
+  <!-- 48 × 48 -->
+  <rect x="874" y="519" width="48" height="48" rx="11" fill="#161B22"/>
+  <rect x="881" y="530" width="29" height="14" rx="7"
+        fill="url(#pillGrad)" transform="rotate(-9, 895.5, 537)"/>
+  <rect x="881" y="548" width="29" height="14" rx="7"
+        fill="url(#pillGrad)" transform="rotate(9, 895.5, 555)"/>
+  <text x="874" y="580" font-size="9" fill="#9CA3AF">48px</text>
+
+  <!-- 80 × 80 -->
+  <rect x="942" y="511" width="80" height="80" rx="18" fill="#161B22"/>
+  <rect x="959" y="530" width="46" height="22" rx="11"
+        fill="url(#pillGrad)" transform="rotate(-9, 982, 541)"/>
+  <rect x="959" y="557" width="46" height="22" rx="11"
+        fill="url(#pillGrad)" transform="rotate(9, 982, 568)"/>
+  <text x="960" y="604" font-size="9" fill="#9CA3AF">80px</text>
+
+  <!-- Usage rules -->
+  <text x="820" y="638" font-size="10" fill="#CBD5E1">
+    Minimum: 32px icon. Never scale below — use text-only lockup instead.
+  </text>
+  <text x="820" y="653" font-size="10" fill="#CBD5E1">
+    Top pill rotates −9°, bottom pill +9°. Both share the same gradient (blue left → cyan right).
+  </text>
+  <text x="820" y="668" font-size="10" fill="#CBD5E1">
+    On light backgrounds: use #FFFFFF card fill and deeper gradient stops (see "Light" variants above).
+  </text>
+  <text x="820" y="683" font-size="10" fill="#CBD5E1">
+    Do not recolor, rotate, separate pills, or use a single pill alone.
+  </text>
+
+</svg>
