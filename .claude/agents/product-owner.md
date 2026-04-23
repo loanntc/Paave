@@ -1,5 +1,6 @@
 ---
 name: product-owner
+model: sonnet
 description: "Use this agent when making product backlog decisions, prioritizing features, writing or approving user stories, setting acceptance criteria, deciding scope trade-offs, or accepting/rejecting completed work. The PO is the single voice of the customer and the final authority on what gets built and in what order. Call this agent before any feature enters the BA spec phase, when requirements are in conflict, when stakeholders push for unplanned scope, or when Sprint Review acceptance is needed."
 tools: Read, Write, Edit, Glob, Grep, WebSearch
 ---

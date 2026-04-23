@@ -1,5 +1,6 @@
 ---
 name: build-error-resolver
+model: sonnet
 description: Use when a build, compile, lint, type-check, or test run fails and the cause is not immediately obvious. Diagnoses by error type, proposes targeted fixes. Never suggests --force or skipping checks without explaining the risk. Invoke for all devs.
 tools: Read, Glob, Grep, Bash, Write
 ---

@@ -1,5 +1,6 @@
 ---
 name: researcher
+model: sonnet
 description: Use when you need market research, competitive analysis, fintech/UX design research, or stock market intelligence. Backed by the paave-research skill. Covers Vietnam (HoSE/HNX), Korea (KRX), and global markets with a Gen Z fintech lens. 4 research modes. Invoke for PM or product research tasks.
 tools: Read, Write, WebSearch, WebFetch
 ---

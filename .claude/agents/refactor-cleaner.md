@@ -1,5 +1,6 @@
 ---
 name: refactor-cleaner
+model: sonnet
 description: Use when cleaning up code after a feature ships, reducing duplication, improving naming, or extracting abstractions. Requires characterisation tests before touching untested code. Never refactors and adds features in the same PR. Invoke for all devs in dedicated cleanup PRs.
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---

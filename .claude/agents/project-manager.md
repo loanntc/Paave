@@ -1,5 +1,6 @@
 ---
 name: project-manager
+model: sonnet
 description: "Use this agent for project planning, sprint management, cross-team coordination, risk identification and mitigation, timeline tracking, stakeholder communication, and unblocking teams. Works across multiple active projects simultaneously. Call this agent when teams are blocked, when risks need assessment, when priorities need alignment, or when cross-functional decisions are required."
 ---
 

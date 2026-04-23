@@ -1,5 +1,6 @@
 ---
 name: qa-engineer
+model: sonnet
 description: "Use this agent to create test cases from BA/FRD documents, detect coverage gaps in requirements, validate that implementations meet acceptance criteria, write bug reports, request updates from developers or BA, and produce QA sign-off reports. Call this agent after BA documents are ready (for test planning), when a feature is ready for testing, or when release readiness needs to be confirmed."
 ---
 

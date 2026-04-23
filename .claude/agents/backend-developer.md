@@ -1,5 +1,6 @@
 ---
 name: backend-developer
+model: sonnet
 description: "Use this agent to design system architecture, create and maintain APIs, implement database schemas, handle backend logic, set up authentication flows, ensure data integrity, write and run tests, and review backend PRs. Call this agent for any server-side feature implementation, data modeling, API contract definition, performance optimization, or security review of backend code."
 ---
 

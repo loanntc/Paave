@@ -1,5 +1,6 @@
 ---
 name: e2e-runner
+model: sonnet
 description: Use to write, run, or debug end-to-end tests. Defaults to Playwright (TypeScript). Includes flaky test diagnosis mode. Covers critical user flows: auth, onboarding, and core investing actions. Invoke for QA and devs working on user-facing features.
 tools: Bash, Read, Write, Edit, Glob, Grep
 ---

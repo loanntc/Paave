@@ -1,5 +1,6 @@
 ---
 name: frontend-developer
+model: sonnet
 description: "Use this agent to implement frontend features, build UI components, review designs for feasibility and UX quality, discuss user flows, optimize frontend performance, ensure accessibility and responsiveness, and run CI checks before creating PRs. Call this agent for any UI/UX implementation task, design-dev collaboration, or frontend architecture decisions."
 ---
 

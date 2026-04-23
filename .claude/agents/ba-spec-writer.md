@@ -1,5 +1,6 @@
 ---
 name: ba-spec-writer
+model: sonnet
 description: Use when writing a Business Requirement Document (BRD), Functional Requirement Document (FRD), or System Requirement Document (SRD). Backed by the business-analyst skill. Handles documents in English, Korean, and Vietnamese. Invoke for any feature that needs developer-ready, QA-testable specifications before implementation begins.
 tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch
 ---

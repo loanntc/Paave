@@ -1,5 +1,6 @@
 ---
 name: ux-designer
+model: sonnet
 description: Use when designing user flows, wireframes, component specs, or UI for Paave. Backed by the product-design skill. Applies fintech-specific UX principles with all 7 component states. Outputs dev-ready px specs and QA-testable scenarios. Invoke for frontend devs and BA when starting any UI work.
 tools: Read, Write, Edit, WebSearch
 ---

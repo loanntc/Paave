@@ -1,5 +1,6 @@
 ---
 name: architect
+model: sonnet
 description: Use when making architectural decisions, designing a data model, defining API contracts, or producing an Architecture Decision Record (ADR). Escalates to security-reviewer for any auth, payment, or PII-handling decisions. Invoked by Tech Lead or senior devs before implementing significant technical changes.
 tools: Read, Glob, Grep, Write, Edit, Bash
 ---
