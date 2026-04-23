@@ -35,7 +35,3 @@ yarn-error.log*
 # ide
 .idea
 .vscode
-
-# claude code — local settings excluded, shared agents included
-.claude/*
-!.claude/agents
