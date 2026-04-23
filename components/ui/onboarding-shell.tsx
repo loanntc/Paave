@@ -29,7 +29,7 @@ export function OnboardingShell({
 }: OnboardingShellProps) {
   const pct = Math.round((step / total) * 100);
   return (
-    <main className="relative min-h-screen overflow-hidden bg-ink-900">
+    <main className="relative min-h-screen overflow-hidden bg-ink-violet-base">
       <AmbientBackground />
 
       <header className="relative z-20 flex w-full items-center justify-between px-6 py-4">
@@ -37,13 +37,13 @@ export function OnboardingShell({
           <Link
             href={backHref}
             aria-label="Back"
-            className="grid size-10 place-items-center rounded-full text-lime-soft transition-colors hover:bg-ink-700"
+            className="grid size-10 place-items-center rounded-full text-text-neo-primary transition-colors hover:bg-ink-violet-raised"
           >
             <ArrowLeft className="size-4" strokeWidth={2} />
           </Link>
           <PaaveWordmark />
         </div>
-        <span className="font-display text-[11px] uppercase tracking-pulse text-fog">
+        <span className="font-pretendard text-[11px] uppercase tracking-pulse text-text-neo-tertiary">
           Step {String(step).padStart(2, "0")} / {String(total).padStart(2, "0")}
         </span>
       </header>
@@ -55,27 +55,27 @@ export function OnboardingShell({
               key={i}
               className={cn(
                 "h-1 flex-1 rounded-full transition-colors",
-                i < step ? "bg-lime" : "bg-ink-600",
+                i < step ? "bg-lime-signal-400" : "bg-ink-violet-raised",
               )}
             />
           ))}
         </div>
-        <p className="mt-2 text-right font-display text-[10px] uppercase tracking-pulse text-fog-muted">
+        <p className="mt-2 text-right font-pretendard text-[10px] uppercase tracking-pulse text-text-neo-tertiary">
           {pct}% synced
         </p>
       </div>
 
       <section className="relative z-10 mx-auto flex w-full max-w-[640px] flex-col px-6 pt-8 pb-12">
         <div className="flex flex-col items-center text-center">
-          <span className="inline-flex items-center gap-2 font-display text-[14px] uppercase tracking-[2.4px] text-plasma">
-            <span className="size-1.5 rounded-full bg-plasma" />
+          <span className="inline-flex items-center gap-2 font-pretendard text-[14px] uppercase tracking-[2.4px] text-violet-deep-400">
+            <span className="size-1.5 rounded-full bg-violet-deep-400" />
             {eyebrow}
           </span>
-          <h1 className="mt-5 max-w-md font-display text-[40px] font-bold leading-[1.08] tracking-[-2px] text-lime-soft sm:text-[48px]">
+          <h1 className="mt-5 max-w-md font-pretendard text-[40px] font-bold leading-[1.08] tracking-[-2px] text-text-neo-primary sm:text-[48px]">
             {heading}
           </h1>
           {copy && (
-            <p className="mt-4 max-w-md font-body text-[16px] leading-[1.62] text-fog">
+            <p className="mt-4 max-w-md text-[16px] leading-[1.62] text-text-neo-secondary">
               {copy}
             </p>
           )}

@@ -46,7 +46,7 @@ export function NameView() {
         <>
           What should we
           <br />
-          <span className="text-lime">call you</span>?
+          <span className="text-lime-signal-400">call you</span>?
         </>
       }
       copy="This is how PAAVE greets you in the ledger. Keep it between 2 and 20 characters — you can remix it later."
@@ -54,17 +54,17 @@ export function NameView() {
         <KineticButton onClick={submit} disabled={!isValid || submitting}>
           {submitting ? "Unlocking ledger…" : "Enter the Ledger"}
           <Zap
-            className="size-5 fill-lime-ink stroke-lime-ink"
+            className="size-5 fill-ink-violet-base stroke-ink-violet-base"
             strokeWidth={2}
             aria-hidden
           />
         </KineticButton>
       }
     >
-      <div className="rounded-[40px] border border-edge bg-[rgba(38,38,38,0.4)] px-8 pt-8 pb-10 backdrop-blur-md">
+      <div className="rounded-[32px] border border-border-neo bg-ink-violet-surface px-8 pt-8 pb-10">
         <label
           htmlFor="onboard-name"
-          className="block font-display text-[12px] uppercase tracking-[2.4px] text-fog"
+          className="block font-pretendard text-[12px] uppercase tracking-[2.4px] text-text-neo-secondary"
         >
           Display name
         </label>
@@ -77,14 +77,14 @@ export function NameView() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Minh, Ji-woo, Alex…"
-          className="mt-3 block h-14 w-full rounded-lg bg-ink-600 px-5 font-body text-[18px] text-lime-soft placeholder:text-ink-400 outline-none transition-all focus:ring-2 focus:ring-lime"
+          className="mt-3 block h-14 w-full rounded-lg bg-ink-violet-raised px-5 text-[18px] text-text-neo-primary placeholder:text-text-neo-tertiary border border-border-neo outline-none transition-all focus:border-border-neo-focus focus:border-2 focus:px-[19px]"
         />
         <div className="mt-3 flex items-center justify-between">
           <p
             className={cn(
-              "font-display text-[11px] uppercase tracking-pulse",
+              "font-pretendard text-[11px] uppercase tracking-pulse",
               isValid || trimmed.length === 0
-                ? "text-fog-muted"
+                ? "text-text-neo-tertiary"
                 : "text-negative",
             )}
           >
@@ -96,13 +96,14 @@ export function NameView() {
                   ? "At least 2 characters"
                   : "Locked in — sounds great"}
           </p>
-          <p className="font-display text-[11px] uppercase tracking-pulse text-fog-muted">
+          <p className="font-pretendard text-[11px] uppercase tracking-pulse text-text-neo-tertiary">
             {trimmed.length}/{MAX_LEN}
           </p>
         </div>
 
+        {/* Quick-pick suggestions */}
         <div className="mt-6">
-          <p className="font-display text-[11px] uppercase tracking-pulse text-plasma">
+          <p className="font-pretendard text-[11px] uppercase tracking-pulse text-violet-deep-400">
             <Sparkles className="inline size-3 -mt-1" /> Quick-pick
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -112,10 +113,10 @@ export function NameView() {
                 type="button"
                 onClick={() => setName(s)}
                 className={cn(
-                  "rounded-full border px-4 py-1.5 font-display text-[12px] uppercase tracking-pulse transition-colors",
+                  "rounded-full border px-4 py-1.5 font-pretendard text-[12px] uppercase tracking-pulse transition-colors",
                   trimmed === s
-                    ? "border-lime bg-lime-glow/40 text-lime"
-                    : "border-edge bg-ink-800/60 text-lime-soft hover:bg-ink-700",
+                    ? "border-lime-signal-400 bg-[rgba(181,232,47,0.12)] text-lime-signal-400"
+                    : "border-border-neo bg-ink-violet-raised/60 text-text-neo-primary hover:bg-ink-violet-hover",
                 )}
               >
                 {s}

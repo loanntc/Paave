@@ -15,7 +15,7 @@ export function PaaveWordmark({
   return (
     <span
       className={cn(
-        "font-display uppercase text-lime-soft leading-none",
+        "font-pretendard font-bold uppercase text-text-neo-primary leading-none",
         sizeMap[size],
         className,
       )}

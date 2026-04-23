@@ -17,10 +17,7 @@ interface OtpInputProps {
   autoFocus?: boolean;
 }
 
-/**
- * 6-digit OTP grid rendered as 2 rows × 3 columns (Figma V2.0 spec).
- * Each cell is a single-character input; focus auto-advances.
- */
+/** 6-digit OTP grid rendered as 2 rows × 3 columns. */
 export function OtpInput({
   length = 6,
   value,
@@ -47,7 +44,6 @@ export function OtpInput({
       setAt(idx, "");
       return;
     }
-    // If pasted more than one digit into a single cell, spread forward
     if (raw.length > 1) {
       const spread = raw.slice(0, length - idx).split("");
       const chars = value.padEnd(length, " ").split("");
@@ -102,12 +98,12 @@ export function OtpInput({
             onKeyDown={handleKeyDown(idx)}
             onPaste={handlePaste}
             className={cn(
-              "h-20 w-full rounded-lg bg-ink-600 text-center",
-              "font-display text-[30px] leading-none tabular-nums",
-              "outline-none transition-all duration-150",
-              "focus:ring-2 focus:ring-lime focus:bg-ink-500",
-              isFilled ? "text-lime-soft" : "text-ink-400",
-              "caret-lime",
+              "h-20 w-full rounded-lg bg-ink-violet-raised text-center",
+              "font-pretendard text-[30px] leading-none tabular-nums",
+              "border border-border-neo outline-none transition-all duration-150",
+              "focus:border-border-neo-focus focus:border-2 focus:bg-ink-violet-hover",
+              isFilled ? "text-text-neo-primary" : "text-text-neo-tertiary",
+              "caret-lime-signal-400",
               "disabled:opacity-50",
             )}
           />
