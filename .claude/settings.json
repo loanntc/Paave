@@ -7,11 +7,11 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "~/.claude/bash-audit-log.sh"
+                        "command": ".claude/bash-audit-log.sh"
                     },
                     {
                         "type": "command",
-                        "command": "~/.claude/business-rules-check.sh"
+                        "command": ".claude/business-rules-check.sh"
                     }
                 ]
             }
@@ -22,7 +22,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "~/.claude/stop-hook-git-check.sh"
+                        "command": ".claude/stop-hook-git-check.sh"
                     }
                 ]
             }

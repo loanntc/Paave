@@ -2,14 +2,17 @@
 # PreToolUse hook: reads ~/.claude/business-rules.md before allowing Bash commands.
 # Blocks high-risk patterns with the relevant rule as context for Claude.
 
-RULES_FILE="$HOME/.claude/business-rules.md"
-input=$(cat)
-command=$(echo "$input" | jq -r '.tool_input.command // ""')
-
-# No rules file — allow everything
-if [[ ! -f "$RULES_FILE" ]]; then
+# Prefer project-level rules; fall back to global
+if [[ -f ".claude/business-rules.md" ]]; then
+  RULES_FILE=".claude/business-rules.md"
+elif [[ -f "$HOME/.claude/business-rules.md" ]]; then
+  RULES_FILE="$HOME/.claude/business-rules.md"
+else
   exit 0
 fi
+
+input=$(cat)
+command=$(echo "$input" | jq -r '.tool_input.command // ""')
 
 BLOCKED=""
 
