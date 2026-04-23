@@ -4,6 +4,7 @@
 
 | Agent | File | Primary Trigger |
 |-------|------|----------------|
+| `product-owner` | `product-owner.md` | Backlog priority, user stories, acceptance criteria, sprint review sign-off |
 | `project-manager` | `project-manager.md` | Planning, risk, cross-team blockers, status |
 | `business-analyst` | `business-analyst.md` | Requirements, BRD/FRD/SRD, gap analysis |
 | `frontend-developer` | `frontend-developer.md` | UI implementation, design-dev alignment |
@@ -16,55 +17,94 @@
 ## SDLC Workflow
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    FEATURE LIFECYCLE                            │
-│                                                                 │
-│  1. DISCOVERY         2. REQUIREMENTS     3. DESIGN            │
-│  ┌──────────┐         ┌──────────────┐   ┌──────────────┐     │
-│  │    PM    │────────▶│      BA      │──▶│  FE + BE     │     │
-│  │          │ scope   │              │   │  (parallel)  │     │
-│  └──────────┘ approved└──────────────┘   └──────────────┘     │
-│       │                      │                   │             │
-│       │                      ▼                   │             │
-│       │              ┌──────────────┐            │             │
-│       │              │      QA      │◀───────────┘             │
-│       │              │ (test plan)  │  reviews specs           │
-│       │              └──────────────┘                          │
-│                                                                 │
-│  4. DEVELOPMENT       5. TESTING         6. REVIEW + SHIP      │
-│  ┌──────────────┐    ┌──────────────┐   ┌──────────────┐     │
-│  │  FE + BE     │───▶│      QA      │──▶│Code Reviewer │     │
-│  │  (parallel)  │    │              │   │              │     │
-│  └──────────────┘    └──────────────┘   └──────────────┘     │
-│         │                  │                   │               │
-│         │◀─ bug reports ───┘                   │               │
-│         │                              ┌───────▼──────┐       │
-│         │                              │    MERGE     │       │
-│         │                              │  (CI green   │       │
-│         │                              │  + approved) │       │
-│         │                              └──────────────┘       │
-│         │                                                      │
-│         └──────── PM tracks all ───────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                        FEATURE LIFECYCLE                             │
+│                                                                      │
+│  0. BACKLOG           1. DISCOVERY       2. REQUIREMENTS             │
+│  ┌──────────┐         ┌──────────┐       ┌──────────────┐           │
+│  │    PO    │────────▶│  PO + PM │──────▶│      BA      │           │
+│  │ priority │ story   │  scope   │ scope │              │           │
+│  │ + story  │ approved│ + risk   │ apprvd│  FRD / SRD   │           │
+│  └──────────┘         └──────────┘       └──────────────┘           │
+│       ▲                    │                     │                   │
+│       │ accepts /          │                     ▼                   │
+│       │ rejects            │             ┌──────────────┐           │
+│       │                    │             │      QA      │           │
+│                            │             │ (test plan)  │           │
+│  3. DESIGN                 │             └──────────────┘           │
+│  ┌──────────────┐          │                     │                   │
+│  │  FE + BE     │◀─────────┘       PO approves FRD before dev       │
+│  │  (parallel)  │                                                    │
+│  └──────────────┘                                                    │
+│                                                                      │
+│  4. DEVELOPMENT       5. TESTING         6. REVIEW + SHIP            │
+│  ┌──────────────┐    ┌──────────────┐   ┌──────────────┐           │
+│  │  FE + BE     │───▶│      QA      │──▶│Code Reviewer │           │
+│  │  (parallel)  │    │              │   │              │           │
+│  └──────────────┘    └──────────────┘   └──────────────┘           │
+│         │                  │                   │                     │
+│         │◀─ bug reports ───┘                   │                     │
+│         │                              ┌───────▼──────┐             │
+│         │                              │    MERGE     │             │
+│         │                              │  (CI green   │             │
+│         │                              │  + approved) │             │
+│         │                              └──────┬───────┘             │
+│         │                                     │                     │
+│         │                              ┌──────▼───────┐             │
+│         │                              │  PO ACCEPTS  │             │
+│         │                              │ Sprint Review│             │
+│         │                              └──────────────┘             │
+│         │                                                            │
+│         └──────────── PM tracks all ───────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Phase-by-Phase Breakdown
 
-### Phase 1 — Discovery (PM leads)
+### Phase 0 — Backlog (PO leads)
 
-**Participants:** PM, BA (consulted), Stakeholders
+**Participants:** PO, Stakeholders (input), PM (consulted on effort)
+**PO actions:**
+- Receives feature requests from stakeholders, users, and data signals
+- Writes a user story with full acceptance criteria for every backlog item before it is sprint-eligible
+- Prioritizes the backlog using: user impact → business value → compliance risk → dependency → effort
+- Consults PM for effort estimates before finalizing priority
+- Marks items `P0` (this sprint), `P1` (next sprint), `P2` (this quarter), `P3` (future)
+- Reviews and updates backlog before every sprint planning session
+
+**PO gates — nothing moves to Phase 1 without:**
+- [ ] User story written in STORY-[ID] format
+- [ ] All acceptance criteria testable and unambiguous
+- [ ] Out-of-scope explicitly listed
+- [ ] Priority assigned with documented rationale
+- [ ] Compliance check passed (age gate, no real-trading paths, KYC if relevant)
+
+**Output:** Sprint-eligible backlog with ordered, fully written user stories
+
+**Transition to Phase 1:** PO confirms top items are ready → PM begins sprint planning with those items
+
+---
+
+### Phase 1 — Discovery (PO + PM lead jointly)
+
+**Participants:** PO, PM, BA (consulted), Stakeholders
+**PO actions:**
+- Presents the prioritized user stories for the upcoming sprint
+- Answers BA and PM questions about intent and edge cases
+- Confirms scope boundaries — what is explicitly in and out
+
 **PM actions:**
-- Receives feature request or business need
-- Defines scope boundaries (in/out of scope) with BA input
+- Receives prioritized stories from PO
+- Defines scope boundaries (in/out of scope) confirmed with PO
 - Assesses risk: timeline, technical complexity, regulatory impact
 - Gets scope approved before BA begins full spec work
 - Creates sprint tickets with enough detail for BA to start
 
-**Output:** Approved scope statement, initial risk register entries
+**Output:** Approved scope statement, initial risk register entries, sprint commitment
 
-**Transition to Phase 2:** PM confirms scope is approved → signals BA to begin
+**Transition to Phase 2:** PO approves scope → PM signals BA to begin
 
 ---
 
@@ -93,9 +133,15 @@
 - BE flags data model constraints or missing system behavior
 - BA updates SRD with agreed API contracts
 
-**Output:** Final BRD + FRD + SRD package, QA-confirmed testable
+**PO review gate (before Final):**
+- BA sends draft FRD to PO for product alignment review
+- PO verifies: acceptance criteria in the FRD match the original user story exactly
+- PO flags any scope drift, missing user needs, or compliance risks
+- PO sign-off is required before BA can mark document Final
 
-**Transition to Phase 3:** BA marks document Final → PM notifies FE, BE, QA to begin
+**Output:** Final BRD + FRD + SRD package, QA-confirmed testable, PO-approved
+
+**Transition to Phase 3:** BA marks document Final (with PO sign-off) → PM notifies FE, BE, QA to begin
 
 ---
 
@@ -202,8 +248,10 @@
 
 **When APPROVED:**
 - PR merges to develop (or main after QA sign-off)
-- PM marks sprint item complete
 - Deployment to staging happens automatically (CI/CD)
+- **PO performs Sprint Review acceptance** — reviews the deployed feature against original acceptance criteria
+- PO verdict: ACCEPTED / CONDITIONALLY ACCEPTED / REJECTED (see product-owner.md for format)
+- PM marks sprint item complete only after PO accepts
 
 ---
 
@@ -214,29 +262,43 @@
 ```
 Developer blocked by missing API contract  →  Escalate to BE (if FE) or FE (if BE), then PM if unresolved in 4h
 QA blocked by unstable build               →  Escalate to responsible developer, then PM if > 24h
-QA finds BA gap during testing             →  Escalate to BA, CC PM
-BA cannot resolve requirement conflict     →  Escalate to PM for stakeholder decision
+QA finds BA gap during testing             →  Escalate to BA, CC PO and PM
+BA cannot resolve requirement conflict     →  Escalate to PO (product decision) or PM (scope/timeline decision)
+BA FRD conflicts with user story           →  Escalate to PO immediately — PO resolves before Final
+PO rejects completed work at Sprint Review →  PO documents rejection, PM creates fix ticket, prioritize next sprint
+Stakeholder requests scope change mid-sprint→  Escalate to PO to triage; PO decides: this sprint or backlog
 PR has no reviewer for > 24h              →  Escalate to PM to assign reviewer
-Any P0 bug in production                  →  Escalate to PM + all team immediately
+Any P0 bug in production                  →  Escalate to PM + PO + all team immediately
+Any compliance / age gate violation found  →  Escalate to PO immediately — release blocked until resolved
 ```
 
 ### Artifact ownership
 
 | Artifact | Owner | Reviewers |
 |----------|-------|-----------|
-| BRD | BA | PM, Stakeholders |
-| FRD | BA | QA (testability), FE (UX), BE (technical) |
+| Product Backlog | **PO** | PM (effort), Stakeholders (input) |
+| User Stories + Acceptance Criteria | **PO** | BA (feasibility), QA (testability) |
+| Sprint Review Sign-off | **PO** | — |
+| BRD | BA | PM, **PO**, Stakeholders |
+| FRD | BA | **PO** (product alignment), QA (testability), FE (UX), BE (technical) |
 | SRD | BA + BE | QA (testability), FE (API shape) |
 | Test Plan | QA | PM, BA |
-| Bug Reports | QA | Developer (assigned), PM (P0/P1) |
+| Bug Reports | QA | Developer (assigned), PM (P0/P1), **PO** (if user-facing regression) |
 | PR | FE or BE | Code Reviewer |
 | Architecture Doc | BE | PM, FE (if API-touching) |
-| Risk Register | PM | All teams |
+| Risk Register | PM | All teams, **PO** (product risks) |
 
 ### Handoff checklist (between phases)
 
+**PO → BA (before spec work begins):**
+- [ ] User story written with full acceptance criteria
+- [ ] Out-of-scope explicitly listed
+- [ ] Compliance check passed (no age gate or real-trading violations)
+- [ ] PO available to answer BA questions during spec phase
+
 **BA → Development:**
 - [ ] FRD marked Final
+- [ ] FRD reviewed and signed off by PO
 - [ ] SRD marked Final
 - [ ] QA has confirmed document is testable (no open BLOCKER gaps)
 - [ ] API contracts agreed between FE and BE
@@ -253,6 +315,7 @@ Any P0 bug in production                  →  Escalate to PM + all team immedia
 - [ ] Zero P0 bugs open
 - [ ] P1 bugs reviewed and accepted by PM if any remain
 - [ ] Regression suite passed
+- [ ] PO Sprint Review acceptance received (ACCEPTED or CONDITIONALLY ACCEPTED)
 
 ---
 

@@ -6,6 +6,7 @@ Sub-agents the orchestrator (main Claude) can delegate to. Each runs with a limi
 
 | Agent | Who uses it | What it does |
 |-------|-------------|--------------|
+| `product-owner` | PO, PM, BA | Backlog prioritization, user stories, acceptance criteria, sprint review sign-off; single voice of the customer |
 | `planner` | All devs, PM | Mini design doc + PR slice strategy per engineering handbook §2 |
 | `architect` | Tech Lead | ADR format + data model + API contracts; escalates to `security-reviewer` |
 | `ba-spec-writer` | BA | BRD/FRD/SRD package; Korean/Vietnamese doc support; backed by `business-analyst` skill |
