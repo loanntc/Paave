@@ -316,6 +316,53 @@ Also test:            360×780, 430×932
 
 ---
 
+## 13. Component Reuse Workflow
+
+**Rule: Check before you create.** Every new screen must audit existing components before introducing anything new. A component created for one screen is available to all future screens.
+
+### 13.1 Workflow for New Screens
+
+```
+1. READ  — Review Section 8 (Signature Components) and docs/design/components.md
+2. AUDIT — For each UI element on the new screen, answer:
+           "Does an existing component cover this, even partially?"
+3. REUSE — If yes: use the existing component. Document any prop/variant needed.
+4. EXTEND — If an existing component almost fits: add a new variant to it,
+             then update its entry in components.md.
+5. CREATE — If nothing fits: design the new component from scratch,
+             following all design-system tokens, then add it to components.md.
+```
+
+### 13.2 Rules
+
+- **No duplicate components.** If two screens have the same UI element with identical behavior, they must share one component — not two copies.
+- **Variants over new components.** A new visual treatment on an existing component shape = a new variant on that component, not a new component.
+- **Document immediately.** A new component not added to `components.md` before the screen spec is submitted is treated as incomplete.
+- **Name consistently.** Component names follow `PascalCase`. Variant names follow `kebab-case` (e.g., `KineticButton` › `variant: ghost-sm`).
+
+### 13.3 When to Create a New Component
+
+Create a new component entry in `components.md` when:
+- The element appears on more than one screen, OR is likely to appear again within 2 sprints.
+- The element has more than one interactive state (default, hover, pressed, disabled, error).
+- The element carries a design token that doesn't exist yet in any current component.
+
+Do **not** create a new component for:
+- One-off decorative elements used on a single screen with no reuse potential.
+- Pure layout wrappers with no visual identity (use spacing tokens instead).
+
+### 13.4 Checklist — Before Submitting a Screen Spec
+
+```
+[ ] Reviewed all components in Section 8 and components.md
+[ ] Every UI element is either: an existing component, an extended variant, or a new documented component
+[ ] New components are added to components.md with all required fields
+[ ] Extended variants are updated in the existing component's components.md entry
+[ ] No design token values are hardcoded in the spec — all values reference named tokens
+```
+
+---
+
 ## Appendix A — V1 → V2 Token Migration
 
 | V1 Token | V1 Value | V2 Token | V2 Value |
