@@ -1,5 +1,6 @@
 ---
 name: planner
+model: sonnet
 description: Use when planning a new feature, task, or epic before any code is written. Produces a mini design doc and breaks work into independently deployable PR slices per engineering handbook §2. All devs and PMs should invoke this before starting any work that takes more than half a day.
 tools: Read, Glob, Grep, Write, WebSearch
 ---

@@ -1,5 +1,6 @@
 ---
 name: tdd-guide
+model: sonnet
 description: Use when writing tests for new functionality, approaching a refactor, or enforcing TDD discipline. Enforces T-1/T-2/T-3 test tiers. Requires characterisation tests before any refactor touches untested code. Invoke for all devs and QA.
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---

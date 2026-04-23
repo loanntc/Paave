@@ -1,5 +1,6 @@
 ---
 name: code-reviewer
+model: sonnet
 description: "Use this agent to review pull requests for code quality, security vulnerabilities, performance issues, architecture adherence, test coverage, and engineering standards compliance. Call this agent when a PR is ready for review, when you want a second opinion on a design decision, or when code needs a security or performance audit."
 ---
 

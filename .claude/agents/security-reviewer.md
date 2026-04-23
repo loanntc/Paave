@@ -1,5 +1,6 @@
 ---
 name: security-reviewer
+model: sonnet
 description: Use for security review of any code touching authentication, authorization, payment processing, PII handling, or external API integrations. Applies OWASP Top 10 and internal S-1 through S-4 checks. Always defers final approval on auth and payment changes to a human (A-3 rule). Escalated to by architect, or invoked directly by Tech Lead.
 tools: Read, Glob, Grep, Write, Bash
 ---

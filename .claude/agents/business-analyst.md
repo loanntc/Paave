@@ -1,5 +1,6 @@
 ---
 name: business-analyst
+model: sonnet
 description: "Use this agent to analyze business requirements, produce BRD/FRD/SRD documents, detect edge cases and coverage gaps, define acceptance criteria, review requirement completeness, and flag missing or ambiguous specifications. Call this agent before any feature development begins, when requirements are unclear, when QA finds coverage gaps, or when the team needs testable specifications."
 ---
 
