@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Manrope, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, Manrope, JetBrains_Mono, Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
+
+const beVietnamPro = Be_Vietnam_Pro({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-be-vietnam-pro",
+  display: "swap",
+});
 
 // Legacy display/body fonts (kept for backwards compatibility)
 const spaceGrotesk = Space_Grotesk({
@@ -17,18 +24,17 @@ const manrope = Manrope({
   display: "swap",
 });
 
-// Mono font for token references / code
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-jetbrains-mono",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "PAAVE — Invest in the Vibe",
+  title: "PAAVE — Luyện tập. Giao dịch. Thăng hạng.",
   description:
-    "A Gen Z investing ledger. Paper-trade Vietnam, Korea, and global markets with kinetic security and community pulse.",
+    "Sàn giao dịch ảo cho thế hệ đầu tư mới. ₫500 triệu vốn ảo · không rủi ro tiền thật · dữ liệu HOSE + KRX trực tiếp.",
   icons: { icon: "/paave-icon-v2.svg" },
 };
 
@@ -47,10 +53,10 @@ export default function RootLayout({
 }) {
   return (
     <html
-      lang="en"
-      className={`${spaceGrotesk.variable} ${manrope.variable} ${jetbrainsMono.variable}`}
+      lang="vi"
+      className={`${beVietnamPro.variable} ${spaceGrotesk.variable} ${manrope.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="min-h-screen font-pretendard bg-ink-violet-base text-text-neo-primary">
+      <body className="min-h-screen bg-[#050509] text-[#E8E6F5]" style={{ fontFamily: "var(--font-be-vietnam-pro), 'Pretendard Variable', Pretendard, -apple-system, sans-serif" }}>
         {children}
       </body>
     </html>
