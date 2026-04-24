@@ -3,32 +3,31 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { ArrowLeft, Eye, EyeOff, Flame, ShieldCheck, Zap } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { AmbientBackground } from "@/components/brand/ambient-background";
-import { PaaveWordmark } from "@/components/brand/paave-wordmark";
-import { KineticButton } from "@/components/ui/kinetic-button";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-type Strength = 0 | 1 | 2 | 3 | 4;
+type Strength = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 function scorePassword(pw: string): Strength {
   let s = 0;
-  if (pw.length >= 8) s++;
+  if (pw.length >= 6) s++;
+  if (pw.length >= 10) s++;
   if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
   if (/\d/.test(pw)) s++;
-  if (/[^A-Za-z0-9]/.test(pw) && pw.length >= 12) s++;
-  return Math.min(s, 4) as Strength;
+  if (/[^A-Za-z0-9]/.test(pw)) s++;
+  if (pw.length >= 14) s++;
+  return Math.min(s, 6) as Strength;
 }
 
-const STRENGTH_LABELS: Record<Strength, string> = {
-  0: "Dormant",
-  1: "Low",
-  2: "Medium",
-  3: "High",
-  4: "Kinetic",
-};
+function Bolt({ size = 12 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
+      <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />
+    </svg>
+  );
+}
+
+const STRENGTH_LABEL = ["", "Yếu", "Yếu", "Trung bình", "Khá", "Mạnh", "Rất mạnh"] as const;
+const STRENGTH_COLOR = ["", "#FF5B7A", "#FF5B7A", "#FF8A5B", "#FF8A5B", "#B5E82F", "#B5E82F"] as const;
 
 export function SignUpView() {
   const router = useRouter();
@@ -39,190 +38,206 @@ export function SignUpView() {
 
   const emailOk = EMAIL_RE.test(email);
   const strength = useMemo(() => scorePassword(password), [password]);
-  const pwOk = strength >= 2;
-  const canSubmit = emailOk && pwOk && !submitting;
+  const canSubmit = emailOk && strength >= 3 && !submitting;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
     setSubmitting(true);
-    // TODO: Supabase signUp({ email, password }) — wire when ready
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 400));
     router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-ink-900">
-      <AmbientBackground />
-
-      <header className="relative z-20 flex w-full items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/splash"
-            aria-label="Back"
-            className="grid size-10 place-items-center rounded-full text-lime-soft transition-colors hover:bg-ink-700"
-          >
-            <ArrowLeft className="size-4" strokeWidth={2} />
-          </Link>
-          <PaaveWordmark />
+    <main
+      className="relative flex min-h-screen flex-col overflow-hidden"
+      style={{
+        background: `
+          radial-gradient(ellipse 70% 50% at 50% 0%, rgba(127,119,221,0.10) 0%, transparent 60%),
+          radial-gradient(ellipse 50% 35% at 50% 100%, rgba(181,232,47,0.04) 0%, transparent 60%),
+          #07070C
+        `,
+      }}
+    >
+      {/* Status bar */}
+      <div className="flex justify-between px-6 pt-14 text-xs font-bold text-white" style={{ fontFamily: "var(--font-jetbrains-mono)" }}>
+        <span>9:41</span>
+        <div className="flex items-center gap-1.5">
+          <svg width="14" height="10" viewBox="0 0 16 10"><rect x="0" y="6" width="2.5" height="4" rx="0.5" fill="currentColor" /><rect x="3.5" y="4" width="2.5" height="6" rx="0.5" fill="currentColor" /><rect x="7" y="2" width="2.5" height="8" rx="0.5" fill="currentColor" /><rect x="10.5" y="0" width="2.5" height="10" rx="0.5" fill="currentColor" /></svg>
+          <svg width="14" height="10" viewBox="0 0 16 10"><path d="M8 3c2 0 3.5 0.8 4.8 2L14 3.8C12.3 2.2 10.3 1 8 1S3.7 2.2 2 3.8L3.2 5C4.5 3.8 6 3 8 3z" fill="currentColor" /><circle cx="8" cy="8" r="1.5" fill="currentColor" /></svg>
+          <svg width="22" height="10" viewBox="0 0 24 10"><rect x="0.5" y="0.5" width="20" height="9" rx="2" stroke="currentColor" fill="none" opacity="0.4" /><rect x="2" y="2" width="16" height="6" rx="1" fill="currentColor" /><rect x="21" y="3" width="2" height="4" rx="0.5" fill="currentColor" opacity="0.4" /></svg>
         </div>
-        <Link
-          href="/sign-in"
-          className="font-display text-[12px] uppercase tracking-pulse text-fog transition-colors hover:text-lime-soft"
-        >
-          Sign in →
+      </div>
+
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-5 pb-2 pt-2">
+        <Link href="/welcome" className="grid place-items-center rounded-lg" style={{ width: 28, height: 28, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </Link>
-      </header>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-grid place-items-center rounded-[5px]" style={{ width: 18, height: 18, background: "#B5E82F", color: "#0B0A1A", boxShadow: "0 0 10px rgba(181,232,47,0.35)" }}>
+            <Bolt size={10} />
+          </span>
+          <span className="text-[13px] font-black tracking-[0.5px]" style={{ fontFamily: "var(--font-be-vietnam-pro)" }}>PAAVE</span>
+        </div>
+        <div className="text-[11px] font-semibold" style={{ color: "#6E6B8F", fontFamily: "var(--font-be-vietnam-pro)" }}>1 / 5</div>
+      </div>
 
-      <section className="relative z-10 mx-auto flex w-full max-w-[640px] flex-col items-center px-6 pt-12 pb-12">
-        <div className="relative w-full">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -top-4 left-1/2 h-24 w-64 -translate-x-1/2 rounded-full bg-plasma/20 blur-3xl"
-          />
-          <div className="relative flex flex-col items-center text-center">
-            <span className="inline-flex items-center gap-2 font-display text-[14px] uppercase tracking-[2.4px] text-plasma">
-              <Flame className="size-3.5 fill-plasma stroke-plasma" aria-hidden />
-              Step 01 / Credentials
-            </span>
-            <h1 className="mt-5 font-display text-[48px] font-bold uppercase leading-[1.02] tracking-[-2.4px] text-lime-soft sm:text-[56px]">
-              Join the
-              <br />
-              <span className="text-lime">Alpha</span>
-            </h1>
-            <p className="mt-5 max-w-md font-body text-[16px] leading-[1.62] text-fog">
-              Mint your credentials. No password reuse, no recycled energy —
-              just a fresh universal ID.
-            </p>
+      {/* Progress */}
+      <div className="px-5 pb-4 pt-2">
+        <div className="mb-1.5 flex items-center justify-between text-[11px] font-semibold" style={{ color: "#6E6B8F", fontFamily: "var(--font-be-vietnam-pro)" }}>
+          <span>Bước 1 / 5</span>
+          <span style={{ color: "#B5E82F" }}>Đăng ký · 20%</span>
+        </div>
+        <div className="flex gap-1.5 h-[3px]">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex-1 rounded-sm" style={{ background: i === 1 ? "#B5E82F" : "rgba(255,255,255,0.08)", boxShadow: i === 1 ? "0 0 6px #B5E82F" : "none" }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Headline */}
+      <h1 className="px-5 pb-2" style={{ fontFamily: "var(--font-be-vietnam-pro)", fontWeight: 900, fontSize: 30, lineHeight: 0.97, letterSpacing: "-0.02em" }}>
+        Tạo tài khoản<br />
+        <span style={{ color: "#B5E82F", textShadow: "0 0 12px rgba(181,232,47,0.25)" }}>Paave của bạn</span>
+      </h1>
+      <p className="mb-5 px-5 text-[13px] leading-relaxed" style={{ color: "#A6A2C7" }}>
+        Nhận ngay ₫500 triệu vốn ảo để bắt đầu giao dịch mô phỏng.
+      </p>
+
+      <form onSubmit={onSubmit} className="flex flex-1 flex-col px-5" noValidate>
+        {/* Email field */}
+        <div className="relative mb-3.5">
+          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "#A6A2C7", fontFamily: "var(--font-be-vietnam-pro)" }}>
+            <span className="h-1 w-1 rounded-full flex-shrink-0" style={{ background: "#B5E82F", boxShadow: "0 0 4px #B5E82F" }} />
+            Email
           </div>
+          <input
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="ten@email.com"
+            className="w-full rounded-xl px-4 text-sm outline-none transition-all"
+            style={{
+              height: 50,
+              background: "rgba(255,255,255,0.02)",
+              border: `1px solid ${emailOk && email ? "rgba(181,232,47,0.6)" : "rgba(255,255,255,0.08)"}`,
+              color: "#E8E6F5",
+              fontFamily: "var(--font-be-vietnam-pro)",
+            }}
+          />
         </div>
 
-        <form
-          onSubmit={onSubmit}
-          className="mt-10 w-full rounded-[40px] border border-edge bg-[rgba(38,38,38,0.4)] px-8 pt-8 pb-10 backdrop-blur-md"
-          noValidate
-        >
-          <div>
-            <label
-              htmlFor="su-email"
-              className="block font-display text-[12px] uppercase tracking-[2.4px] text-fog"
-            >
-              Universal ID / Email
-            </label>
-            <input
-              id="su-email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              autoFocus
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@vibe.com"
-              className="mt-3 block h-14 w-full rounded-lg bg-ink-600 px-5 font-body text-[16px] text-lime-soft placeholder:text-ink-400 outline-none transition-all focus:ring-2 focus:ring-lime"
-            />
+        {/* Password field */}
+        <div className="relative mb-3.5">
+          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "#A6A2C7", fontFamily: "var(--font-be-vietnam-pro)" }}>
+            <span className="h-1 w-1 rounded-full flex-shrink-0" style={{ background: "#B5E82F", boxShadow: "0 0 4px #B5E82F" }} />
+            Mật khẩu
           </div>
+          <input
+            type={showPw ? "text" : "password"}
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Tối thiểu 8 ký tự"
+            className="w-full rounded-xl px-4 pr-12 text-sm outline-none transition-all"
+            style={{
+              height: 50,
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#E8E6F5",
+              fontFamily: "var(--font-be-vietnam-pro)",
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPw((v) => !v)}
+            className="absolute right-3 top-1/2 translate-y-1 text-lg"
+            style={{ color: "#6E6B8F", paddingBottom: 2 }}
+            aria-label={showPw ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+          >
+            {showPw ? "🙈" : "👁"}
+          </button>
+        </div>
 
-          <div className="mt-6">
-            <label
-              htmlFor="su-password"
-              className="block font-display text-[12px] uppercase tracking-[2.4px] text-fog"
-            >
-              Access Key / Password
-            </label>
-            <div className="relative">
-              <input
-                id="su-password"
-                type={showPw ? "text" : "password"}
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="min 8 characters — mix it up"
-                className="mt-3 block h-14 w-full rounded-lg bg-ink-600 pl-5 pr-14 font-body text-[16px] text-lime-soft placeholder:text-ink-400 outline-none transition-all focus:ring-2 focus:ring-lime"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw((v) => !v)}
-                aria-label={showPw ? "Hide password" : "Show password"}
-                className="absolute right-4 top-1/2 -translate-y-1/2 mt-[6px] grid size-8 place-items-center rounded-md text-fog transition-colors hover:text-lime-soft"
-              >
-                {showPw ? (
-                  <EyeOff className="size-4" strokeWidth={2} />
-                ) : (
-                  <Eye className="size-4" strokeWidth={2} />
-                )}
-              </button>
+        {/* Password strength */}
+        {password.length > 0 && (
+          <div className="mb-4 rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <div className="mb-2 flex items-center justify-between text-[11px] font-semibold" style={{ fontFamily: "var(--font-be-vietnam-pro)" }}>
+              <span style={{ color: "#6E6B8F" }}>Độ mạnh mật khẩu</span>
+              <span style={{ color: STRENGTH_COLOR[strength] || "#6E6B8F" }}>{STRENGTH_LABEL[strength] || "…"}</span>
             </div>
-
-            <SecurityMeter strength={strength} />
+            <div className="flex gap-1 h-1">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="flex-1 rounded-sm transition-all" style={{
+                  background: i <= strength ? (STRENGTH_COLOR[strength] || "#6E6B8F") : "rgba(255,255,255,0.08)",
+                  boxShadow: i <= strength ? `0 0 6px ${STRENGTH_COLOR[strength]}` : "none",
+                }} />
+              ))}
+            </div>
           </div>
+        )}
 
-          <div className="mt-8">
-            <KineticButton type="submit" disabled={!canSubmit}>
-              {submitting ? "Minting ID…" : "Start Your Streak"}
-              <Zap
-                className="size-5 fill-lime-ink stroke-lime-ink"
-                strokeWidth={2}
-                aria-hidden
-              />
-            </KineticButton>
-          </div>
-
-          <p className="mt-6 text-center font-body text-[13px] leading-[1.6] text-fog">
-            Already in the network?{" "}
-            <Link
-              href="/sign-in"
-              className="font-display uppercase tracking-pulse text-plasma hover:underline"
-            >
-              Sign in
-            </Link>
-          </p>
-        </form>
-
-        <div className="mt-8 flex items-center gap-3 font-display text-[11px] uppercase tracking-pulse text-fog-muted">
-          <ShieldCheck className="size-3.5 text-plasma" aria-hidden />
-          Encrypted · v1.0.4-beta
+        {/* Social divider */}
+        <div className="mb-3 mt-2 flex items-center gap-2.5 text-[11px]" style={{ color: "#6E6B8F", fontFamily: "var(--font-be-vietnam-pro)" }}>
+          <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
+          Hoặc tiếp tục với
+          <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />
         </div>
-      </section>
-    </main>
-  );
-}
 
-function SecurityMeter({ strength }: { strength: Strength }) {
-  const label = STRENGTH_LABELS[strength];
-  return (
-    <div className="mt-4 rounded-2xl border border-edge bg-ink-800/60 px-4 py-3">
-      <div className="flex items-center justify-between">
-        <span className="font-display text-[11px] uppercase tracking-pulse text-fog">
-          Security Level
-        </span>
-        <span
-          className={cn(
-            "font-display text-[11px] uppercase tracking-drop",
-            strength >= 3
-              ? "text-lime"
-              : strength === 2
-                ? "text-plasma"
-                : "text-fog-muted",
-          )}
+        {/* Social buttons */}
+        <div className="mb-4 grid grid-cols-3 gap-2.5">
+          {[
+            { label: "Apple", bg: "#000", color: "#fff" },
+            { label: "Google", bg: "#fff", color: "#111" },
+            { label: "Zalo", bg: "#0068FF", color: "#fff" },
+          ].map((s) => (
+            <button
+              key={s.label}
+              type="button"
+              className="flex items-center justify-center gap-1.5 rounded-xl text-sm font-bold"
+              style={{
+                height: 48,
+                background: s.bg,
+                color: s.color,
+                border: s.bg === "#fff" ? "1px solid #ddd" : "none",
+                fontFamily: "var(--font-be-vietnam-pro)",
+              }}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1" />
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="mb-3 flex w-full items-center justify-center gap-2 rounded-[14px] font-bold text-sm"
+          style={{
+            height: 54,
+            background: canSubmit ? "#B5E82F" : "rgba(255,255,255,0.06)",
+            color: canSubmit ? "#0B0A1A" : "#6E6B8F",
+            fontFamily: "var(--font-be-vietnam-pro)",
+            fontWeight: 700,
+            fontSize: 15,
+            boxShadow: canSubmit ? "0 0 0 1px rgba(181,232,47,0.2), 0 8px 24px rgba(181,232,47,0.18)" : "none",
+            cursor: canSubmit ? "pointer" : "not-allowed",
+          }}
         >
-          Kinetic: {label}
-        </span>
-      </div>
-      <div className="mt-3 flex gap-2">
-        {[0, 1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className={cn(
-              "h-1.5 flex-1 rounded-full transition-colors",
-              i < strength
-                ? strength >= 3
-                  ? "bg-lime-drop shadow-glow-lime"
-                  : "bg-plasma-drop"
-                : "bg-ink-600",
-            )}
-          />
-        ))}
-      </div>
-    </div>
+          {canSubmit && <Bolt size={12} />}
+          {submitting ? "Đang xử lý…" : "Tiếp tục"}
+        </button>
+
+        <p className="pb-8 text-center text-xs" style={{ color: "#6E6B8F" }}>
+          Đã có tài khoản?{" "}
+          <Link href="/sign-in" className="font-bold" style={{ color: "#B5E82F" }}>Đăng nhập</Link>
+        </p>
+      </form>
+    </main>
   );
 }

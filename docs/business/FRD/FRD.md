@@ -17,7 +17,7 @@
 
 ## How to Use This Document
 
-This file is the **master combination index**. Every functional requirement for Paave lives in a dedicated module file under `frd/`. Each module file is:
+This file is the **master combination index**. Every functional requirement for Paave lives in a dedicated module file in the same `FRD/` folder. Each module file is:
 - **Self-contained** — no cross-file references needed to build or test a module
 - **Authoritative** — incorporates all deltas from v2.1 → v2.2 → v2.3 → v2.4
 - **Developer-ready** — full Input / Output / Precondition / Postcondition / Edge Cases per FR
@@ -130,35 +130,35 @@ PO decisions still blocking development: Decision #1 (lot size), Decision #2 (AT
 
 | Feature | Module File | Pillar | Actor | Goal |
 |---------|-------------|--------|-------|------|
-| **Paper Trading Engine** | [10-paper-trading.md](frd/10-paper-trading.md) | **PRIMARY** | LEARN_MODE / FULL_ACCESS | Simulate market and limit orders on HOSE/HNX (VN primary), KOSPI/KOSDAQ (reference), global tickers (reference) with virtual funds |
-| **Social Trading** | [13-social-trading.md](frd/13-social-trading.md) | PRIMARY | Registered User | Follow traders, view per-ticker feeds, share trade receipts, size conviction from community signal |
-| **Multi-Method Signup** | [01-onboarding-authentication.md](frd/01-onboarding-authentication.md) | PRIMARY | New User | Register via email/password, Google, Apple, or Zalo |
-| **Onboarding Personalization** | [01-onboarding-authentication.md](frd/01-onboarding-authentication.md) | PRIMARY | New User | Capture industrial preferences + investment goal |
-| Forgot Password | [01-onboarding-authentication.md](frd/01-onboarding-authentication.md) | Supporting | Registered User | Reset password via email OTP (v2.4) |
-| Biometric Authentication | [01-onboarding-authentication.md](frd/01-onboarding-authentication.md) | Supporting | Registered User | Optional biometric login (v2.4) |
-| Home Screen | [02-home-screen.md](frd/02-home-screen.md) | Supporting | Registered User | Surface paper portfolio, followed traders, market snapshot, trending stocks |
-| Discover / Trending Feed | [03-discover-feed.md](frd/03-discover-feed.md) | Supporting | Registered User | Browse curated stock cards with preference-weighted ranking |
-| Stock Detail | [04-stock-detail.md](frd/04-stock-detail.md) | Supporting | Registered User | View price data, key stats, community feed, and place paper trades |
-| Portfolio Tracking (Paper) | [05-portfolio-tracking.md](frd/05-portfolio-tracking.md) | Supporting | Registered User | Track virtual holdings, P&L, and trade history |
-| Markets Module | [06-markets.md](frd/06-markets.md) | Supporting | Registered User | Browse VN market data (primary, real-time); KR + Global as **reference only** |
-| Notifications + Deep Links | [07-notifications.md](frd/07-notifications.md) | Supporting | Registered User | Price alerts, nudges, portfolio updates, deep link routing (v2.4) |
-| User Account + Sessions | [08-user-account.md](frd/08-user-account.md) | Supporting | Registered User | Profile, language, preferences, linked providers, multi-device sessions, DOB correction |
-| Age Gate | [09-age-gate.md](frd/09-age-gate.md) | Supporting | New User | Enforce age-appropriate feature access; UTC+7 age boundary (v2.4) |
-| Gamification | [11-gamification.md](frd/11-gamification.md) | Supporting | Registered User | Earn XP, advance Trader Tiers, complete weekly challenges |
-| AI Insights P0 | [12-ai-insights.md](frd/12-ai-insights.md) | Supporting | Registered User | Post-trade insight cards (LEARN_MODE educational variant); natural-language stock queries |
-| AI Insights P1 (V1.x) | [12-ai-insights.md](frd/12-ai-insights.md) | Supporting | Registered User | Weekly portfolio health check and behavioral nudges |
-| Social Trading | [13-social-trading.md](frd/13-social-trading.md) | Supporting | Registered User | Posts (500-char limit, authoritative), follows, trade receipts |
-| Language System | [14-language-system.md](frd/14-language-system.md) | Supporting | Registered User | VN/KR/EN language selection; locale-appropriate financial terminology |
-| Legal / Disclaimers | [15-legal-disclaimers.md](frd/15-legal-disclaimers.md) | Supporting | Registered User | Investment, AI, paper-trading, minor, and brokerage-partner disclaimers; data consent |
-| **Brokerage Partner Integration (V1.x)** | [16-brokerage-integration.md](frd/16-brokerage-integration.md) | PRIMARY (V1.x) | FULL_ACCESS User, Tier 3+, ≥ 30 paper trades | Open a real account at a licensed partner broker |
+| **Paper Trading Engine** | [10-paper-trading.md](10-paper-trading.md) | **PRIMARY** | LEARN_MODE / FULL_ACCESS | Simulate market and limit orders on HOSE/HNX (VN primary), KOSPI/KOSDAQ (reference), global tickers (reference) with virtual funds |
+| **Social Trading** | [13-social-trading.md](13-social-trading.md) | PRIMARY | Registered User | Follow traders, view per-ticker feeds, share trade receipts, size conviction from community signal |
+| **Multi-Method Signup** | [01-onboarding-authentication.md](01-onboarding-authentication.md) | PRIMARY | New User | Register via email/password, Google, Apple, or Zalo |
+| **Onboarding Personalization** | [01-onboarding-authentication.md](01-onboarding-authentication.md) | PRIMARY | New User | Capture industrial preferences + investment goal |
+| Forgot Password | [01-onboarding-authentication.md](01-onboarding-authentication.md) | Supporting | Registered User | Reset password via email OTP (v2.4) |
+| Biometric Authentication | [01-onboarding-authentication.md](01-onboarding-authentication.md) | Supporting | Registered User | Optional biometric login (v2.4) |
+| Home Screen | [02-home-screen.md](02-home-screen.md) | Supporting | Registered User | Surface paper portfolio, followed traders, market snapshot, trending stocks |
+| Discover / Trending Feed | [03-discover-feed.md](03-discover-feed.md) | Supporting | Registered User | Browse curated stock cards with preference-weighted ranking |
+| Stock Detail | [04-stock-detail.md](04-stock-detail.md) | Supporting | Registered User | View price data, key stats, community feed, and place paper trades |
+| Portfolio Tracking (Paper) | [05-portfolio-tracking.md](05-portfolio-tracking.md) | Supporting | Registered User | Track virtual holdings, P&L, and trade history |
+| Markets Module | [06-markets.md](06-markets.md) | Supporting | Registered User | Browse VN market data (primary, real-time); KR + Global as **reference only** |
+| Notifications + Deep Links | [07-notifications.md](07-notifications.md) | Supporting | Registered User | Price alerts, nudges, portfolio updates, deep link routing (v2.4) |
+| User Account + Sessions | [08-user-account.md](08-user-account.md) | Supporting | Registered User | Profile, language, preferences, linked providers, multi-device sessions, DOB correction |
+| Age Gate | [09-age-gate.md](09-age-gate.md) | Supporting | New User | Enforce age-appropriate feature access; UTC+7 age boundary (v2.4) |
+| Gamification | [11-gamification.md](11-gamification.md) | Supporting | Registered User | Earn XP, advance Trader Tiers, complete weekly challenges |
+| AI Insights P0 | [12-ai-insights.md](12-ai-insights.md) | Supporting | Registered User | Post-trade insight cards (LEARN_MODE educational variant); natural-language stock queries |
+| AI Insights P1 (V1.x) | [12-ai-insights.md](12-ai-insights.md) | Supporting | Registered User | Weekly portfolio health check and behavioral nudges |
+| Social Trading | [13-social-trading.md](13-social-trading.md) | Supporting | Registered User | Posts (500-char limit, authoritative), follows, trade receipts |
+| Language System | [14-language-system.md](14-language-system.md) | Supporting | Registered User | VN/KR/EN language selection; locale-appropriate financial terminology |
+| Legal / Disclaimers | [15-legal-disclaimers.md](15-legal-disclaimers.md) | Supporting | Registered User | Investment, AI, paper-trading, minor, and brokerage-partner disclaimers; data consent |
+| **Brokerage Partner Integration (V1.x)** | [16-brokerage-integration.md](16-brokerage-integration.md) | PRIMARY (V1.x) | FULL_ACCESS User, Tier 3+, ≥ 30 paper trades | Open a real account at a licensed partner broker |
 
 ---
 
 ## Module Directory
 
-All module files live in `docs/business/frd/`. Each file is self-contained and authoritative for its FR range.
+All module files live alongside this file in `docs/business/FRD/`. Each file is self-contained and authoritative for its FR range.
 
-### [01 — Onboarding & Authentication](frd/01-onboarding-authentication.md)
+### [01 — Onboarding & Authentication](01-onboarding-authentication.md)
 
 **FR range:** FR-01 to FR-08.2, FR-AUTH-07, FR-AUTH-08
 **Topics:**
@@ -183,7 +183,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [02 — Home Screen](frd/02-home-screen.md)
+### [02 — Home Screen](02-home-screen.md)
 
 **FR range:** FR-09 to FR-14
 **Topics:**
@@ -196,7 +196,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [03 — Discover / Trending Feed](frd/03-discover-feed.md)
+### [03 — Discover / Trending Feed](03-discover-feed.md)
 
 **FR range:** FR-15 to FR-22
 **Topics:**
@@ -211,7 +211,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [04 — Stock Detail](frd/04-stock-detail.md)
+### [04 — Stock Detail](04-stock-detail.md)
 
 **FR range:** FR-23 to FR-29
 **Topics:**
@@ -225,7 +225,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [05 — Portfolio Tracking](frd/05-portfolio-tracking.md)
+### [05 — Portfolio Tracking](05-portfolio-tracking.md)
 
 **FR range:** FR-30 to FR-35
 **Topics:**
@@ -234,7 +234,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [06 — Markets](frd/06-markets.md)
+### [06 — Markets](06-markets.md)
 
 **FR range:** FR-36 to FR-41
 **Topics:**
@@ -247,7 +247,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [07 — Notifications](frd/07-notifications.md)
+### [07 — Notifications](07-notifications.md)
 
 **FR range:** FR-42 to FR-47, FR-NOTIF-01
 **Topics:**
@@ -261,7 +261,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [08 — User Account](frd/08-user-account.md)
+### [08 — User Account](08-user-account.md)
 
 **FR range:** FR-48 to FR-53, FR-AUTH-09, FR-ACCT-DOB-01
 **Topics:**
@@ -277,7 +277,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [09 — Age Gate](frd/09-age-gate.md)
+### [09 — Age Gate](09-age-gate.md)
 
 **FR range:** FR-AGE-01 to FR-AGE-04
 **Topics:**
@@ -290,7 +290,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [10 — Paper Trading Engine](frd/10-paper-trading.md)
+### [10 — Paper Trading Engine](10-paper-trading.md)
 
 **FR range:** FR-PT-01 to FR-PT-08
 **Topics:**
@@ -310,7 +310,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [11 — Gamification](frd/11-gamification.md)
+### [11 — Gamification](11-gamification.md)
 
 **FR range:** FR-GAME-01 to FR-GAME-05
 **Topics:**
@@ -322,7 +322,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [12 — AI Insights](frd/12-ai-insights.md)
+### [12 — AI Insights](12-ai-insights.md)
 
 **FR range:** FR-AI-01 to FR-AI-05
 **Topics:**
@@ -334,7 +334,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [13 — Social Trading](frd/13-social-trading.md)
+### [13 — Social Trading](13-social-trading.md)
 
 **FR range:** FR-SOC-01 to FR-SOC-05
 **Topics:**
@@ -346,7 +346,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [14 — Language System](frd/14-language-system.md)
+### [14 — Language System](14-language-system.md)
 
 **FR range:** FR-LANG-01 to FR-LANG-02
 **Topics:**
@@ -355,7 +355,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [15 — Legal / Disclaimers](frd/15-legal-disclaimers.md)
+### [15 — Legal / Disclaimers](15-legal-disclaimers.md)
 
 **FR range:** FR-LEGAL-01 to FR-LEGAL-03
 **Topics:**
@@ -365,7 +365,7 @@ All module files live in `docs/business/frd/`. Each file is self-contained and a
 
 ---
 
-### [16 — Brokerage Partner Integration (V1.x)](frd/16-brokerage-integration.md)
+### [16 — Brokerage Partner Integration (V1.x)](16-brokerage-integration.md)
 
 **FR range:** FR-BRK-01 to FR-BRK-06
 **Status:** All deferred to V1.x — not in V1 scope
@@ -461,22 +461,22 @@ All business rules from v2.2 + amendments from v2.3 + new rules from v2.4. Numbe
 
 | BRD Objective | Description | Linked FRs | Module File(s) |
 |---------------|-------------|------------|---------------|
-| BO-01 | Acquire 50K Vietnamese Gen Z MAU through low-barrier mobile-first onboarding | FR-01..FR-08.2, FR-AUTH-07, FR-AUTH-08, FR-AGE-01, FR-AGE-03, FR-LEGAL-03, FR-LANG-01 | [01](frd/01-onboarding-authentication.md), [09](frd/09-age-gate.md), [14](frd/14-language-system.md), [15](frd/15-legal-disclaimers.md) |
-| BO-02 | D7 retention ≥ 40% | FR-09..FR-14, FR-GAME-01..05, FR-AI-01..05 | [02](frd/02-home-screen.md), [11](frd/11-gamification.md), [12](frd/12-ai-insights.md) |
-| BO-03 | Watchlist adoption ≥ 60% | FR-21, FR-27, FR-28, FR-43, FR-44 | [03](frd/03-discover-feed.md), [04](frd/04-stock-detail.md), [07](frd/07-notifications.md) |
-| BO-04 | Discover engagement ≥ 50% daily | FR-15..FR-22 | [03](frd/03-discover-feed.md) |
-| BO-05 | VN-primary concentration ≥ 90% VN MAU | FR-37, BR-46 | [06](frd/06-markets.md) |
-| BO-06 | VN data latency ≤ 15s | FR-37, BR-46 | [06](frd/06-markets.md) |
-| BO-07 | Onboarding completion ≥ 75% | FR-04.1, FR-05..FR-05.5, FR-08, FR-08.1, FR-08.2, BR-43, BR-44 | [01](frd/01-onboarding-authentication.md) |
-| **BO-08** | **Paper trading as primary loop** (≥ 70% activation, ≥ 3 trades/user/week) | **FR-PT-01..FR-PT-08**, FR-35, FR-AI-01, FR-GAME-01, FR-23..29 | [10](frd/10-paper-trading.md), [04](frd/04-stock-detail.md), [12](frd/12-ai-insights.md) |
-| **BO-09** | **Social-trading engagement ≥ 35%** | **FR-SOC-01..05**, FR-16, FR-23..29, FR-NOTIF-01 | [13](frd/13-social-trading.md), [07](frd/07-notifications.md) |
-| BO-10 | Gamification Tier 2 ≥ 40% | FR-GAME-01..05, FR-08.2 | [11](frd/11-gamification.md) |
-| BO-11 | AI insight card read-through ≥ 55% | FR-AI-01..05, BR-29 | [12](frd/12-ai-insights.md) |
-| BO-12 | Age 16–17 segment with zero violations | FR-AGE-01..04, FR-05.4, FR-LEGAL-01..03, FR-PT-06, BR-28, BR-31, BR-37, BR-AGE-05 | [09](frd/09-age-gate.md), [01](frd/01-onboarding-authentication.md), [15](frd/15-legal-disclaimers.md) |
-| **BO-13** (V1.x) | **Brokerage bridge initiation ≥ 20% of eligible users** | **FR-BRK-01..06**, BR-30..34 | [16](frd/16-brokerage-integration.md) |
-| **BO-14** | **Multi-method signup ≥ 60% social, Zalo ≥ 25% VN** | **FR-04.1, FR-05..FR-05.5**, FR-07, FR-49.1, BR-35..42 | [01](frd/01-onboarding-authentication.md), [08](frd/08-user-account.md) |
-| **BO-15** | **Onboarding personalization capture ≥ 90%** | **FR-08.1, FR-08.2**, BR-43, BR-44 | [01](frd/01-onboarding-authentication.md) |
-| **BO-16** | **Preference-driven retention lift ≥ 8pp** | FR-08.1, FR-08.2, FR-15..17, FR-GAME-04, BR-45 | [01](frd/01-onboarding-authentication.md), [03](frd/03-discover-feed.md), [11](frd/11-gamification.md) |
+| BO-01 | Acquire 50K Vietnamese Gen Z MAU through low-barrier mobile-first onboarding | FR-01..FR-08.2, FR-AUTH-07, FR-AUTH-08, FR-AGE-01, FR-AGE-03, FR-LEGAL-03, FR-LANG-01 | [01](01-onboarding-authentication.md), [09](09-age-gate.md), [14](14-language-system.md), [15](15-legal-disclaimers.md) |
+| BO-02 | D7 retention ≥ 40% | FR-09..FR-14, FR-GAME-01..05, FR-AI-01..05 | [02](02-home-screen.md), [11](11-gamification.md), [12](12-ai-insights.md) |
+| BO-03 | Watchlist adoption ≥ 60% | FR-21, FR-27, FR-28, FR-43, FR-44 | [03](03-discover-feed.md), [04](04-stock-detail.md), [07](07-notifications.md) |
+| BO-04 | Discover engagement ≥ 50% daily | FR-15..FR-22 | [03](03-discover-feed.md) |
+| BO-05 | VN-primary concentration ≥ 90% VN MAU | FR-37, BR-46 | [06](06-markets.md) |
+| BO-06 | VN data latency ≤ 15s | FR-37, BR-46 | [06](06-markets.md) |
+| BO-07 | Onboarding completion ≥ 75% | FR-04.1, FR-05..FR-05.5, FR-08, FR-08.1, FR-08.2, BR-43, BR-44 | [01](01-onboarding-authentication.md) |
+| **BO-08** | **Paper trading as primary loop** (≥ 70% activation, ≥ 3 trades/user/week) | **FR-PT-01..FR-PT-08**, FR-35, FR-AI-01, FR-GAME-01, FR-23..29 | [10](10-paper-trading.md), [04](04-stock-detail.md), [12](12-ai-insights.md) |
+| **BO-09** | **Social-trading engagement ≥ 35%** | **FR-SOC-01..05**, FR-16, FR-23..29, FR-NOTIF-01 | [13](13-social-trading.md), [07](07-notifications.md) |
+| BO-10 | Gamification Tier 2 ≥ 40% | FR-GAME-01..05, FR-08.2 | [11](11-gamification.md) |
+| BO-11 | AI insight card read-through ≥ 55% | FR-AI-01..05, BR-29 | [12](12-ai-insights.md) |
+| BO-12 | Age 16–17 segment with zero violations | FR-AGE-01..04, FR-05.4, FR-LEGAL-01..03, FR-PT-06, BR-28, BR-31, BR-37, BR-AGE-05 | [09](09-age-gate.md), [01](01-onboarding-authentication.md), [15](15-legal-disclaimers.md) |
+| **BO-13** (V1.x) | **Brokerage bridge initiation ≥ 20% of eligible users** | **FR-BRK-01..06**, BR-30..34 | [16](16-brokerage-integration.md) |
+| **BO-14** | **Multi-method signup ≥ 60% social, Zalo ≥ 25% VN** | **FR-04.1, FR-05..FR-05.5**, FR-07, FR-49.1, BR-35..42 | [01](01-onboarding-authentication.md), [08](08-user-account.md) |
+| **BO-15** | **Onboarding personalization capture ≥ 90%** | **FR-08.1, FR-08.2**, BR-43, BR-44 | [01](01-onboarding-authentication.md) |
+| **BO-16** | **Preference-driven retention lift ≥ 8pp** | FR-08.1, FR-08.2, FR-15..17, FR-GAME-04, BR-45 | [01](01-onboarding-authentication.md), [03](03-discover-feed.md), [11](11-gamification.md) |
 
 ### v2.4 Gap-Fix FR Traceability
 
@@ -497,6 +497,6 @@ All business rules from v2.2 + amendments from v2.3 + new rules from v2.4. Numbe
 
 ---
 
-*Document end. This master index (v2.4) is the authoritative entry point for the Paave FRD. Proceed to individual module files in `frd/` for implementation-ready FR detail. For system logic and API contracts, see `SRD.md` v2.0 and `SRD-order-engine-v2.3.md`.*
+*Document end. This master index (v2.4) is the authoritative entry point for the Paave FRD. Proceed to individual module files in the same `FRD/` folder for implementation-ready FR detail. For system logic and API contracts, see `SRD.md`.*
 
 *Pending PO decisions (Decision #1 lot size, Decision #2 ATO/ATC V1 scope, Decision #3 KR Trader Score, Biometric V1 scope, Admin panel for DOB tickets V1 scope) are tracked in `REVIEW-self-and-po-v2.4.md`.*
