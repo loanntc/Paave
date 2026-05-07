@@ -6,14 +6,13 @@ import {
   Bell,
   Compass,
   Flame,
-  Home as HomeIcon,
   LineChart,
   Trophy,
-  User,
   Wallet,
 } from "lucide-react";
 import { AmbientBackground } from "@/components/brand/ambient-background";
 import { PaaveWordmark } from "@/components/brand/paave-wordmark";
+import { PaaveNav } from "@/components/paave/paave-nav";
 import { cn } from "@/lib/utils";
 
 export function HomeView() {
@@ -31,7 +30,7 @@ export function HomeView() {
         <WeeklyChallenge />
       </section>
 
-      <BottomNav />
+      <PaaveNav />
     </main>
   );
 }
@@ -127,16 +126,17 @@ function MiniStat({
 
 function QuickActions() {
   const actions = [
-    { label: "Discover", icon: Compass, tone: "lime" as const },
-    { label: "Markets", icon: LineChart, tone: "plasma" as const },
-    { label: "Alerts", icon: Bell, tone: "lime" as const },
-    { label: "Wallet", icon: Wallet, tone: "plasma" as const },
+    { label: "Discover", href: "/discover", icon: Compass, tone: "lime" as const },
+    { label: "Markets", href: "/markets", icon: LineChart, tone: "plasma" as const },
+    { label: "Alerts", href: "/profile", icon: Bell, tone: "lime" as const },
+    { label: "Portfolio", href: "/portfolio", icon: Wallet, tone: "plasma" as const },
   ];
   return (
     <section aria-label="Quick actions" className="grid grid-cols-4 gap-3">
-      {actions.map(({ label, icon: Icon, tone }) => (
-        <button
+      {actions.map(({ label, href, icon: Icon, tone }) => (
+        <Link
           key={label}
+          href={href}
           className="group flex flex-col items-center gap-2 rounded-2xl border border-edge bg-ink-800/60 px-3 py-4 backdrop-blur transition-all hover:bg-ink-700 active:scale-[0.98]"
         >
           <span
@@ -152,7 +152,7 @@ function QuickActions() {
           <span className="font-display text-[11px] uppercase tracking-pulse text-lime-soft">
             {label}
           </span>
-        </button>
+        </Link>
       ))}
     </section>
   );
@@ -220,7 +220,7 @@ function MarketSnapshot() {
           Market Pulse
         </h2>
         <Link
-          href="#"
+          href="/markets"
           className="font-display text-[11px] uppercase tracking-pulse text-plasma"
         >
           All markets →
@@ -275,7 +275,7 @@ function TrendingRow() {
           </h2>
         </div>
         <Link
-          href="#"
+          href="/discover"
           className="font-display text-[11px] uppercase tracking-pulse text-plasma"
         >
           Discover →
@@ -283,28 +283,30 @@ function TrendingRow() {
       </header>
       <ul className="flex gap-3 overflow-x-auto scrollbar-hide -mx-6 px-6 snap-x snap-mandatory">
         {trending.map((t) => (
-          <li
-            key={t.symbol}
-            className="snap-start min-w-[220px] rounded-3xl border border-edge bg-ink-800/60 p-5 backdrop-blur"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-display text-[11px] uppercase tracking-pulse text-plasma">
-                {t.tag}
-              </span>
-              <span className="font-display text-[10px] uppercase tracking-pulse text-fog">
-                {t.market}
-              </span>
-            </div>
-            <p className="mt-4 font-display text-[18px] text-lime-soft">
-              {t.symbol}
-            </p>
-            <p className="font-body text-[12px] text-fog truncate">{t.name}</p>
-            <div className="mt-4 flex items-end justify-between">
-              <p className="font-display text-[18px] tabular-nums text-lime-soft">
-                {t.price}
+          <li key={t.symbol} className="snap-start min-w-[220px]">
+            <Link
+              href={`/stock/${t.symbol}`}
+              className="block rounded-3xl border border-edge bg-ink-800/60 p-5 backdrop-blur transition-colors hover:bg-ink-700"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-display text-[11px] uppercase tracking-pulse text-plasma">
+                  {t.tag}
+                </span>
+                <span className="font-display text-[10px] uppercase tracking-pulse text-fog">
+                  {t.market}
+                </span>
+              </div>
+              <p className="mt-4 font-display text-[18px] text-lime-soft">
+                {t.symbol}
               </p>
-              <ChangePill value={t.changePct} />
-            </div>
+              <p className="font-body text-[12px] text-fog truncate">{t.name}</p>
+              <div className="mt-4 flex items-end justify-between">
+                <p className="font-display text-[18px] tabular-nums text-lime-soft">
+                  {t.price}
+                </p>
+                <ChangePill value={t.changePct} />
+              </div>
+            </Link>
           </li>
         ))}
       </ul>
@@ -347,39 +349,3 @@ function WeeklyChallenge() {
   );
 }
 
-type NavItem = { label: string; icon: typeof HomeIcon; active?: boolean };
-const navItems: NavItem[] = [
-  { label: "Home", icon: HomeIcon, active: true },
-  { label: "Discover", icon: Compass },
-  { label: "Markets", icon: LineChart },
-  { label: "Wallet", icon: Wallet },
-  { label: "Profile", icon: User },
-];
-
-function BottomNav() {
-  return (
-    <nav
-      aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-[896px] items-center justify-around border-t border-edge bg-ink-900/90 px-4 pt-2 pb-6 backdrop-blur-xl"
-    >
-      {navItems.map(({ label, icon: Icon, active }) => (
-        <button
-          key={label}
-          aria-current={active ? "page" : undefined}
-          className={cn(
-            "flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-colors",
-            active ? "text-lime-soft" : "text-fog hover:text-lime-soft",
-          )}
-        >
-          <Icon
-            className={cn("size-5", active && "stroke-lime")}
-            strokeWidth={active ? 2.5 : 2}
-          />
-          <span className="font-display text-[10px] uppercase tracking-pulse">
-            {label}
-          </span>
-        </button>
-      ))}
-    </nav>
-  );
-}
