@@ -249,14 +249,14 @@ The Stock Detail screen is the canonical view for a single stock. It is reachabl
 ### FR-28: Set Price Alert
 
 - **Actor**: Authenticated user (all tiers)
-- **Description**: The "Set Alert" button opens a bottom sheet modal. User selects direction ("Price above" or "Price below") and enters a target price. Alert behavior follows SINGLE_FIRE mode by default. A RECURRING mode is user-selectable in the same bottom sheet. One alert per stock per user (BR-03). Setting a new alert for a stock that already has one overwrites the existing alert (no confirmation required — the bottom sheet pre-populates with existing alert values). Alert with target equal to current price: rejected with inline error "Price must be different from current price." If the alert threshold is already satisfied at creation time (EC-ALT-01): the alert triggers on the next price evaluation within ≤15 seconds — it does NOT wait for the next crossing event. SINGLE_FIRE mode: alert status → TRIGGERED after first trigger; consumed (no further fires). RECURRING mode: alert stays ACTIVE after triggering and fires again on each subsequent evaluation that satisfies the condition. If push notifications are disabled: alert is tracked silently with no push sent.
+- **Description**: The "Set Alert" button opens a bottom sheet modal. User selects direction ("Price above" or "Price below") and enters a target price. Alert behavior follows SINGLE_FIRE mode by default. A RECURRING mode is user-selectable in the same bottom sheet. Maximum 50 active alert rules per user across all stocks (BR-03). Each stock can have at most one alert at a time — to change an existing stock alert, delete it first and create a new one. Alert with target equal to current price: rejected with inline error "Price must be different from current price." If the alert threshold is already satisfied at creation time (EC-ALT-01): the alert triggers on the next price evaluation within ≤15 seconds — it does NOT wait for the next crossing event. SINGLE_FIRE mode: alert status → TRIGGERED after first trigger; consumed (no further fires). RECURRING mode: alert stays ACTIVE after triggering and fires again on each subsequent evaluation that satisfies the condition. If push notifications are disabled: alert is tracked silently with no push sent.
 
 - **Input**:
   - Alert direction: "Price above" | "Price below"
   - Target price (numeric, in stock's native currency)
   - Alert mode: SINGLE_FIRE (default) | RECURRING (user selects)
   - Current stock price (for validation)
-  - Existing alert for this stock (if any, pre-populate bottom sheet)
+  - Existing alerts for this stock (if any, pre-populate bottom sheet for editing; user must delete and recreate to change target)
 - **Output**:
   - Alert saved to server; status = ACTIVE
   - "Set Alert" button label updates to "Alert Active" with indicator
@@ -345,7 +345,7 @@ The Stock Detail screen is the canonical view for a single stock. It is reachabl
 
 | ID | Rule | Violation Behavior |
 |---|---|---|
-| BR-03 | One price alert per stock per user | New alert overwrites existing without confirmation; pre-populate bottom sheet with existing values |
+| BR-03 | Max 50 active alert rules per user; one alert per stock at a time | Show current active alert if exists; user must delete before creating a new one for the same stock |
 | BR-04 | Price alerts are one-time triggers by default (SINGLE_FIRE) | After trigger: status → TRIGGERED; no further pushes until user re-sets alert. RECURRING mode is opt-in. |
 | BR-07 | Analyst consensus thresholds as defined in FR-26 consensus label table | If no threshold matches, show "Mixed" |
 | BR-09 | VN market data SLA ≤15 seconds real-time; KR/Global = reference, no SLA | VN stale > 15s: show stale indicator |

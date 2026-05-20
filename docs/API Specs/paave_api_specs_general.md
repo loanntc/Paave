@@ -1,9 +1,16 @@
 # Paave API Specification - Complete Endpoint Reference
 
 **Version:** 1.5.0  
-**Total Endpoints:** 452  
+**Updated:** 2026-05-20 (aligned with api.json — authoritative OpenAPI 3.0.3 source)
+**Total Endpoints:** ~449 operations across 388 path entries  
 **Base URL:** `https://api.paave.io/api/v1`  
 **Description:** Vietnamese stock trading social platform with virtual and live trading
+
+> **v1.5.0 Breaking Changes Summary:**
+> - Auth header changed to `Authorization: jwt <token>` (NOT `Bearer`)
+> - News endpoints restructured: use `/news/articles` + `/news/articles/{articleId}` (cursor-paginated); old `/news`, `/news/{id}`, `/news/filter`, `/news/latest-by-symbols`, `/news/stock-news`, `/news/favorites` removed
+> - Price alert cap: 50 active rules per user (previously 1 per stock)
+> - Social endpoints expanded: 20 total (block/unblock, timeline, cashtag feed added)
 
 ## Table of Contents
 
@@ -33,8 +40,8 @@ The Paave API is a comprehensive RESTful service providing:
 - **Live Trading**: 41 endpoints for real-money contests and analytics
 - **NHSV Equity**: 72 endpoints for live equity trading orders, transfers, loans
 - **NHSV Derivatives**: 39 endpoints for futures orders, positions, margins
-- **Social Features**: 15 endpoints for posts, follows, blocks, cashtags
-- **News & Fundamentals**: 19 endpoints for news, company data, financials
+- **Social Features**: 20 endpoints for posts, follows, blocks, cashtags, timeline, relationships
+- **News & Fundamentals**: 12 endpoints for news, company data, financials
 - **Insights & Personalization**: 21 endpoints for watchlists, notifications, search history
 - **Admin & Configuration**: 58 endpoints for feature flags, locale, scopes
 
@@ -53,11 +60,12 @@ All successful API responses follow this structure:
 
 ## Authentication
 
-### Bearer Token
-All authenticated endpoints require an Authorization header:
+### JWT Token
+All authenticated endpoints require an Authorization header using the `jwt` scheme (NOT `Bearer`):
 ```
-Authorization: Bearer <accessToken>
+Authorization: jwt <accessToken>
 ```
+> **Critical:** Using `Bearer` prefix instead of `jwt` returns HTTP 401. Despite the token response returning `tokenType: "Bearer"`, the request header must use the `jwt` prefix.
 
 ### Token Lifecycle
 - **Access Token**: 3600 seconds (1 hour lifetime)
@@ -1420,55 +1428,75 @@ Update the authenticated user's username. An OTP may be required to confirm the 
 
 ## News
 
-**Summary:** Market news articles and system notices
+**Summary:** Market news articles and system notices (v1.5.0 — 4 endpoints)
 
-### `DELETE /api/v1/news/favorites`
+> **v1.5.0 breaking changes:** `/api/v1/news` (page-based) and `/api/v1/news/{newsId}` are replaced by `/api/v1/news/articles` (keyset/cursor pagination) and `/api/v1/news/articles/{articleId}`. News favorites endpoints (`GET/POST/DELETE /api/v1/news/favorites`) and helper endpoints (`/news/filter`, `/news/latest-by-symbols`, `/news/stock-news`) have been removed. Use `symbol` and `category` query params on `/api/v1/news/articles` for filtering.
 
-**ID:** `NEWS_FAVORITE_REMOVE`  
-**Summary:** Remove news articles from favorites.  
+### `GET /api/v1/news/articles`
 
-Remove one or more news articles from the user's favorites.  
+**ID:** `NEWS_ARTICLES`  
+**Summary:** List news articles with cursor-based pagination.  
 
-**Auth:** ✓ Required (Bearer JWT)  
+Get a paginated list of news articles using keyset/cursor pagination. Supports language, symbol, and category filters. Response includes `nextCursor` at root for fetching the next page; pass `cursor` from previous response to paginate forward. When `isFallback` is true, the article was served in the fallback language (not the requested one) and `translatedFields` lists which fields were auto-translated.
+
+**Auth:** ✓ Required (jwt JWT)  
 
 **Parameters:**
 
-- `newsIds` (string) (required): Comma-separated news article IDs to remove
+- `language` (string) (optional): Language filter (e.g., `vi`, `en`)
+- `cursor` (string) (optional): Pagination cursor from previous response (`nextCursor`)
+- `size` (integer) (optional): Page size (default 20)
+- `symbol` (string) (optional): Stock code filter (e.g., `VNM`)
+- `category` (string) (optional): Article category filter
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "articleId": "string",
+      "source": "string",
+      "title": "string",
+      "servedLanguage": "vi",
+      "isFallback": false,
+      "translatedFields": [],
+      "publishedAt": "2026-05-20T08:00:00Z",
+      "symbols": ["VNM"],
+      "categories": ["market"],
+      "fetchedAt": "2026-05-20T08:01:00Z"
+    }
+  ],
+  "nextCursor": "string | null",
+  "meta": { "requestId": "req_abc123" }
+}
+```
 
 **Responses:**
 
-- `204`: No content
-- `400`: Bad request — invalid or missing parameters
-- `401`: Unauthorized — missing or invalid JWT
+- `200`: News articles with cursor
+- `400`: Bad request — invalid parameters
+- `401`: Unauthorized — missing or invalid jwt token
 - `403`: Forbidden
 - `429`: Too many requests
 - `500`: Internal server error
 
-### `GET /api/v1/news`
+### `GET /api/v1/news/articles/{articleId}`
 
-**ID:** `NEWS_GET`  
-**Summary:** List news articles with optional filters.  
+**ID:** `NEWS_ARTICLE_BY_ID`  
+**Summary:** Get a single news article by ID.
 
-Get a paginated list of news articles with optional filters for language, category, symbol, and keyword.  
-
-**Auth:** ✓ Required (Bearer JWT)  
+**Auth:** ✓ Required (jwt JWT)  
 
 **Parameters:**
 
-- `language` (string) (optional): Language filter (e.g., vi, en)
-- `pinned` (boolean) (optional): Filter for pinned articles only
-- `keyword` (string) (optional): Search keyword
-- `category` (string) (optional): Article category
-- `symbol` (string) (optional): Stock code filter (e.g., VNM)
-- `page` (integer) (optional): Zero-based page index
-- `size` (integer) (optional): Page size (1–100, default 20)
+- `articleId` (string, path, required): Article ID
+- `language` (string) (optional): Preferred language for served content
 
 **Responses:**
 
-- `200`: Paginated news articles
-- `400`: Bad request — invalid or missing parameters
-- `401`: Unauthorized — missing or invalid JWT
-- `403`: Forbidden
+- `200`: News article
+- `401`: Unauthorized
+- `404`: Not found
 - `429`: Too many requests
 - `500`: Internal server error
 
@@ -1499,105 +1527,6 @@ Returns official exchange and regulatory announcements sourced from the NHSV not
 - `502`: Bad Gateway — upstream error
 - `504`: Gateway Timeout — upstream timeout
 
-### `GET /api/v1/news/favorites`
-
-**ID:** `NEWS_FAVORITE_GET`  
-**Summary:** Get saved favorite news articles.  
-
-Get the authenticated user's saved favorite news articles.  
-
-**Auth:** ✓ Required (Bearer JWT)  
-
-**Parameters:**
-
-- `page` (integer) (optional): Zero-based page index
-- `size` (integer) (optional): Page size (1–100, default 20)
-
-**Responses:**
-
-- `200`: Favorite news articles
-- `401`: Unauthorized — missing or invalid JWT
-- `403`: Forbidden
-- `429`: Too many requests
-- `500`: Internal server error
-
-### `GET /api/v1/news/favorites/{newsId}`
-
-**ID:** `NEWS_FAVORITE_EXIST`  
-**Summary:** Check if a news article is in favorites.  
-
-Check whether a specific news article is in the user's favorites.  
-
-**Auth:** ✓ Required (Bearer JWT)  
-
-**Parameters:**
-
-- `newsId` (integer) (required): News article ID
-
-**Responses:**
-
-- `200`: Favorite status for the article
-- `401`: Unauthorized — missing or invalid JWT
-- `403`: Forbidden
-- `429`: Too many requests
-- `500`: Internal server error
-
-### `GET /api/v1/news/filter`
-
-**ID:** `NEWS_FILTER`  
-**Summary:** Filtered news query with date range support.  
-
-Get a paginated list of news articles filtered by symbol, category, date range, and language. All filters use AND semantics. Redis cache applies only when symbol is provided and no date range is specified (pages 0–10 only) — date-range requests always bypass cache.  
-
-**Auth:** ✓ Required (Bearer JWT)  
-
-**Parameters:**
-
-- `symbol` (string) (optional): Stock code filter (e.g., VNM). Required for cache to apply.
-- `category` (string) (optional): Article category (e.g., market, company)
-- `fromDate` (string) (optional): Start of date range, ISO 8601 (e.g., 2026-01-01T00:00:00Z)
-- `toDate` (string) (optional): End of date range, ISO 8601 (e.g., 2026-03-31T23:59:59Z)
-- `language` (string) (optional): Language filter, allowlist: vi, en
-- `page` (integer) (optional): Zero-based page index (default 0)
-- `size` (integer) (optional): Page size (1–100, default 20)
-
-**Responses:**
-
-- `200`: Paginated filtered news articles
-- `400`: Bad request — invalid parameters
-- `401`: Unauthorized — missing or invalid JWT
-- `403`: Forbidden
-- `429`: Too many requests
-- `500`: Internal server error
-- `502`: Bad Gateway — upstream error
-- `504`: Gateway Timeout — upstream timeout
-
-### `GET /api/v1/news/latest-by-symbols`
-
-**ID:** `NEWS_LATEST_BY_SYMBOLS`  
-**Summary:** Latest news for a caller-supplied list of stock symbols.  
-
-Get the latest news articles matching any of the provided symbols. The caller is responsible for resolving the symbol list (e.g., from a watchlist). Results are ordered by publish date descending. Maximum 20 symbols per request; maximum page size is 50.  
-
-**Auth:** ✓ Required (Bearer JWT)  
-
-**Parameters:**
-
-- `symbols` (string) (required): Comma-separated stock codes, max 20 (e.g., VNM,HPG,FPT). Required.
-- `page` (integer) (optional): Zero-based page index (default 0)
-- `size` (integer) (optional): Page size (1–50, default 20)
-
-**Responses:**
-
-- `200`: Paginated news articles matching any of the supplied symbols
-- `400`: Bad request — symbols is required or exceeds 20 items
-- `401`: Unauthorized — missing or invalid JWT
-- `403`: Forbidden
-- `429`: Too many requests
-- `500`: Internal server error
-- `502`: Bad Gateway — upstream error
-- `504`: Gateway Timeout — upstream timeout
-
 ### `GET /api/v1/news/notices`
 
 **ID:** `NEWS_NOTICES`  
@@ -1620,73 +1549,6 @@ Get paginated regulatory notices and announcements.
 - `400`: Bad request — invalid or missing parameters
 - `401`: Unauthorized — missing or invalid JWT
 - `403`: Forbidden
-- `429`: Too many requests
-- `500`: Internal server error
-
-### `GET /api/v1/news/stock-news`
-
-**ID:** `NEWS_STOCK_NEWS`  
-**Summary:** News articles for a specific stock symbol.  
-
-Get a paginated list of news articles associated with a specific stock symbol. The symbol parameter is required. Results are ordered by publish date descending.  
-
-**Auth:** ✓ Required (Bearer JWT)  
-
-**Parameters:**
-
-- `symbol` (string) (required): Stock code to filter by (e.g., HPG). Required.
-- `page` (integer) (optional): Zero-based page index (default 0)
-- `size` (integer) (optional): Page size (1–100, default 20)
-
-**Responses:**
-
-- `200`: Paginated news articles for the given stock
-- `400`: Bad request — symbol is required
-- `401`: Unauthorized — missing or invalid JWT
-- `403`: Forbidden
-- `429`: Too many requests
-- `500`: Internal server error
-- `502`: Bad Gateway — upstream error
-- `504`: Gateway Timeout — upstream timeout
-
-### `GET /api/v1/news/{newsId}`
-
-**ID:** `NEWS_BY_ID`  
-**Summary:** Get a news article by ID.  
-
-Get a single news article by ID.  
-
-**Auth:** ✓ Required (Bearer JWT)  
-
-**Parameters:**
-
-- `newsId` (integer) (required): News article ID
-
-**Responses:**
-
-- `200`: News article
-- `401`: Unauthorized — missing or invalid JWT
-- `403`: Forbidden
-- `404`: Not found
-- `429`: Too many requests
-- `500`: Internal server error
-
-### `POST /api/v1/news/favorites`
-
-**ID:** `NEWS_FAVORITE_ADD`  
-**Summary:** Add a news article to favorites.  
-
-Add a news article to the user's favorites.  
-
-**Auth:** ✓ Required (Bearer JWT)  
-
-**Responses:**
-
-- `201`: Article added to favorites
-- `400`: Bad request — invalid or missing parameters
-- `401`: Unauthorized — missing or invalid JWT
-- `403`: Forbidden
-- `404`: Not found
 - `429`: Too many requests
 - `500`: Internal server error
 
