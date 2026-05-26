@@ -36,12 +36,5 @@ yarn-error.log*
 .idea
 .vscode
 
-# claude code agent worktrees (temporary, never commit)
-.claude/worktrees/
-
-# supabase cli cache (contains project refs and connection strings)
-supabase/.temp/
-
-# python cache
-__pycache__/
-*.pyc
+# claude code
+.claude/
