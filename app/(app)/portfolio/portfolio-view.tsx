@@ -201,7 +201,7 @@ export function PortfolioView() {
       {/* ── Header ────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-ink-violet-base/90 backdrop-blur border-b border-border-neo-subtle">
         <Link
-          href="/"
+          href="/home"
           aria-label="Go back"
           className="grid size-9 place-items-center rounded-full border border-border-neo bg-ink-violet-surface text-text-neo-secondary hover:text-text-neo-primary transition-colors"
         >
