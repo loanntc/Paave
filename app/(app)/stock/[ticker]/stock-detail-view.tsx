@@ -238,6 +238,16 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
           </section>
         )}
 
+        {/* ── Daily price range bar (floor / ref / ceiling) ────── */}
+        {!isLoading && quote?.floor_price != null && quote.ref_price != null && quote.ceiling_price != null && quote.last_price != null && (
+          <PriceRangeBar
+            floor={quote.floor_price}
+            refPrice={quote.ref_price}
+            ceiling={quote.ceiling_price}
+            current={quote.last_price}
+          />
+        )}
+
         {/* ── Price chart (30-day close prices) ─────────────────── */}
         {closePrices.length >= 2 && (
           <section
@@ -498,6 +508,93 @@ function KeyStats({ quote }: { quote: QuoteData }) {
             </div>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Price range bar — shows floor / ref / ceiling for the session with the
+// current price marked as a draggable thumb. Helps F0 users understand
+// how Vietnam's exchange price limits work.
+// ---------------------------------------------------------------------------
+function PriceRangeBar({
+  floor,
+  refPrice,
+  ceiling,
+  current,
+}: {
+  floor: number;
+  refPrice: number;
+  ceiling: number;
+  current: number;
+}) {
+  const range = ceiling - floor;
+  if (range <= 0) return null;
+
+  // Convert a price to a percentage position (clamped to [0, 100])
+  const toPercent = (p: number) =>
+    Math.max(0, Math.min(100, ((p - floor) / range) * 100));
+
+  const refPct = toPercent(refPrice);
+  const currentPct = toPercent(current);
+  const isUp = current >= refPrice;
+
+  return (
+    <section
+      aria-label="Biên độ giá hôm nay"
+      className="rounded-2xl bg-ink-violet-surface border border-border-neo px-4 py-4"
+    >
+      <p className="text-[11px] font-bold uppercase tracking-[0.8px] text-text-neo-tertiary mb-4">
+        Biên độ giá hôm nay
+      </p>
+
+      {/* Track */}
+      <div className="relative h-1.5 rounded-full bg-ink-violet-raised mx-2 mb-5">
+        {/* Negative zone: floor → ref */}
+        <div
+          className="absolute inset-y-0 left-0 rounded-l-full bg-negative/25"
+          style={{ width: `${refPct}%` }}
+        />
+        {/* Positive zone: ref → ceiling */}
+        <div
+          className="absolute inset-y-0 rounded-r-full bg-positive/25"
+          style={{ left: `${refPct}%`, right: 0 }}
+        />
+
+        {/* Reference price tick — thicker so it's readable */}
+        <div
+          aria-hidden
+          className="absolute top-1/2 -translate-y-1/2 w-px h-3 bg-text-neo-tertiary/50 rounded-full"
+          style={{ left: `${refPct}%` }}
+        />
+
+        {/* Current price thumb */}
+        <div
+          role="img"
+          aria-label={`Giá hiện tại ${formatVND(current)}`}
+          className={cn(
+            "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-4 rounded-full border-[2.5px] border-ink-violet-surface shadow",
+            isUp ? "bg-positive" : "bg-negative",
+          )}
+          style={{ left: `${currentPct}%` }}
+        />
+      </div>
+
+      {/* Price labels */}
+      <div className="flex justify-between text-[10px] tabular-nums">
+        <div>
+          <p className="font-bold text-negative">Sàn</p>
+          <p className="text-text-neo-tertiary mt-0.5">{formatVND(floor)}</p>
+        </div>
+        <div className="text-center">
+          <p className="font-bold text-text-neo-secondary">TC</p>
+          <p className="text-text-neo-tertiary mt-0.5">{formatVND(refPrice)}</p>
+        </div>
+        <div className="text-right">
+          <p className="font-bold text-positive">Trần</p>
+          <p className="text-text-neo-tertiary mt-0.5">{formatVND(ceiling)}</p>
+        </div>
       </div>
     </section>
   );
