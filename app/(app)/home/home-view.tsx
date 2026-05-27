@@ -15,6 +15,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import type { MarketIndex } from "@/app/api/market/indices/route";
 import type { StockResult } from "@/app/api/stocks/search/route";
 import { AmbientBackground } from "@/components/brand/ambient-background";
 import { PaaveWordmark } from "@/components/brand/paave-wordmark";
@@ -51,6 +52,8 @@ export function HomeView() {
   const [displayName, setDisplayName] = useState<string>("bạn");
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [portfolioLoading, setPortfolioLoading] = useState(true);
+  const [indices, setIndices] = useState<MarketIndex[]>([]);
+  const [indicesLoading, setIndicesLoading] = useState(true);
   const [trending, setTrending] = useState<StockResult[]>([]);
   const [trendingLoading, setTrendingLoading] = useState(true);
 
@@ -122,6 +125,22 @@ export function HomeView() {
     fetchHomeData();
   }, []);
 
+  // Fetch VN market indices (HOSE/HNX/UPCOM) — public data, no auth required
+  useEffect(() => {
+    async function fetchIndices() {
+      try {
+        const res = await fetch("/api/market/indices");
+        const data: { indices: MarketIndex[] } = await res.json();
+        if (data.indices.length > 0) setIndices(data.indices);
+      } catch {
+        // Keep empty — MarketSnapshot falls back to skeleton
+      } finally {
+        setIndicesLoading(false);
+      }
+    }
+    fetchIndices();
+  }, []);
+
   // Fetch top gainers independently (public data, no auth required)
   useEffect(() => {
     async function fetchTrending() {
@@ -151,7 +170,7 @@ export function HomeView() {
           isLoading={portfolioLoading}
         />
         <QuickActions />
-        <MarketSnapshot />
+        <MarketSnapshot indices={indices} isLoading={indicesLoading} />
         <TrendingRow stocks={trending} isLoading={trendingLoading} />
         <WeeklyChallenge />
       </section>
@@ -350,22 +369,30 @@ function QuickActions() {
 }
 
 
-function MarketSnapshot() {
-  const markets: Array<{
-    code: "VN" | "KR" | "US";
-    name: string;
-    value: string;
-    changePct: number;
-  }> = [
-    { code: "VN", name: "VN-INDEX", value: "1.284,56", changePct: 0.62 },
-    { code: "KR", name: "KOSPI", value: "2,712.14", changePct: -0.34 },
-    { code: "US", name: "S&P 500", value: "5,248.49", changePct: 0.18 },
-  ];
+/**
+ * Format a numeric index value (index points, not VND currency) using
+ * Vietnamese number convention: period thousand-separator, comma decimal.
+ * e.g.  1284.56  →  "1.284,56"
+ *       228.45   →  "228,45"
+ */
+function formatIndexValue(value: number): string {
+  const [integer, decimal] = value.toFixed(2).split(".");
+  const thousands = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return `${thousands},${decimal}`;
+}
+
+function MarketSnapshot({
+  indices,
+  isLoading,
+}: {
+  indices: MarketIndex[];
+  isLoading: boolean;
+}) {
   return (
-    <section aria-label="Market snapshot" className="rounded-3xl bg-ink-800 p-6">
+    <section aria-label="Thị trường Việt Nam" className="rounded-3xl bg-ink-800 p-6">
       <header className="flex items-center justify-between">
         <h2 className="font-display text-[14px] uppercase tracking-drop text-lime-soft">
-          Market Pulse
+          Thị trường VN
         </h2>
         <Link
           href="/discover"
@@ -374,25 +401,41 @@ function MarketSnapshot() {
           Tất cả →
         </Link>
       </header>
-      <ul className="mt-4 grid grid-cols-3 gap-3">
-        {markets.map((m) => (
-          <li
-            key={m.code}
-            className="rounded-2xl bg-ink-600/60 px-4 py-4"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-display text-[11px] uppercase tracking-pulse text-fog">
-                {m.code}
-              </span>
-              <ChangePill value={m.changePct} />
-            </div>
-            <p className="mt-2 font-body text-[12px] text-fog">{m.name}</p>
-            <p className="mt-1 font-display text-[18px] tabular-nums text-lime-soft">
-              {m.value}
-            </p>
-          </li>
-        ))}
-      </ul>
+
+      {isLoading ? (
+        <ul className="mt-4 grid grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => (
+            <li key={i} className="rounded-2xl bg-ink-600/60 px-4 py-4 animate-pulse space-y-2">
+              <div className="flex justify-between">
+                <div className="h-2.5 w-12 rounded bg-ink-500" />
+                <div className="h-2.5 w-10 rounded-full bg-ink-500" />
+              </div>
+              <div className="h-2.5 w-16 rounded bg-ink-500 mt-2" />
+              <div className="h-5 w-20 rounded bg-ink-500 mt-1" />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul className="mt-4 grid grid-cols-3 gap-3">
+          {indices.map((idx) => (
+            <li
+              key={idx.exchange}
+              className="rounded-2xl bg-ink-600/60 px-4 py-4"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-display text-[11px] uppercase tracking-pulse text-fog">
+                  {idx.exchange}
+                </span>
+                {idx.change_pct != null && <ChangePill value={idx.change_pct} />}
+              </div>
+              <p className="mt-2 font-body text-[12px] text-fog">{idx.name}</p>
+              <p className="mt-1 font-display text-[18px] tabular-nums text-lime-soft">
+                {idx.close != null ? formatIndexValue(idx.close) : "—"}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
