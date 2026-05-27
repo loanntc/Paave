@@ -77,6 +77,7 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [symbol, setSymbol] = useState<SymbolData | null>(null);
   const [holding, setHolding] = useState<HoldingData | null>(null);
+  const [closePrices, setClosePrices] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [tradeSheetOpen, setTradeSheetOpen] = useState(false);
   const [alertSheetOpen, setAlertSheetOpen] = useState(false);
@@ -87,8 +88,8 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
     const db = getBrowserClient();
 
     async function fetchData() {
-      // Auth + market data in parallel
-      const [quoteRes, symbolRes, sessionRes] = await Promise.all([
+      // Auth + market data + historical bars in parallel
+      const [quoteRes, symbolRes, sessionRes, barsRes] = await Promise.all([
         db
           .from("symbol_quotes_latest")
           .select(
@@ -102,10 +103,26 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
           .eq("code", ticker)
           .single(),
         db.auth.getSession(),
+        db
+          .from("symbol_day_bars")
+          .select("close")
+          .eq("symbol_code", ticker)
+          .order("trade_date", { ascending: false })
+          .limit(30),
       ]);
 
       setQuote(quoteRes.data ?? null);
       setSymbol(symbolRes.data ?? null);
+
+      // Reverse to chronological order (oldest → newest) for chart rendering
+      if (barsRes.data?.length) {
+        setClosePrices(
+          [...barsRes.data]
+            .reverse()
+            .map((b) => Number(b.close))
+            .filter((v) => v > 0),
+        );
+      }
 
       // Fetch user's position for this ticker if logged in
       const uid = sessionRes.data.session?.user?.id;
@@ -218,6 +235,19 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
               </span>
               <span className="text-text-neo-tertiary text-[12px]">hôm nay</span>
             </div>
+          </section>
+        )}
+
+        {/* ── Price chart (30-day close prices) ─────────────────── */}
+        {closePrices.length >= 2 && (
+          <section
+            aria-label="Biểu đồ 30 ngày"
+            className="rounded-2xl bg-ink-violet-surface border border-border-neo overflow-hidden"
+          >
+            <p className="px-4 pt-3 pb-0 text-[11px] font-bold uppercase tracking-[0.8px] text-text-neo-tertiary">
+              30 ngày gần nhất
+            </p>
+            <PriceChart prices={closePrices} />
           </section>
         )}
 
@@ -470,6 +500,52 @@ function KeyStats({ quote }: { quote: QuoteData }) {
         ))}
       </div>
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Price chart — inline SVG area chart (no external deps)
+// ---------------------------------------------------------------------------
+function PriceChart({ prices }: { prices: number[] }) {
+  if (prices.length < 2) return null;
+
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+  const isUp = prices[prices.length - 1] >= prices[0];
+
+  const W = 340;
+  const H = 80;
+  const PAD = 4;
+
+  const toX = (i: number) => PAD + (i / (prices.length - 1)) * (W - 2 * PAD);
+  const toY = (p: number) => PAD + (1 - (p - min) / range) * (H - 2 * PAD);
+
+  const pts = prices.map((p, i) => `${toX(i).toFixed(2)},${toY(p).toFixed(2)}`).join(" ");
+  const area = `${pts} ${toX(prices.length - 1).toFixed(2)},${H} ${toX(0).toFixed(2)},${H}`;
+
+  const stroke = isUp ? "#B5E82F" : "#FF5B7A";
+  const fillColor = isUp ? "rgba(181,232,47,0.12)" : "rgba(255,91,122,0.12)";
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      width="100%"
+      height={H}
+      preserveAspectRatio="none"
+      aria-label="Biểu đồ giá 30 ngày gần nhất"
+      role="img"
+    >
+      <polygon points={area} fill={fillColor} />
+      <polyline
+        points={pts}
+        fill="none"
+        stroke={stroke}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
