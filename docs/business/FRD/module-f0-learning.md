@@ -30,6 +30,9 @@
    - [FR-LEARN-14: Module 2 — Your First Trade](#fr-learn-14-module-2--your-first-trade)
    - [FR-LEARN-15: Module 3 — Thinking in Portfolios](#fr-learn-15-module-3--thinking-in-portfolios)
    - [FR-LEARN-16: Module 4 — Trader Psychology](#fr-learn-16-module-4--trader-psychology)
+   - [FR-LEARN-17: User Learning Level System](#fr-learn-17-user-learning-level-system)
+   - [FR-LEARN-18: Module Knowledge Check (MKC)](#fr-learn-18-module-knowledge-check-mkc)
+   - [FR-LEARN-19: Initial Placement Quiz](#fr-learn-19-initial-placement-quiz)
 5. [Business Rules](#5-business-rules)
 6. [Data Model](#6-data-model)
 7. [Out of Scope (V1)](#7-out-of-scope-v1)
@@ -897,6 +900,116 @@
 
 ---
 
+### FR-LEARN-17: User Learning Level System
+
+- **Priority:** P1
+- **Actor:** System (event-driven) / Registered User
+- **Description:** A knowledge-based Learning Level (L0–L5) tracks the user's progress through the F0 Learning Path independently of the Trader Tier system (FR-GAME-02). The Learning Level advances when module completion and Knowledge Check conditions are met. It is displayed as a pill badge on the user profile.
+
+**Level Definitions:**
+
+| Level ID | VN Name | EN Name | Advance Condition |
+|----------|---------|---------|------------------|
+| `LVL_F0_NEWCOMER` | Tân binh | Newcomer | Account created (starting state) |
+| `LVL_F0_EXPLORING` | Đang khám phá | Exploring | ≥1 lesson in M1 completed |
+| `LVL_F1_BASICS` | Hiểu thị trường | Market Basics | M1 complete AND MKC-1 passed (≥3/5) |
+| `LVL_F1_TRADER` | Biết giao dịch | Can Trade | M2 complete AND MKC-2 passed AND ≥5 paper trades placed |
+| `LVL_F2_PORTFOLIO` | Tư duy danh mục | Portfolio Thinker | M3 complete AND MKC-3 passed |
+| `LVL_F2_DISCIPLINED` | Trader có kỷ luật | Disciplined Trader | M4 complete AND MKC-4 passed |
+
+**Key Rules:**
+- Learning Level can only advance, never decrease.
+- Level re-evaluated after every lesson completion, module completion, and Knowledge Check result.
+- XP on level-up: +15 XP per level advancement (idempotency key: `{user_id}_{level_id}_LEVEL_UP`).
+- Display: pill badge on profile below username, separate from Trader Tier badge.
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-17-1 | New user with account just created | Opens profile | Learning Level shows "Tân binh" (no badge displayed; level 0 is invisible) |
+| AC-17-2 | User completes L1.1 | Lesson completion fires | Learning Level advances to "Đang khám phá"; +15 XP granted; badge visible |
+| AC-17-3 | User completes all M1 lessons and passes MKC-1 (≥3/5) | Knowledge check result processed | Level advances to "Hiểu thị trường"; +15 XP; profile badge updated |
+| AC-17-4 | Level-up event fires twice (retry) | — | Idempotency key prevents duplicate XP and duplicate level record |
+
+---
+
+### FR-LEARN-18: Module Knowledge Check (MKC)
+
+- **Priority:** P1
+- **Actor:** New User (F0 Trader)
+- **Description:** After completing all 5 lessons in a module, a 5-question Module Knowledge Check (MKC) is unlocked. The user must score ≥3/5 to advance the Learning Level and unblock next-module unlock evaluation. The MKC is not required to receive the module completion badge or XP — those are awarded on lesson completion per FR-LEARN-09. The MKC gates Learning Level advancement only. Retries are unlimited with a 60-second cooldown between attempts.
+
+**MKC Structure:**
+- 5 questions; one question per lesson in the module (covers all 5 lesson topics)
+- Questions presented in randomized order each attempt
+- 4 answer options per question; exactly 1 correct answer
+- Passing threshold: ≥3 correct (60%)
+- No time limit per question
+
+**MKC–Module Mapping:**
+
+| MKC ID | Module | Questions Drawn From |
+|--------|--------|---------------------|
+| MKC-1 | M1 — The VN Stock Market | L1.1, L1.2, L1.3, L1.4, L1.5 |
+| MKC-2 | M2 — Your First Trade | L2.1, L2.2, L2.3, L2.4, L2.5 |
+| MKC-3 | M3 — Thinking in Portfolios | L3.1, L3.2, L3.3, L3.4, L3.5 |
+| MKC-4 | M4 — Trader Psychology | L4.1, L4.2, L4.3, L4.4, L4.5 |
+
+> Full question text, answer options, correct answers, and hint text for all 4 MKCs are defined in `module-f0-learning-content.md` §3.
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-18-1 | User has completed all 5 lessons in M1 but not yet taken MKC-1 | User opens Grow tab → M1 card | "Knowledge Check available" CTA shown below M1 progress bar |
+| AC-18-2 | User scores 2/5 on MKC-1 | Result displayed | Learning Level does NOT advance; "Thử lại" button shown; 60-second cooldown starts |
+| AC-18-3 | User scores 3/5 on MKC-1 | Result displayed | Learning Level advances to "Hiểu thị trường"; +15 XP; M2 unlock evaluation triggered |
+| AC-18-4 | User scores 5/5 on MKC-1 | Result displayed | Same as AC-18-3; no additional bonus (pass is pass) |
+| AC-18-5 | User retries MKC-1 within 60-second cooldown | — | Retry button disabled with countdown timer; cannot start new attempt |
+| AC-18-6 | User has already passed MKC-1 | Opens M1 card | "Knowledge Check" shows as passed (checkmark); no re-take required |
+
+**Edge Cases:**
+
+| Case | Expected Behavior |
+|------|-------------------|
+| User passes MKC but network drops before result ACK | Result saved optimistically client-side; synced on reconnect; no re-test required |
+| Question content fails to load (API error) | Show error state with "Thử lại"; MKC attempt not counted; no cooldown applied |
+| User passes MKC for a module they completed via Placement Quiz skip | Not applicable — MKC-1 not required for Placement Quiz skipees; Learning Level set directly to L2 on placement pass |
+
+---
+
+### FR-LEARN-19: Initial Placement Quiz
+
+- **Priority:** P2
+- **Actor:** New User (F0 Trader)
+- **Description:** An optional 5-question placement quiz offered when the user taps "Tôi đã biết chứng khoán cơ bản" (I already know the basics) on the Welcome Modal (FR-LEARN-01). Scoring ≥4/5 allows the user to skip Module 1 and start from Module 2. One attempt per account — cannot be retried.
+
+**Placement Quiz Spec:**
+- 5 questions covering M1 core topics (exchanges, trading hours, price bands, order types, T+2)
+- Pass threshold: 4/5 correct (80%)
+- One attempt only; result is final
+
+> Full question text, answer options, correct answers, and hint text are defined in `module-f0-learning-content.md` §2.
+
+**Outcome Mapping:**
+
+| Score | Outcome | Learning Level Set To |
+|-------|---------|----------------------|
+| 4–5/5 | Skip M1; M2 unlocked; M1 accessible in review mode; `placement_quiz_passed = true` | `LVL_F1_BASICS` immediately |
+| 0–3/5 | M1 required; message: "Hãy bắt đầu từ Module 1 để xây nền vững chắc!" | `LVL_F0_EXPLORING` (start normally) |
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-19-1 | User taps "Tôi đã biết chứng khoán cơ bản" on Welcome Modal | — | Placement Quiz screen opens with 5 questions |
+| AC-19-2 | User scores 4/5 or 5/5 | Quiz submitted | M1 set to `SKIPPED_VIA_PLACEMENT`; M2 unlocked; Learning Level = `LVL_F1_BASICS`; success message shown |
+| AC-19-3 | User scores 0–3/5 | Quiz submitted | M1 remains unlocked as normal; encouragement message shown; quiz result is final |
+| AC-19-4 | User completed placement quiz previously (returning session) | Opens Welcome Modal (impossible — modal fires once) | Placement Quiz not re-offered; Welcome Modal fires only once per account |
+
+---
+
 ## 5. Business Rules
 
 | ID | Rule | Scope | Violation Behavior |
@@ -919,6 +1032,9 @@
 | BR-LEARN-16 | "Try it now" CTA opens as a push modal (stack push, not replace). Back navigation from the CTA modal always returns the user to the CTA card (card 5). The CTA modal never replaces the lesson stack frame. | FR-LEARN-05 | Navigation stack integrity verified in QA by confirming back button from CTA modal lands on card 5, not Grow tab or Home |
 | BR-LEARN-17 | If user has no virtual portfolio when tapping "Try it now", virtual account is auto-initialized with 500,000,000 VND (per FR-PT-01) before the CTA modal opens. This is a silent background operation. | FR-LEARN-05 | If initialization fails after 3 retries, show error with retry button; do not block lesson completion |
 | BR-LEARN-18 | Navigating to the CTA modal does NOT cancel any pending orders. The pending order confirmation modal is informational only. | FR-LEARN-05 | Verified in QA by confirming pending order exists before and after CTA modal interaction |
+| BR-LEARN-19 | Learning Level can only advance, never decrease. A level-up event is idempotent: key = `{user_id}_{level_id}_LEVEL_UP`. Re-passing a MKC for an already-passed module does not re-grant the +15 XP level-up bonus. | FR-LEARN-17 | Duplicate level-up event silently rejected; no duplicate XP |
+| BR-LEARN-20 | Module Knowledge Check (MKC) pass status is permanent. Once a user passes MKC-N, they never need to re-take it. Module completion badge and XP (FR-LEARN-09) are independent of MKC result — they are awarded on lesson completion, not on MKC pass. | FR-LEARN-18 | MKC failure does not block badge or lesson XP; it only blocks Learning Level advancement |
+| BR-LEARN-21 | The Placement Quiz (FR-LEARN-19) is offered once and cannot be retried. A score of 4/5 or 5/5 sets M1 to `SKIPPED_VIA_PLACEMENT` and sets Learning Level to `LVL_F1_BASICS`. M1 remains accessible in review mode for skipped users. | FR-LEARN-19 | If placement quiz result is ambiguous due to network error, system defaults to M1 required (fail-safe) |
 
 ---
 
