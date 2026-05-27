@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowRight, Check, Globe2 } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 import { cn } from "@/lib/utils";
 import { KineticButton } from "@/components/ui/kinetic-button";
 import { OnboardingShell } from "@/components/ui/onboarding-shell";
@@ -11,6 +12,13 @@ import {
   writeOnboarding,
   type Nationality,
 } from "@/lib/onboarding-storage";
+
+function getBrowserClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
 
 interface Option {
   code: Nationality;
@@ -53,9 +61,16 @@ export function NationalityView() {
     if (saved) setSelected(saved);
   }, []);
 
-  function next() {
+  async function next() {
     if (!selected) return;
     writeOnboarding({ nationality: selected });
+    // Persist to Supabase user_metadata — best-effort, silent on failure
+    try {
+      const db = getBrowserClient();
+      await db.auth.updateUser({ data: { nationality: selected } });
+    } catch {
+      // Degrade silently — localStorage copy is the source of truth for now
+    }
     router.push("/onboarding/name");
   }
 

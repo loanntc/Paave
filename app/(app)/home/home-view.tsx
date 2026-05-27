@@ -22,6 +22,7 @@ import { AmbientBackground } from "@/components/brand/ambient-background";
 import { PaaveWordmark } from "@/components/brand/paave-wordmark";
 import { useChatSheet } from "@/lib/ai/chat-context";
 import { useLearningProgress } from "@/lib/learning/use-learning-progress";
+import { usePriceAlerts } from "@/lib/use-price-alerts";
 import { MODULES } from "@/lib/learning/content";
 import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,7 @@ export function HomeView() {
   const [indicesLoading, setIndicesLoading] = useState(true);
   const [trending, setTrending] = useState<StockResult[]>([]);
   const [trendingLoading, setTrendingLoading] = useState(true);
+  const { hydrated: alertsHydrated, alerts } = usePriceAlerts();
 
   useEffect(() => {
     const db = getBrowserClient();
@@ -178,7 +180,10 @@ export function HomeView() {
     <main className="relative min-h-screen overflow-hidden bg-ink-900 pb-28">
       <AmbientBackground />
 
-      <HomeHeader name={displayName} />
+      <HomeHeader
+        name={displayName}
+        alertCount={alertsHydrated ? alerts.length : 0}
+      />
 
       <section className="relative z-10 mx-auto flex w-full max-w-[896px] flex-col gap-5 px-6">
         <PortfolioHero
@@ -196,7 +201,8 @@ export function HomeView() {
   );
 }
 
-function HomeHeader({ name }: { name: string; }) {
+function HomeHeader({ name, alertCount }: { name: string; alertCount: number }) {
+  const router = useRouter();
   return (
     <header className="relative z-20 flex w-full items-center justify-between px-6 pt-4 pb-6">
       <div className="flex items-center gap-3">
@@ -204,11 +210,16 @@ function HomeHeader({ name }: { name: string; }) {
       </div>
       <div className="flex items-center gap-2">
         <button
-          aria-label="Notifications"
+          aria-label={alertCount > 0 ? `${alertCount} thông báo giá đang bật` : "Thông báo"}
+          onClick={() => router.push("/discover")}
           className="relative grid size-10 place-items-center rounded-full border border-edge bg-ink-800/60 text-lime-soft backdrop-blur transition-colors hover:bg-ink-700"
         >
           <Bell className="size-4" strokeWidth={2} />
-          <span className="absolute right-2 top-2 size-1.5 rounded-full bg-plasma" />
+          {alertCount > 0 && (
+            <span className="absolute right-1.5 top-1.5 grid size-4 place-items-center rounded-full bg-plasma text-[9px] font-bold text-plasma-ink">
+              {alertCount > 9 ? "9+" : alertCount}
+            </span>
+          )}
         </button>
         <div
           aria-label={`Greeting for ${name}`}
