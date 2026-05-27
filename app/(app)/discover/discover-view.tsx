@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, BookmarkCheck, Flame, Search, TrendingDown, TrendingUp, X } from "lucide-react";
+import { Bell, BookmarkCheck, BookmarkPlus, Flame, Search, TrendingDown, TrendingUp, X } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import type { StockResult } from "@/app/api/stocks/search/route";
 import type { PriceAlert } from "@/lib/use-price-alerts";
@@ -272,51 +272,73 @@ export function DiscoverView() {
 function StockResultRow({ stock }: { stock: StockResult }) {
   const hasPrice = stock.last_price != null;
   const isUp = (stock.pct_change ?? 0) >= 0;
+  const { isWatched, toggleWatchlist } = useWatchlist();
+  const watched = isWatched(stock.code);
 
   return (
-    <Link
-      href={`/stock/${stock.code}`}
-      className="flex items-center justify-between px-4 py-3 hover:bg-ink-violet-raised transition-colors"
-    >
-      {/* Left: code + name */}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="font-display text-[14px] font-bold text-text-neo-primary">
-            {stock.code}
-          </span>
-          {stock.exchange && (
-            <span className="text-[10px] font-bold uppercase tracking-[0.3px] text-text-neo-tertiary border border-border-neo rounded px-1 py-px">
-              {stock.exchange}
+    // Wrapper div so the bookmark button is a sibling of the Link, not a child
+    <div className="flex items-center hover:bg-ink-violet-raised transition-colors">
+      <Link
+        href={`/stock/${stock.code}`}
+        className="flex items-center flex-1 min-w-0 px-4 py-3 gap-4"
+      >
+        {/* Left: code + name */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="font-display text-[14px] font-bold text-text-neo-primary">
+              {stock.code}
             </span>
-          )}
+            {stock.exchange && (
+              <span className="text-[10px] font-bold uppercase tracking-[0.3px] text-text-neo-tertiary border border-border-neo rounded px-1 py-px">
+                {stock.exchange}
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-text-neo-tertiary truncate mt-0.5">
+            {stock.short_name ?? stock.name}
+          </p>
         </div>
-        <p className="text-[11px] text-text-neo-tertiary truncate mt-0.5">
-          {stock.short_name ?? stock.name}
-        </p>
-      </div>
 
-      {/* Right: price + pct */}
-      {hasPrice && (
-        <div className="text-right shrink-0 ml-4">
-          <p className="font-display text-[14px] tabular-nums text-text-neo-primary">
-            {formatVND(stock.last_price!)}
-          </p>
-          <p
-            className={cn(
-              "flex items-center justify-end gap-0.5 text-[11px] tabular-nums",
-              isUp ? "text-positive" : "text-negative",
-            )}
-          >
-            {isUp ? (
-              <TrendingUp className="size-3" strokeWidth={2} />
-            ) : (
-              <TrendingDown className="size-3" strokeWidth={2} />
-            )}
-            {pctLabel(stock.pct_change ?? 0)}
-          </p>
-        </div>
-      )}
-    </Link>
+        {/* Middle: price + pct */}
+        {hasPrice && (
+          <div className="text-right shrink-0">
+            <p className="font-display text-[14px] tabular-nums text-text-neo-primary">
+              {formatVND(stock.last_price!)}
+            </p>
+            <p
+              className={cn(
+                "flex items-center justify-end gap-0.5 text-[11px] tabular-nums",
+                isUp ? "text-positive" : "text-negative",
+              )}
+            >
+              {isUp ? (
+                <TrendingUp className="size-3" strokeWidth={2} />
+              ) : (
+                <TrendingDown className="size-3" strokeWidth={2} />
+              )}
+              {pctLabel(stock.pct_change ?? 0)}
+            </p>
+          </div>
+        )}
+      </Link>
+
+      {/* Watchlist toggle — sibling of Link to avoid invalid nested-anchor HTML */}
+      <button
+        onClick={() => toggleWatchlist(stock.code)}
+        aria-label={watched ? `Bỏ theo dõi ${stock.code}` : `Theo dõi ${stock.code}`}
+        className={cn(
+          "shrink-0 grid size-10 place-items-center mr-2 rounded-xl transition-colors",
+          watched
+            ? "text-lime-signal-400 hover:text-lime-signal-400/70"
+            : "text-text-neo-tertiary hover:text-text-neo-secondary",
+        )}
+      >
+        {watched
+          ? <BookmarkCheck className="size-4" strokeWidth={2} />
+          : <BookmarkPlus className="size-4" strokeWidth={2} />
+        }
+      </button>
+    </div>
   );
 }
 
