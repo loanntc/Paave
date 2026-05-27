@@ -55,6 +55,13 @@ interface HoldingData {
   realized_pl: number;
 }
 
+interface SimilarStock {
+  code: string;
+  name: string;
+  lastPrice: number | null;
+  pctChange: number | null;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -78,6 +85,7 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
   const [symbol, setSymbol] = useState<SymbolData | null>(null);
   const [holding, setHolding] = useState<HoldingData | null>(null);
   const [closePrices, setClosePrices] = useState<number[]>([]);
+  const [similar, setSimilar] = useState<SimilarStock[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [tradeSheetOpen, setTradeSheetOpen] = useState(false);
   const [alertSheetOpen, setAlertSheetOpen] = useState(false);
@@ -151,6 +159,49 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
               realized_pl: Number(h.realized_pl),
             });
           }
+        }
+      }
+
+      // Similar stocks — secondary fetch (non-blocking, best-effort)
+      // Runs after the primary data is set so the page renders immediately.
+      const sector = symbolRes.data?.sector;
+      if (sector) {
+        const { data: sectorSymbols } = await db
+          .from("symbols")
+          .select("code, short_name, name")
+          .eq("sector", sector)
+          .neq("code", ticker)
+          .limit(12);
+
+        if (sectorSymbols?.length) {
+          const codes = sectorSymbols.map((s) => s.code);
+          const { data: sectorQuotes } = await db
+            .from("symbol_quotes_latest")
+            .select("symbol_code, last_price, pct_change, total_volume")
+            .in("symbol_code", codes)
+            .order("total_volume", { ascending: false })
+            .limit(6);
+
+          const quoteMap = new Map(
+            (sectorQuotes ?? []).map((q) => [q.symbol_code, q]),
+          );
+          setSimilar(
+            sectorSymbols
+              .filter((s) => quoteMap.has(s.code))
+              .slice(0, 6)
+              .map((s) => ({
+                code: s.code,
+                name: s.short_name ?? s.name,
+                lastPrice:
+                  quoteMap.get(s.code)?.last_price != null
+                    ? Number(quoteMap.get(s.code)!.last_price)
+                    : null,
+                pctChange:
+                  quoteMap.get(s.code)?.pct_change != null
+                    ? Number(quoteMap.get(s.code)!.pct_change)
+                    : null,
+              })),
+          );
         }
       }
 
@@ -349,6 +400,14 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
         ) : quote ? (
           <KeyStats quote={quote} />
         ) : null}
+
+        {/* ── Similar stocks (same sector) ─────────────────────── */}
+        {similar.length > 0 && symbol?.sector && (
+          <SimilarStocksSection
+            sector={symbol.sector}
+            stocks={similar}
+          />
+        )}
 
         {/* ── AI Analysis card (FR-AI-01, FR-AI-02) ────────────── */}
         <StockAICard ticker={ticker} language="vi" />
@@ -668,6 +727,62 @@ function PriceHeroSkeleton() {
       <div className="h-10 w-48 rounded-lg bg-ink-violet-surface" />
       <div className="h-5 w-32 rounded-lg bg-ink-violet-surface" />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Similar stocks — same sector, sorted by volume (liquidity proxy)
+// ---------------------------------------------------------------------------
+function SimilarStocksSection({
+  sector,
+  stocks,
+}: {
+  sector: string;
+  stocks: SimilarStock[];
+}) {
+  return (
+    <section aria-label={`Cổ phiếu cùng ngành ${sector}`}>
+      <p className="text-[11px] font-bold uppercase tracking-[0.8px] text-text-neo-tertiary mb-2">
+        Cùng ngành · {sector}
+      </p>
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
+        {stocks.map((s) => {
+          const isUp = (s.pctChange ?? 0) >= 0;
+          return (
+            <Link
+              key={s.code}
+              href={`/stock/${s.code}`}
+              className="shrink-0 rounded-2xl bg-ink-violet-surface border border-border-neo px-3 py-2.5 min-w-[110px] hover:bg-ink-violet-raised transition-colors active:scale-[0.98]"
+            >
+              <p className="font-display text-[13px] font-bold text-text-neo-primary">
+                {s.code}
+              </p>
+              <p className="text-[10px] text-text-neo-tertiary truncate mt-0.5 max-w-[90px]">
+                {s.name}
+              </p>
+              {s.lastPrice != null && (
+                <>
+                  <p className="font-display text-[12px] tabular-nums text-text-neo-primary mt-1.5">
+                    {formatVND(s.lastPrice)}
+                  </p>
+                  {s.pctChange != null && (
+                    <p
+                      className={cn(
+                        "text-[10px] tabular-nums font-medium",
+                        isUp ? "text-positive" : "text-negative",
+                      )}
+                    >
+                      {isUp ? "+" : ""}
+                      {s.pctChange.toFixed(2)}%
+                    </p>
+                  )}
+                </>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
