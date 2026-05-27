@@ -9,7 +9,6 @@ import {
   BookOpen,
   Compass,
   Flame,
-  LineChart,
   MessageSquare,
   TrendingDown,
   Trophy,
