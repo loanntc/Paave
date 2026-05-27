@@ -283,28 +283,30 @@ function TrendingRow() {
       </header>
       <ul className="flex gap-3 overflow-x-auto scrollbar-hide -mx-6 px-6 snap-x snap-mandatory">
         {trending.map((t) => (
-          <li
-            key={t.symbol}
-            className="snap-start min-w-[220px] rounded-3xl border border-edge bg-ink-800/60 p-5 backdrop-blur"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-display text-[11px] uppercase tracking-pulse text-plasma">
-                {t.tag}
-              </span>
-              <span className="font-display text-[10px] uppercase tracking-pulse text-fog">
-                {t.market}
-              </span>
-            </div>
-            <p className="mt-4 font-display text-[18px] text-lime-soft">
-              {t.symbol}
-            </p>
-            <p className="font-body text-[12px] text-fog truncate">{t.name}</p>
-            <div className="mt-4 flex items-end justify-between">
-              <p className="font-display text-[18px] tabular-nums text-lime-soft">
-                {t.price}
+          <li key={t.symbol} className="snap-start min-w-[220px]">
+            <Link
+              href={`/stock/${t.symbol}`}
+              className="block rounded-3xl border border-edge bg-ink-800/60 p-5 backdrop-blur transition-colors hover:border-plasma/40 active:scale-[0.98]"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-display text-[11px] uppercase tracking-pulse text-plasma">
+                  {t.tag}
+                </span>
+                <span className="font-display text-[10px] uppercase tracking-pulse text-fog">
+                  {t.market}
+                </span>
+              </div>
+              <p className="mt-4 font-display text-[18px] text-lime-soft">
+                {t.symbol}
               </p>
-              <ChangePill value={t.changePct} />
-            </div>
+              <p className="font-body text-[12px] text-fog truncate">{t.name}</p>
+              <div className="mt-4 flex items-end justify-between">
+                <p className="font-display text-[18px] tabular-nums text-lime-soft">
+                  {t.price}
+                </p>
+                <ChangePill value={t.changePct} />
+              </div>
+            </Link>
           </li>
         ))}
       </ul>
