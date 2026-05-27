@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BookmarkCheck, Flame, Search, TrendingDown, TrendingUp, X } from "lucide-react";
+import { Bell, BookmarkCheck, Flame, Search, TrendingDown, TrendingUp, X } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import type { StockResult } from "@/app/api/stocks/search/route";
+import type { PriceAlert } from "@/lib/use-price-alerts";
+import { usePriceAlerts } from "@/lib/use-price-alerts";
 import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useWatchlist } from "@/lib/use-watchlist";
@@ -46,34 +48,59 @@ export function DiscoverView() {
   const [section, setSection] = useState("Khối lượng cao nhất");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { hydrated, watchlist, removeFromWatchlist } = useWatchlist();
+  const { hydrated: alertsHydrated, alerts, removeAlert } = usePriceAlerts();
   const [watchlistQuotes, setWatchlistQuotes] = useState<Map<string, WatchlistQuote>>(new Map());
+  const [triggeredAlerts, setTriggeredAlerts] = useState<PriceAlert[]>([]);
 
-  // Batch-fetch live prices for watched tickers whenever the watchlist changes
+  // Batch-fetch live prices for both watchlist and alert tickers in one query.
+  // Derives triggered alerts from the result so we don't need a second fetch.
   useEffect(() => {
-    if (!hydrated || watchlist.length === 0) {
+    if (!hydrated || !alertsHydrated) return;
+
+    const allTickers = Array.from(
+      new Set([...watchlist, ...alerts.map((a) => a.ticker)]),
+    );
+
+    if (allTickers.length === 0) {
       setWatchlistQuotes(new Map());
+      setTriggeredAlerts([]);
       return;
     }
+
     const db = getBrowserClient();
     db
       .from("symbol_quotes_latest")
       .select("symbol_code, last_price, pct_change")
-      .in("symbol_code", watchlist)
+      .in("symbol_code", allTickers)
       .then(({ data }) => {
+        // Build price map for watchlist chips
         const map = new Map<string, WatchlistQuote>();
+        const priceMap = new Map<string, number>();
         for (const q of data ?? []) {
           if (q.last_price != null) {
-            map.set(q.symbol_code, {
-              price: Number(q.last_price),
-              pctChange: q.pct_change != null ? Number(q.pct_change) : null,
-            });
+            const price = Number(q.last_price);
+            priceMap.set(q.symbol_code, price);
+            if (watchlist.includes(q.symbol_code)) {
+              map.set(q.symbol_code, {
+                price,
+                pctChange: q.pct_change != null ? Number(q.pct_change) : null,
+              });
+            }
           }
         }
         setWatchlistQuotes(map);
+
+        // Derive which alerts are currently triggered
+        const triggered = alerts.filter((a) => {
+          const price = priceMap.get(a.ticker);
+          if (price == null) return false;
+          return a.condition === "above" ? price >= a.target : price <= a.target;
+        });
+        setTriggeredAlerts(triggered);
       });
-  // watchlist.join ensures we re-fetch only when tickers actually change
+  // Re-fetch when watchlist, alert ids, or hydration state changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, watchlist.join(",")]);
+  }, [hydrated, alertsHydrated, watchlist.join(","), alerts.map((a) => a.id).join(",")]);
 
   // Fetch on mount, on query change, and on sort change
   useEffect(() => {
@@ -176,6 +203,25 @@ export function DiscoverView() {
       {/* ── Results ────────────────────────────────────────────────────── */}
       <div className="px-4 pt-4 max-w-[640px] mx-auto space-y-4">
 
+        {/* Triggered alerts — shown when not searching and at least one alert is active */}
+        {!query && alertsHydrated && triggeredAlerts.length > 0 && (
+          <section aria-label="Thông báo giá đã kích hoạt">
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.8px] text-lime-signal-400 mb-2 flex items-center gap-1.5">
+              <Bell className="size-3" strokeWidth={2.5} />
+              Thông báo giá đã kích hoạt ({triggeredAlerts.length})
+            </h2>
+            <div className="rounded-2xl bg-lime-signal-400/5 border border-lime-signal-400/25 overflow-hidden divide-y divide-lime-signal-400/10">
+              {triggeredAlerts.map((alert) => (
+                <TriggeredAlertRow
+                  key={alert.id}
+                  alert={alert}
+                  onDismiss={() => removeAlert(alert.id)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Watchlist quick-access — only shown when not searching */}
         {!query && hydrated && watchlist.length > 0 && (
           <section aria-label="Danh sách theo dõi">
@@ -271,6 +317,44 @@ function StockResultRow({ stock }: { stock: StockResult }) {
         </div>
       )}
     </Link>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TriggeredAlertRow — single row for an alert whose condition is currently met
+// ---------------------------------------------------------------------------
+function TriggeredAlertRow({
+  alert,
+  onDismiss,
+}: {
+  alert: PriceAlert;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3">
+      <Bell className="size-4 text-lime-signal-400 shrink-0" strokeWidth={2} />
+      <Link
+        href={`/stock/${alert.ticker}`}
+        className="flex-1 min-w-0"
+      >
+        <p className="text-[13px] font-bold text-text-neo-primary">
+          {alert.ticker}
+          <span className="font-normal text-lime-signal-400 ml-1.5">
+            {alert.condition === "above" ? "≥" : "≤"} {formatVND(alert.target)}
+          </span>
+        </p>
+        <p className="text-[11px] text-lime-signal-400/70">
+          {alert.condition === "above" ? "Đã vượt lên trên" : "Đã giảm xuống dưới"} mức mục tiêu
+        </p>
+      </Link>
+      <button
+        onClick={onDismiss}
+        aria-label={`Xoá thông báo ${alert.ticker}`}
+        className="shrink-0 grid size-7 place-items-center rounded-full text-text-neo-tertiary hover:text-text-neo-primary hover:bg-ink-violet-raised transition-colors"
+      >
+        <X className="size-3.5" strokeWidth={2.5} />
+      </button>
+    </div>
   );
 }
 
