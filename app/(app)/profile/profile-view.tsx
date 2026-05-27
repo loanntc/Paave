@@ -1,0 +1,356 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+import { TierBadge, type TierLevel } from "@/components/paave/tier-badge";
+import { XPBar } from "@/components/paave/xp-bar";
+import { formatVND, pctLabel } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+// ---------------------------------------------------------------------------
+// Supabase browser client
+// ---------------------------------------------------------------------------
+function getBrowserClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tier progression config
+// Based on total lifetime trades — thresholds keep Gen Z coming back daily.
+// ---------------------------------------------------------------------------
+const TIER_THRESHOLDS: Record<TierLevel, { min: number; max: number }> = {
+  1: { min: 0,   max: 10  },
+  2: { min: 10,  max: 25  },
+  3: { min: 25,  max: 50  },
+  4: { min: 50,  max: 100 },
+  5: { min: 100, max: 200 },
+  6: { min: 200, max: 200 }, // maxed out
+};
+
+function getTierLevel(totalTrades: number): TierLevel {
+  if (totalTrades >= 200) return 6;
+  if (totalTrades >= 100) return 5;
+  if (totalTrades >= 50)  return 4;
+  if (totalTrades >= 25)  return 3;
+  if (totalTrades >= 10)  return 2;
+  return 1;
+}
+
+function getXP(totalTrades: number, tier: TierLevel): { value: number; max: number } {
+  const { min, max } = TIER_THRESHOLDS[tier];
+  if (tier === 6) return { value: 200, max: 200 };
+  return { value: totalTrades - min, max: max - min };
+}
+
+// ---------------------------------------------------------------------------
+// ProfileView
+// ---------------------------------------------------------------------------
+interface ProfileData {
+  displayName: string;
+  email: string;
+  totalTrades: number;
+  totalEquity: number;
+  totalPL: number;
+  totalPLPct: number;
+  positionCount: number;
+}
+
+export function ProfileView() {
+  const router = useRouter();
+  const [data, setData] = useState<ProfileData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  useEffect(() => {
+    const db = getBrowserClient();
+
+    async function fetchProfile() {
+      const {
+        data: { session },
+      } = await db.auth.getSession();
+
+      if (!session?.user) {
+        setIsLoading(false);
+        return;
+      }
+
+      const uid = session.user.id;
+      const meta = session.user.user_metadata ?? {};
+      const displayName: string =
+        (meta.full_name as string | undefined) ??
+        (meta.name as string | undefined) ??
+        session.user.email?.split("@")[0] ??
+        "Nhà đầu tư";
+
+      // Fetch sub-account
+      const { data: acct } = await db
+        .from("virtual_sub_accounts")
+        .select("id, cash_balance, starting_balance")
+        .eq("user_id", uid)
+        .eq("status", "ACTIVE")
+        .limit(1)
+        .single();
+
+      if (!acct) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Parallel: holdings + trade count
+      const [holdingsRes, tradesCountRes] = await Promise.all([
+        db
+          .from("virtual_holdings")
+          .select("quantity, avg_cost")
+          .eq("sub_account_id", acct.id)
+          .gt("quantity", 0),
+
+        db
+          .from("virtual_trades")
+          .select("id", { count: "exact", head: true })
+          .eq("sub_account_id", acct.id),
+      ]);
+
+      const holdingsValue = (holdingsRes.data ?? []).reduce(
+        (s, h) => s + Number(h.avg_cost) * Number(h.quantity),
+        0,
+      );
+      const cashBalance = Number(acct.cash_balance);
+      const startingBalance = Number(acct.starting_balance);
+      const totalEquity = cashBalance + holdingsValue;
+      const totalPL = totalEquity - startingBalance;
+      const totalPLPct = (totalPL / startingBalance) * 100;
+      const totalTrades = tradesCountRes.count ?? 0;
+
+      setData({
+        displayName,
+        email: session.user.email ?? "",
+        totalTrades,
+        totalEquity,
+        totalPL,
+        totalPLPct,
+        positionCount: (holdingsRes.data ?? []).length,
+      });
+      setIsLoading(false);
+    }
+
+    fetchProfile();
+  }, []);
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await fetch("/api/auth/sign-out", { method: "POST" });
+      router.push("/sign-in");
+    } catch {
+      setIsSigningOut(false);
+    }
+  };
+
+  const tier = data ? getTierLevel(data.totalTrades) : 1;
+  const xp = data ? getXP(data.totalTrades, tier) : { value: 0, max: 10 };
+  const initial = data?.displayName?.charAt(0).toUpperCase() ?? "?";
+
+  return (
+    <main className="min-h-screen bg-ink-violet-base text-text-neo-primary pb-24">
+
+      {/* ── Header ────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-ink-violet-base/90 backdrop-blur border-b border-border-neo-subtle">
+        <span className="font-display text-[18px] font-bold tracking-[-0.3px]">
+          Hồ sơ
+        </span>
+      </header>
+
+      <div className="px-4 pt-6 space-y-4 max-w-[640px] mx-auto">
+
+        {isLoading ? (
+          <ProfileSkeleton />
+        ) : !data ? (
+          <p className="text-[13px] text-text-neo-tertiary">
+            Đăng nhập để xem hồ sơ.
+          </p>
+        ) : (
+          <>
+            {/* ── Identity card ──────────────────────────────────────── */}
+            <section className="rounded-2xl bg-ink-violet-surface border border-border-neo px-5 py-5">
+              <div className="flex items-center gap-4">
+                {/* Avatar */}
+                <div
+                  className="shrink-0 grid size-16 place-items-center rounded-full text-[22px] font-bold text-ink-violet-base"
+                  style={{
+                    background: "linear-gradient(135deg, #B5E82F, #7F77DD)",
+                  }}
+                >
+                  {initial}
+                </div>
+
+                {/* Name + email + tier */}
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-[17px] font-bold text-text-neo-primary truncate">
+                    {data.displayName}
+                  </p>
+                  <p className="text-[12px] text-text-neo-tertiary truncate">
+                    {data.email}
+                  </p>
+                  <div className="mt-2">
+                    <TierBadge level={tier} showLocale="vi" />
+                  </div>
+                </div>
+              </div>
+
+              {/* XP progress */}
+              <div className="mt-5 space-y-1.5">
+                <div className="flex justify-between text-[11px] text-text-neo-tertiary">
+                  <span>Tiến độ lên Cấp {tier === 6 ? "MAX" : tier + 1}</span>
+                  <span>
+                    {tier === 6
+                      ? "Huyền thoại 👑"
+                      : `${xp.value} / ${xp.max} lệnh`}
+                  </span>
+                </div>
+                <XPBar value={xp.value} max={xp.max} />
+              </div>
+            </section>
+
+            {/* ── Account stats ───────────────────────────────────────── */}
+            <section
+              aria-label="Thống kê tài khoản"
+              className="rounded-2xl bg-ink-violet-surface border border-border-neo overflow-hidden"
+            >
+              <h2 className="px-5 pt-4 pb-2 text-[11px] font-bold uppercase tracking-[0.8px] text-text-neo-tertiary">
+                Giả lập
+              </h2>
+              <div className="divide-y divide-border-neo-subtle">
+                <StatRow
+                  label="Tổng tài sản"
+                  value={formatVND(data.totalEquity)}
+                />
+                <StatRow
+                  label="Lãi / lỗ ròng"
+                  value={`${data.totalPL >= 0 ? "+" : ""}${formatVND(data.totalPL)}`}
+                  sub={pctLabel(data.totalPLPct)}
+                  tone={data.totalPL >= 0 ? "positive" : "negative"}
+                />
+                <StatRow
+                  label="Tổng lệnh"
+                  value={`${data.totalTrades.toLocaleString()} lệnh`}
+                />
+                <StatRow
+                  label="Vị thế đang mở"
+                  value={`${data.positionCount} cổ phiếu`}
+                />
+              </div>
+            </section>
+
+            {/* ── Actions ─────────────────────────────────────────────── */}
+            <section className="rounded-2xl bg-ink-violet-surface border border-border-neo overflow-hidden">
+              <h2 className="px-5 pt-4 pb-2 text-[11px] font-bold uppercase tracking-[0.8px] text-text-neo-tertiary">
+                Tài khoản
+              </h2>
+              <button
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+                className={cn(
+                  "w-full flex items-center justify-between px-5 py-4",
+                  "text-[14px] font-medium text-negative",
+                  "hover:bg-ink-violet-raised transition-colors",
+                  "disabled:opacity-50",
+                )}
+              >
+                <span>{isSigningOut ? "Đang đăng xuất…" : "Đăng xuất"}</span>
+                <span className="text-[18px]">→</span>
+              </button>
+            </section>
+
+            {/* ── Version info ────────────────────────────────────────── */}
+            <p className="text-center text-[11px] text-text-neo-tertiary pb-2">
+              PAAVE v2.0 · Beta · Chỉ dành cho giao dịch giả lập
+            </p>
+          </>
+        )}
+      </div>
+    </main>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// StatRow
+// ---------------------------------------------------------------------------
+function StatRow({
+  label,
+  value,
+  sub,
+  tone,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "positive" | "negative";
+}) {
+  return (
+    <div className="flex items-center justify-between px-5 py-3">
+      <span className="text-[13px] text-text-neo-secondary">{label}</span>
+      <div className="text-right">
+        <span
+          className={cn(
+            "font-display text-[14px] tabular-nums font-medium",
+            tone === "positive"
+              ? "text-positive"
+              : tone === "negative"
+                ? "text-negative"
+                : "text-text-neo-primary",
+          )}
+        >
+          {value}
+        </span>
+        {sub && (
+          <p className={cn("text-[11px] tabular-nums",
+            tone === "positive" ? "text-positive" : tone === "negative" ? "text-negative" : "text-text-neo-tertiary"
+          )}>
+            {sub}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Skeleton
+// ---------------------------------------------------------------------------
+function ProfileSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      {/* Identity card */}
+      <div className="rounded-2xl bg-ink-violet-surface border border-border-neo p-5">
+        <div className="flex items-center gap-4">
+          <div className="size-16 rounded-full bg-ink-violet-raised shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-32 rounded bg-ink-violet-raised" />
+            <div className="h-3 w-44 rounded bg-ink-violet-raised" />
+            <div className="h-5 w-20 rounded-full bg-ink-violet-raised" />
+          </div>
+        </div>
+        <div className="mt-5 space-y-1.5">
+          <div className="flex justify-between">
+            <div className="h-2.5 w-24 rounded bg-ink-violet-raised" />
+            <div className="h-2.5 w-16 rounded bg-ink-violet-raised" />
+          </div>
+          <div className="h-2.5 w-full rounded-full bg-ink-violet-raised" />
+        </div>
+      </div>
+      {/* Stats */}
+      <div className="rounded-2xl bg-ink-violet-surface border border-border-neo p-4 space-y-3">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex justify-between">
+            <div className="h-3 w-24 rounded bg-ink-violet-raised" />
+            <div className="h-3 w-20 rounded bg-ink-violet-raised" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
