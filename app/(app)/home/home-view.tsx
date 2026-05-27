@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   Bell,
@@ -312,12 +313,13 @@ function MiniStat({
 
 function QuickActions() {
   const { open: openChat } = useChatSheet();
+  const router = useRouter();
 
   const actions = [
-    { label: "Discover", icon: Compass, tone: "lime" as const, onClick: undefined as (() => void) | undefined },
-    { label: "Markets", icon: LineChart, tone: "plasma" as const, onClick: undefined },
+    { label: "Discover", icon: Compass, tone: "lime" as const, onClick: () => router.push("/discover") },
+    { label: "Markets", icon: LineChart, tone: "plasma" as const, onClick: () => router.push("/discover") },
     { label: "Ask AI", icon: MessageSquare, tone: "lime" as const, onClick: () => openChat({ language: "vi" }) },
-    { label: "Wallet", icon: Wallet, tone: "plasma" as const, onClick: undefined },
+    { label: "Wallet", icon: Wallet, tone: "plasma" as const, onClick: () => router.push("/portfolio") },
   ];
 
   return (
