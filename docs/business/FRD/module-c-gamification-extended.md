@@ -32,7 +32,7 @@ The Achievement Badge System awards permanent, non-revocable digital badges to u
 |---|---|---|---|---|
 | `BADGE_FIRST_TRADE` | First Trade | Common | `#9CA3AF` | First paper trade placed and filled |
 | `BADGE_GREEN_WEEK` | Green Week | Uncommon | `#34D399` | 7 consecutive trading days with positive portfolio NAV delta |
-| `BADGE_MARKET_SCHOLAR` | Market Scholar | Common | `#9CA3AF` | All F0 Learning Module 1 lessons completed |
+| `BADGE_MARKET_SCHOLAR` | Market Scholar | **Rare** | `#60A5FA` | All F0 Learning Module 4 lessons completed (F0 Learning Path capstone) |
 | `BADGE_SHARP_SHOOTER` | Sharp Shooter | Uncommon | `#34D399` | 5 price alerts triggered (condition met AND notification delivered) |
 | `BADGE_WHALE_WATCHER` | Whale Watcher | Rare | `#60A5FA` | Stock on watchlist continuously for 30 calendar days before first BUY order on that stock |
 | `BADGE_CHALLENGE_KING` | Challenge King | Rare | `#60A5FA` | 3 cumulative weekly challenge wins (per FR-GAME-04) |
@@ -150,33 +150,38 @@ The Achievement Badge System awards permanent, non-revocable digital badges to u
 
 ### FR-GAME-06-03: Badge Award — Market Scholar
 
+> **Note (corrected 2026-05-27):** Market Scholar is the **Module 4 (Trader Psychology) completion badge** — not a Module 1 badge. It is Rare rarity, not Common. This correction aligns with FRD-F-LEARN FR-LEARN-09 and FR-LEARN-16.
+
 - **Priority:** P0
-- **Actor:** System (event-driven, fires on lesson completion event)
-- **Description:** When a user completes a lesson in F0 Learning Module 1, the system checks whether all 5 lessons in Module 1 (L1.1, L1.2, L1.3, L1.4, L1.5) are marked complete for that user. If yes, and the user does not yet hold `BADGE_MARKET_SCHOLAR`, the badge is awarded.
+- **Actor:** System (event-driven, fires on `module_completion` event for M4)
+- **Description:** When a user completes all 5 lessons in F0 Learning Module 4 (Trader Psychology), the `module_completion` event fires for M4. The system checks whether the user does not yet hold `BADGE_MARKET_SCHOLAR`. If they do not, the badge (Rare) is inserted into `badge_awards` and a push notification is dispatched. XP of +75 is granted via FR-GAME-01 (this is the M4 module bonus XP, tracked separately from lesson XP).
 - **Input:**
-  - `lesson_complete_event.user_id` — integer
-  - `lesson_complete_event.lesson_id` — string, must be one of `["L1.1","L1.2","L1.3","L1.4","L1.5"]` to be relevant
-  - `lesson_complete_event.completed_at` — UTC timestamp
+  - `module_completion_event.user_id` — integer, required
+  - `module_completion_event.module_id` — string, must equal `"M4"` to be relevant
+  - `module_completion_event.completed_at` — UTC timestamp
 - **Output:**
-  - Row inserted into `badge_awards` for `BADGE_MARKET_SCHOLAR`
-  - XP +75 queued via FR-GAME-01
-  - Push notification: `"You completed Module 1! Market Scholar badge earned."`
+  - Row inserted into `badge_awards`: `{ user_id, badge_id: "BADGE_MARKET_SCHOLAR", awarded_at: UTC timestamp, idempotency_key: "{user_id}_BADGE_MARKET_SCHOLAR" }`
+  - XP +75 queued via FR-GAME-01 (idempotency key: `"{user_id}_BADGE_MARKET_SCHOLAR_XP"`)
+  - Push notification: title `"Achievement Unlocked"`, body `"Bạn đã hoàn thành toàn bộ hành trình F0! Market Scholar (Hiếm) đã mở khóa."` (You completed the full F0 journey! Market Scholar (Rare) unlocked.), deep link to badge detail screen
+  - Badge rarity: **Rare** (`#60A5FA`, 3px border, ★ symbol prefix)
 
 #### Acceptance Criteria
 
 | # | Given | When | Then |
 |---|---|---|---|
-| AC-06-03-1 | User has completed L1.1–L1.4 | User completes L1.5 | Badge is awarded immediately |
-| AC-06-03-2 | User completes lessons in non-sequential order (L1.5, L1.3, L1.1, L1.4) | User completes L1.2 (the last remaining) | Badge is awarded |
-| AC-06-03-3 | User already holds `BADGE_MARKET_SCHOLAR` | A lesson completion event for L1.x fires again (replay) | No duplicate insert; no XP re-granted |
+| AC-06-03-1 | User has completed L4.1–L4.4 | User completes L4.5 | `module_completion` fires for M4; badge `BADGE_MARKET_SCHOLAR` (Rare) awarded; push notification sent; XP +75 queued |
+| AC-06-03-2 | User completes M4 lessons in non-sequential order (L4.5, L4.3, L4.1, L4.4) | User completes L4.2 (the last remaining) | Same as AC-06-03-1 |
+| AC-06-03-3 | User already holds `BADGE_MARKET_SCHOLAR` | A `module_completion` event for M4 fires again (retry / replay) | No duplicate insert; no XP re-granted; push notification suppressed |
+| AC-06-03-4 | Placement Quiz skip (M1 skipped) user completes M2, M3, M4 | M4 completion fires | Badge awarded normally; skip of M1 does not affect M4 badge eligibility |
 
 #### Business Rules
 
 | # | Rule |
 |---|---|
-| BR-06-03-1 | Module 1 is defined as exactly lessons: L1.1, L1.2, L1.3, L1.4, L1.5 (5 lessons total). |
-| BR-06-03-2 | All 5 lessons must have `status = "COMPLETE"` in `user_lesson_progress` to qualify. |
-| BR-06-03-3 | XP grant idempotency key: `"{user_id}_BADGE_MARKET_SCHOLAR_XP"`. |
+| BR-06-03-1 | Module 4 is defined as exactly lessons: L4.1, L4.2, L4.3, L4.4, L4.5 (5 lessons total). |
+| BR-06-03-2 | All 5 M4 lessons must have `status = "COMPLETE"` in `user_lesson_progress` to qualify. |
+| BR-06-03-3 | XP grant idempotency key: `"{user_id}_BADGE_MARKET_SCHOLAR_XP"`. Badge award idempotency key: `"{user_id}_BADGE_MARKET_SCHOLAR"`. Two separate keys per two-key idempotency pattern. |
+| BR-06-03-4 | Badge rarity is Rare (`#60A5FA`). Any code path awarding this badge with Common (`#9CA3AF`) is a defect. Badge art must use the Rare visual treatment: 3px border, ★ symbol, blue shimmer. |
 
 ---
 

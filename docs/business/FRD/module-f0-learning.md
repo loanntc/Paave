@@ -94,7 +94,7 @@
 | M1 | The VN Stock Market | L1.1–L1.5 | None (auto-unlock on registration) | 125 | 0 | 125 | "Market Foundations" (Common) | Module 2 |
 | M2 | Your First Trade | L2.1–L2.5 | M1 complete | 125 | 0 | 125 | "First Trader" (Common) + 50,000,000 VND bonus cash | Module 3 (+ ≥3 trades check) |
 | M3 | Thinking in Portfolios | L3.1–L3.5 | M2 complete AND ≥3 paper trades on main portfolio | 125 | 25 | 150 | "Portfolio Thinker" (Uncommon) | Module 4 |
-| M4 | Trader Psychology | L4.1–L4.5 | M3 complete AND ≥1 trade on each of 5 distinct trading days | 125 | 75 | 200 | "Market Scholar" (Common) | Community posting (Tier 2) |
+| M4 | Trader Psychology | L4.1–L4.5 | M3 complete AND ≥1 trade on each of 5 distinct trading days | 125 | 75 | 200 | "Market Scholar" (Rare) | Community posting (Tier 2) |
 
 **Card sequence per lesson (fixed order):**
 1. Concept card
@@ -134,11 +134,13 @@
 
 | Element | Content |
 |---------|---------|
+| Intro animation | Lottie asset `lottie_welcome_learning.json` (rocket/chart-ticker theme, dark-canvas); plays once for 3s then holds final frame. **Fallback:** static PNG `img_welcome_learning_static.png` if asset fails. CTA buttons are active during animation — not gated on completion. (OQ-02 resolved: Lottie 3s) |
 | Headline | "Học chứng khoán, không cần kinh nghiệm" (Learn stocks, no experience needed) |
 | Body | 2–3 sentence value statement (max 60 words): explains paper trading concept and zero-risk learning |
 | Lesson preview | Thumbnail image for L1.1 + lesson title "Cổ phiếu là gì?" |
 | Primary CTA | "Bắt đầu Module 1" (Start Module 1) — full-width filled button |
 | Secondary CTA | "Khám phá trước" (Explore first) — ghost/text button below primary |
+| Tertiary CTA | "Tôi đã biết chứng khoán cơ bản" (I already know the basics) — text link; initiates Placement Quiz (FR-LEARN-19) |
 
 **Acceptance Criteria:**
 
@@ -568,7 +570,18 @@
 | M1 | 125 | 0 | 125 | Market Foundations | Common | None |
 | M2 | 125 | 0 | 125 | First Trader | Common | 50,000,000 VND bonus virtual cash (7-day TTL) |
 | M3 | 125 | 25 | 150 | Portfolio Thinker | Uncommon | None |
-| M4 | 125 | 75 | 200 | Market Scholar | Common | Community posting eligibility (Tier 2) — cross-ref FR-GAME-06 |
+| M4 | 125 | 75 | 200 | Market Scholar | **Rare** | Community posting eligibility (Tier 2) — cross-ref FR-GAME-06 |
+
+> **OQ-05 resolved:** Market Scholar upgraded to **Rare** (`#60A5FA`). Rationale: M4 is the capstone of the entire F0 journey (20 lessons, 4 MKCs passed, 5 distinct trading days). Common would undersell the achievement. Rare matches the effort tier and the "Scholar" naming convention.
+
+**Module Completion Modal — XP Display Rules (OQ-06 resolved):**
+
+| Module | XP Line 1 | XP Line 2 | Notes |
+|--------|----------|-----------|-------|
+| M1 | "+125 XP từ bài học" | — | Single line; no bonus |
+| M2 | "+125 XP từ bài học" | — | Single line; no bonus |
+| M3 | "+125 XP từ bài học" | "+25 XP 🎓 Thưởng hoàn thành!" | Two separate line items; both in `lime`; bonus line slightly smaller (`Space Grotesk 16 Medium`) |
+| M4 | "+125 XP từ bài học" | "+75 XP 🎓 Thưởng hoàn thành!" | Two separate line items; same treatment as M3 |
 
 **Acceptance Criteria:**
 
@@ -577,7 +590,7 @@
 | AC-01 | User completes L1.5 | Module completion event fires for M1 | Celebration modal shown with "Market Foundations" badge; +125 XP total shown (5×25, no bonus); Module 2 unlocked notification fires |
 | AC-02 | User completes L2.5 | Module completion event fires for M2 | "First Trader" badge awarded; 50,000,000 VND bonus cash ledger entry created; celebration modal shows bonus cash award; Module 3 unlock evaluation triggered |
 | AC-03 | User completes L3.5 | Module completion event fires for M3 | "Portfolio Thinker" badge (Uncommon) awarded; +150 XP shown (125 lessons + 25 bonus); Module 4 unlock evaluation triggered |
-| AC-04 | User completes L4.5 | Module completion event fires for M4 | "Market Scholar" badge (Common) awarded; +200 XP shown (125 lessons + 75 bonus); community posting eligibility flag set; cross-reference to FR-GAME-06 evaluated |
+| AC-04 | User completes L4.5 | Module completion event fires for M4 | "Market Scholar" badge (Rare — `#60A5FA` border) awarded; "+125 XP từ bài học" and "+75 XP 🎓 Thưởng hoàn thành!" shown as two line items; community posting eligibility flag set; cross-reference to FR-GAME-06 evaluated |
 | AC-05 | `module_completion` event fires twice for same user + module (retry scenario) | — | Idempotency check prevents duplicate badge award and duplicate XP grant |
 
 **Edge Cases:**
@@ -840,7 +853,7 @@
 |---|-------|------|------|
 | AC-01 | User has M2 complete and exactly 2 trades | User views Grow tab | M3 shows `LOCKED` state; tooltip: "Đặt ít nhất 3 lệnh để mở khóa Module 3" |
 | AC-02 | User places their 3rd trade | `paper_trade_placed` event fires | M3 unlock evaluation triggered; M3 unlocks immediately (since M2 also complete); notification sent |
-| AC-03 | User completes L3.3 CTA (add 5 stocks to watchlist) | CTA modal pre-fills 5 stocks | All 5 stocks added in a single confirmation action; watchlist count = prior count + 5 (deduplication: if any already in watchlist, skip silently) |
+| AC-03 | User completes L3.3 CTA (add 5 stocks to watchlist) | CTA modal pre-fills 5 stocks | All 5 stocks added in a single confirmation action; deduplication applied server-side; user sees 2-second toast: "Đã thêm [N] cổ phiếu mới · [M] đã có sẵn" where N = newly added count, M = already-in-watchlist count; if all 5 were already in watchlist: toast reads "5 cổ phiếu đã có trong danh sách theo dõi"; lesson still completes. (OQ-07 resolved) |
 | AC-04 | User completes all 5 M3 lessons | Module completion fires | Celebration modal shows "Portfolio Thinker" badge (Uncommon — distinct visual treatment), "+150 XP" |
 
 **Edge Cases:**
@@ -869,7 +882,7 @@
 | L4.5 | Xây dựng quy tắc giao dịch (Building Your Trading Rules) | Rule-based trading; stop-loss discipline; journaling | `SHARE_TRADING_RULES` | Community post composer; template: "3 quy tắc giao dịch của tôi: 1. ___ 2. ___ 3. ___" |
 
 - **Precondition:** M3 `status = COMPLETE` AND ≥1 trade placed on each of 5 distinct VN market trading calendar days
-- **Postcondition (on all 5 lessons complete):** `module_completion` fires; +200 XP (125 lessons + 75 bonus); "Market Scholar" (Common) badge (cross-ref FR-GAME-06); `user_profile.community_tier` evaluated for Tier 2 eligibility; community posting enabled if Tier 2 XP threshold met
+- **Postcondition (on all 5 lessons complete):** `module_completion` fires; +200 XP (125 lessons + 75 bonus, displayed as two separate line items per FR-LEARN-09); "Market Scholar" (**Rare**, `#60A5FA`) badge (cross-ref FR-GAME-06); `user_profile.community_tier` evaluated for Tier 2 eligibility; community posting enabled if total XP ≥ 500 (Tier 2 threshold per BR-LEARN-22)
 
 **Trading Days Definition for M4 Prerequisite:**
 
@@ -879,6 +892,7 @@
 | Weekend | Saturday and Sunday are excluded; not counted as trading days |
 | Public holidays | VN national holidays (per official HOSE/HNX holiday calendar) are excluded |
 | Non-consecutive | The 5 days do not need to be consecutive; any 5 qualifying days within the user's trade history suffice |
+| ATO order day boundary | An ATO (pre-open) order placed before 09:15 counts for the **calendar date of placement** — not the session date on which it fills. `trade_day = DATE(order.placed_at AT TIME ZONE 'Asia/Ho_Chi_Minh')`. (OQ-04 resolved) |
 
 **Acceptance Criteria:**
 
@@ -887,7 +901,7 @@
 | AC-01 | User has M3 complete and has traded on only 3 distinct days | User views Grow tab | M4 shows `LOCKED`; tooltip: "Giao dịch ít nhất 5 ngày để mở khóa Module 4" (Trade on at least 5 days to unlock Module 4) |
 | AC-02 | User places a trade on their 5th distinct trading day | `paper_trade_placed` event fires | M4 unlock evaluation triggered; M4 unlocks; notification: "Module 4 đã mở khóa!" |
 | AC-03 | User completes L4.5 CTA (share post) | Community post modal opens with template | Post is pre-populated; user can edit each "___" field; tapping "Chia sẻ" posts to community feed; tapping "Bỏ qua" dismisses without posting; lesson completes in both cases |
-| AC-04 | User completes all 5 M4 lessons | Module completion fires | "+200 XP" shown; "Market Scholar" badge awarded; if user's total XP ≥ Tier 2 threshold (defined in FR-GAME-06), community posting enabled immediately |
+| AC-04 | User completes all 5 M4 lessons | Module completion fires | "+125 XP từ bài học" and "+75 XP 🎓 Thưởng hoàn thành!" shown as two line items; "Market Scholar" badge (Rare) awarded; if user's total XP ≥ 500 (Tier 2 threshold, BR-LEARN-22), community posting enabled immediately |
 | AC-05 | AI behavioral flags are empty (no detected patterns) when L4.2 CTA opens | CTA modal opens | Screen shows "Chưa phát hiện mô hình hành vi đáng chú ý" (No behavioral patterns detected yet); lesson still completes |
 
 **Edge Cases:**
@@ -920,8 +934,21 @@
 **Key Rules:**
 - Learning Level can only advance, never decrease.
 - Level re-evaluated after every lesson completion, module completion, and Knowledge Check result.
+- **Level advancement is event-based, not XP-threshold-based.** Each level has explicit completion-event conditions (see table above). XP accumulation does NOT trigger level advancement — only the listed events do. (OQ-A resolved)
 - XP on level-up: +15 XP per level advancement (idempotency key: `{user_id}_{level_id}_LEVEL_UP`).
 - Display: pill badge on profile below username, separate from Trader Tier badge.
+
+**Advance Condition Summary (authoritative):**
+
+| Level Transition | Event(s) Required |
+|-----------------|-------------------|
+| NEWCOMER → EXPLORING | Any 1 lesson in M1 completed |
+| EXPLORING → F1_BASICS | All 5 M1 lessons complete AND MKC-1 passed (≥3/5) |
+| F1_BASICS → F1_TRADER | All 5 M2 lessons complete AND MKC-2 passed AND ≥5 paper trades placed (main portfolio) |
+| F1_TRADER → F2_PORTFOLIO | All 5 M3 lessons complete AND MKC-3 passed |
+| F2_PORTFOLIO → F2_DISCIPLINED | All 5 M4 lessons complete AND MKC-4 passed |
+
+> **There are no XP thresholds for level advancement.** References in the UI to "XP threshold for level-up" (OQ-A blocker) were erroneous. The system checks event conditions only. The +15 XP granted on level-up is a reward for the event, not a prerequisite.
 
 **Acceptance Criteria:**
 
@@ -1035,6 +1062,9 @@
 | BR-LEARN-19 | Learning Level can only advance, never decrease. A level-up event is idempotent: key = `{user_id}_{level_id}_LEVEL_UP`. Re-passing a MKC for an already-passed module does not re-grant the +15 XP level-up bonus. | FR-LEARN-17 | Duplicate level-up event silently rejected; no duplicate XP |
 | BR-LEARN-20 | Module Knowledge Check (MKC) pass status is permanent. Once a user passes MKC-N, they never need to re-take it. Module completion badge and XP (FR-LEARN-09) are independent of MKC result — they are awarded on lesson completion, not on MKC pass. | FR-LEARN-18 | MKC failure does not block badge or lesson XP; it only blocks Learning Level advancement |
 | BR-LEARN-21 | The Placement Quiz (FR-LEARN-19) is offered once and cannot be retried. A score of 4/5 or 5/5 sets M1 to `SKIPPED_VIA_PLACEMENT` and sets Learning Level to `LVL_F1_BASICS`. M1 remains accessible in review mode for skipped users. | FR-LEARN-19 | If placement quiz result is ambiguous due to network error, system defaults to M1 required (fail-safe) |
+| BR-LEARN-22 | Community posting (Tier 2) eligibility requires `user_profile.total_xp ≥ 500`. This threshold is evaluated when M4 completion fires. If total XP is below 500 at M4 completion (edge case: user had XP deductions or the XP system had gaps), community posting is NOT enabled until XP reaches 500 on any subsequent XP grant event. The 500 XP threshold is the authoritative value for acceptance testing — FR-GAME-06 must be consistent with this value. | FR-LEARN-16, FR-LEARN-09 | If FR-GAME-06 defines a different threshold, this FRD value (500 XP) takes precedence until explicitly overridden by signed product decision |
+| BR-LEARN-23 | For the M4 "5 distinct trading days" prerequisite, the trading day of an order is determined by the **order placement timestamp** converted to VN local time (`Asia/Ho_Chi_Minh`). An ATO order placed at 08:45 VNST counts for the calendar date 2026-05-27 regardless of when or whether it fills. Day boundary = midnight VNST. | FR-LEARN-16 | Timezone conversion must use the IANA `Asia/Ho_Chi_Minh` zone (no DST, UTC+7 year-round); server must not use UTC date for this calculation |
+| BR-LEARN-24 | Once the Placement Quiz screen renders Q1, both Android system back gesture and iOS edge-swipe gesture are intercepted and suppressed. The back chevron is removed from the quiz header on Q1 render. Mid-quiz app kill counts as an attempt expended (`placement_quiz_attempted = true` written on Q1 render, before any answer is given). | FR-LEARN-19 | If the flag write for `placement_quiz_attempted` fails (network error), the system must retry; the quiz must not be re-offered until the flag is confirmed written |
 
 ---
 
@@ -1226,12 +1256,14 @@
 
 ## 9. Open Questions
 
-| # | Question | Owner | Due Date | Status |
+All open questions resolved as of 2026-05-27.
+
+| # | Question | Owner | Decision | Status |
 |---|----------|-------|----------|--------|
-| OQ-01 | What is the exact Tier 2 XP threshold referenced in M4 completion → community posting eligibility? This FRD defers to FR-GAME-06, but the threshold value is needed for acceptance testing. | Product | TBD | Open |
-| OQ-02 | Should the Welcome Modal include a brief animated intro (lottie/video, ~3s) or static imagery only? Impacts content team timeline. | Design | TBD | Open |
-| OQ-03 | What is the fallback behavior if the pre-filled stock for a CTA (e.g., VIC, VNM) is delisted vs. temporarily suspended? Both cases handled the same (substitute next blue-chip) per this FRD — confirm with product. | Product | TBD | Open |
-| OQ-04 | M4 prerequisite: "5 distinct trading days" — does a trade placed during ATO (pre-open) that fills at market open count as the ATO day or the open session day? (Edge case for day boundary.) | Engineering | TBD | Open |
-| OQ-05 | Is the "Market Scholar" badge (M4) Common or Rare? The brief states Common cross-referencing FR-GAME-06, but "Scholar" naming convention suggests Uncommon or Rare. Confirm rarity tier. | Product | TBD | Open |
-| OQ-06 | Module 3 bonus XP of +25 (on top of 5×25 lessons = 125, total 150): is this bonus displayed as a separate line item in the completion modal, or rolled into the total? | Design | TBD | Open |
-| OQ-07 | L3.3 CTA adds 5 pre-filled watchlist stocks in bulk. If one of those stocks is already in the user's watchlist, is a silent skip the correct UX or should user see a "2 already in watchlist, 3 added" confirmation? | Design | TBD | Open |
+| OQ-01 | What is the exact Tier 2 XP threshold for community posting eligibility? | Product | **500 XP** — defined in BR-LEARN-22; authoritative here; FR-GAME-06 must align. | ✅ Resolved |
+| OQ-02 | Welcome Modal: Lottie animation (~3s) or static imagery? | Design | **Lottie 3s** (`lottie_welcome_learning.json`). CTAs active during animation. Static PNG fallback on asset load failure. Defined in FR-LEARN-01 modal spec. | ✅ Resolved |
+| OQ-03 | Fallback if CTA pre-fill stock is delisted vs. suspended — same treatment? | Product | **Confirmed: same treatment.** Both delisted and suspended stocks trigger silent substitution with next available blue-chip on same exchange (per IR-19 in DEV-QA spec). No user-visible difference. | ✅ Resolved |
+| OQ-04 | M4 "5 distinct trading days": ATO order — placement date or fill date? | Engineering | **Placement date.** `trade_day = DATE(order.placed_at AT TIME ZONE 'Asia/Ho_Chi_Minh')`. Defined in BR-LEARN-23 and Trading Days Definition table in FR-LEARN-16. | ✅ Resolved |
+| OQ-05 | "Market Scholar" badge (M4) — Common or Rare? | Product | **Rare** (`#60A5FA`, 3px border). M4 is the F0 capstone (20 lessons + 4 MKCs + 5 trading days). Updated in FR-LEARN-09, FR-LEARN-16, module-c-gamification-extended.md. | ✅ Resolved |
+| OQ-06 | M3 bonus XP (+25): separate line item or rolled into total in completion modal? | Design | **Separate line items.** "+125 XP từ bài học" + "+25 XP 🎓 Thưởng hoàn thành!". Same pattern applied to M4. Defined in FR-LEARN-09 XP Display Rules table. | ✅ Resolved |
+| OQ-07 | L3.3 bulk watchlist add — silent skip or confirmation toast on duplicates? | Design | **Toast confirmation.** "Đã thêm [N] cổ phiếu mới · [M] đã có sẵn" (2s auto-dismiss). If all 5 already in watchlist: "5 cổ phiếu đã có trong danh sách theo dõi". Updated in FR-LEARN-15 AC-03. | ✅ Resolved |
