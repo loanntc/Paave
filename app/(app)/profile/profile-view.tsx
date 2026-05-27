@@ -112,7 +112,7 @@ export function ProfileView() {
       const [holdingsRes, tradesCountRes] = await Promise.all([
         db
           .from("virtual_holdings")
-          .select("quantity, avg_cost")
+          .select("symbol_code, quantity, avg_cost")
           .eq("sub_account_id", acct.id)
           .gt("quantity", 0),
 
@@ -122,8 +122,22 @@ export function ProfileView() {
           .eq("sub_account_id", acct.id),
       ]);
 
+      // Batch-fetch live prices so the profile shows mark-to-market equity
+      const codes = (holdingsRes.data ?? []).map((h) => h.symbol_code).filter(Boolean);
+      let priceMap = new Map<string, number>();
+      if (codes.length > 0) {
+        const { data: quotes } = await db
+          .from("symbol_quotes_latest")
+          .select("symbol_code, last_price")
+          .in("symbol_code", codes);
+        for (const q of quotes ?? []) {
+          if (q.last_price != null) priceMap.set(q.symbol_code, Number(q.last_price));
+        }
+      }
+
       const holdingsValue = (holdingsRes.data ?? []).reduce(
-        (s, h) => s + Number(h.avg_cost) * Number(h.quantity),
+        (s, h) =>
+          s + (priceMap.get(h.symbol_code) ?? Number(h.avg_cost)) * Number(h.quantity),
         0,
       );
       const cashBalance = Number(acct.cash_balance);

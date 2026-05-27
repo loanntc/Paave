@@ -3,10 +3,23 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { BookmarkCheck, Search, TrendingDown, TrendingUp, X } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 import type { StockResult } from "@/app/api/stocks/search/route";
 import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useWatchlist } from "@/lib/use-watchlist";
+
+function getBrowserClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
+
+interface WatchlistQuote {
+  price: number;
+  pctChange: number | null;
+}
 
 // ---------------------------------------------------------------------------
 // DiscoverView
@@ -18,6 +31,34 @@ export function DiscoverView() {
   const [section, setSection] = useState("Khối lượng cao nhất");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { hydrated, watchlist, removeFromWatchlist } = useWatchlist();
+  const [watchlistQuotes, setWatchlistQuotes] = useState<Map<string, WatchlistQuote>>(new Map());
+
+  // Batch-fetch live prices for watched tickers whenever the watchlist changes
+  useEffect(() => {
+    if (!hydrated || watchlist.length === 0) {
+      setWatchlistQuotes(new Map());
+      return;
+    }
+    const db = getBrowserClient();
+    db
+      .from("symbol_quotes_latest")
+      .select("symbol_code, last_price, pct_change")
+      .in("symbol_code", watchlist)
+      .then(({ data }) => {
+        const map = new Map<string, WatchlistQuote>();
+        for (const q of data ?? []) {
+          if (q.last_price != null) {
+            map.set(q.symbol_code, {
+              price: Number(q.last_price),
+              pctChange: q.pct_change != null ? Number(q.pct_change) : null,
+            });
+          }
+        }
+        setWatchlistQuotes(map);
+      });
+  // watchlist.join ensures we re-fetch only when tickers actually change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, watchlist.join(",")]);
 
   // Fetch on mount (default = top by volume) and on query change
   useEffect(() => {
@@ -101,6 +142,7 @@ export function DiscoverView() {
                 <WatchlistChip
                   key={ticker}
                   ticker={ticker}
+                  quote={watchlistQuotes.get(ticker) ?? null}
                   onRemove={() => removeFromWatchlist(ticker)}
                 />
               ))}
@@ -187,23 +229,53 @@ function StockResultRow({ stock }: { stock: StockResult }) {
 }
 
 // ---------------------------------------------------------------------------
-// WatchlistChip — a removable ticker pill
+// WatchlistChip — a removable ticker card with live price
 // ---------------------------------------------------------------------------
-function WatchlistChip({ ticker, onRemove }: { ticker: string; onRemove: () => void }) {
+function WatchlistChip({
+  ticker,
+  quote,
+  onRemove,
+}: {
+  ticker: string;
+  quote: WatchlistQuote | null;
+  onRemove: () => void;
+}) {
+  const isUp = (quote?.pctChange ?? 0) >= 0;
   return (
-    <div className="flex items-center gap-1 pl-3 pr-1.5 py-1.5 rounded-full bg-ink-violet-surface border border-border-neo group">
+    <div className="flex items-stretch rounded-2xl bg-ink-violet-surface border border-border-neo overflow-hidden">
       <Link
         href={`/stock/${ticker}`}
-        className="font-display text-[13px] font-bold text-text-neo-primary hover:text-lime-signal-400 transition-colors"
+        className="flex flex-col justify-center px-3 py-2 min-w-0 hover:bg-ink-violet-raised transition-colors"
       >
-        {ticker}
+        <span className="font-display text-[13px] font-bold text-text-neo-primary">
+          {ticker}
+        </span>
+        {quote ? (
+          <span
+            className={cn(
+              "text-[11px] tabular-nums font-medium",
+              quote.pctChange != null
+                ? isUp
+                  ? "text-positive"
+                  : "text-negative"
+                : "text-text-neo-tertiary",
+            )}
+          >
+            {formatVND(quote.price)}
+            {quote.pctChange != null && (
+              <> · {isUp ? "+" : ""}{pctLabel(quote.pctChange)}</>
+            )}
+          </span>
+        ) : (
+          <span className="text-[11px] text-text-neo-tertiary animate-pulse">…</span>
+        )}
       </Link>
       <button
         onClick={onRemove}
         aria-label={`Xóa ${ticker} khỏi danh sách theo dõi`}
-        className="grid size-4 place-items-center rounded-full text-text-neo-tertiary hover:text-text-neo-primary hover:bg-ink-violet-raised transition-colors"
+        className="flex items-center px-2 text-text-neo-tertiary hover:text-text-neo-primary hover:bg-ink-violet-raised border-l border-border-neo-subtle transition-colors"
       >
-        <X className="size-2.5" strokeWidth={2.5} />
+        <X className="size-3" strokeWidth={2.5} />
       </button>
     </div>
   );
