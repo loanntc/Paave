@@ -28,6 +28,14 @@ export interface VNMarketStatusResult {
   label: string;
   /** True only during continuous trading (morning and afternoon sessions) */
   isTrading: boolean;
+  /**
+   * Minutes remaining until the next notable phase transition.
+   * Populated only for phases where a countdown is meaningful:
+   *   - pre_open → minutes until market opens (09:00)
+   *   - lunch    → minutes until afternoon session (13:00)
+   * Null for all other phases.
+   */
+  minutesUntilNext: number | null;
 }
 
 /**
@@ -60,39 +68,39 @@ export function getVNMarketStatus(now: Date = new Date()): VNMarketStatusResult 
 
   // Weekend: fully closed
   if (weekday === "Sat" || weekday === "Sun") {
-    return { status: "closed", label: "Nghỉ cuối tuần", isTrading: false };
+    return { status: "closed", label: "Nghỉ cuối tuần", isTrading: false, minutesUntilNext: null };
   }
 
   // Pre-open: 08:45 – 09:00
   if (totalMinutes >= 8 * 60 + 45 && totalMinutes < 9 * 60) {
-    return { status: "pre_open", label: "Tiền phiên", isTrading: false };
+    return { status: "pre_open", label: "Tiền phiên", isTrading: false, minutesUntilNext: 9 * 60 - totalMinutes };
   }
 
   // Morning continuous session: 09:00 – 11:30
   if (totalMinutes >= 9 * 60 && totalMinutes < 11 * 60 + 30) {
-    return { status: "open", label: "Phiên sáng", isTrading: true };
+    return { status: "open", label: "Phiên sáng", isTrading: true, minutesUntilNext: null };
   }
 
   // Lunch break: 11:30 – 13:00
   if (totalMinutes >= 11 * 60 + 30 && totalMinutes < 13 * 60) {
-    return { status: "lunch", label: "Nghỉ trưa", isTrading: false };
+    return { status: "lunch", label: "Nghỉ trưa", isTrading: false, minutesUntilNext: 13 * 60 - totalMinutes };
   }
 
   // Afternoon continuous session: 13:00 – 14:30
   if (totalMinutes >= 13 * 60 && totalMinutes < 14 * 60 + 30) {
-    return { status: "open", label: "Phiên chiều", isTrading: true };
+    return { status: "open", label: "Phiên chiều", isTrading: true, minutesUntilNext: null };
   }
 
   // ATC / closing auction: 14:30 – 15:00
   if (totalMinutes >= 14 * 60 + 30 && totalMinutes < 15 * 60) {
-    return { status: "atc", label: "ATC", isTrading: false };
+    return { status: "atc", label: "ATC", isTrading: false, minutesUntilNext: null };
   }
 
   // After-hours / PTC: 15:00 – 15:15
   if (totalMinutes >= 15 * 60 && totalMinutes < 15 * 60 + 15) {
-    return { status: "after_hours", label: "Sau giờ", isTrading: false };
+    return { status: "after_hours", label: "Sau giờ", isTrading: false, minutesUntilNext: null };
   }
 
   // All other times (before 08:45 or after 15:15)
-  return { status: "closed", label: "Đóng cửa", isTrading: false };
+  return { status: "closed", label: "Đóng cửa", isTrading: false, minutesUntilNext: null };
 }

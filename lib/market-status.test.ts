@@ -175,6 +175,47 @@ describe("getVNMarketStatus", () => {
     expect(result.isTrading).toBe(true);
   });
 
+  // ── minutesUntilNext contract ──────────────────────────────────────────────
+  it("minutesUntilNext is 15 at 08:45 (15 minutes until 09:00 open)", () => {
+    const result = getVNMarketStatus(ict(0, 8, 45));
+    expect(result.minutesUntilNext).toBe(15);
+  });
+
+  it("minutesUntilNext is 1 at 08:59 (last minute of pre-open)", () => {
+    const result = getVNMarketStatus(ict(0, 8, 59));
+    expect(result.minutesUntilNext).toBe(1);
+  });
+
+  it("minutesUntilNext is 90 at 11:30 (90 minutes until 13:00 afternoon open)", () => {
+    const result = getVNMarketStatus(ict(0, 11, 30));
+    expect(result.minutesUntilNext).toBe(90);
+  });
+
+  it("minutesUntilNext is 30 at 12:30 (30 minutes until afternoon session)", () => {
+    const result = getVNMarketStatus(ict(0, 12, 30));
+    expect(result.minutesUntilNext).toBe(30);
+  });
+
+  it("minutesUntilNext is null during morning session (no countdown needed)", () => {
+    const result = getVNMarketStatus(ict(0, 10, 0));
+    expect(result.minutesUntilNext).toBeNull();
+  });
+
+  it("minutesUntilNext is null during afternoon session", () => {
+    const result = getVNMarketStatus(ict(0, 13, 30));
+    expect(result.minutesUntilNext).toBeNull();
+  });
+
+  it("minutesUntilNext is null when market is closed (evening)", () => {
+    const result = getVNMarketStatus(ict(0, 20, 0));
+    expect(result.minutesUntilNext).toBeNull();
+  });
+
+  it("minutesUntilNext is null during ATC", () => {
+    const result = getVNMarketStatus(ict(0, 14, 45));
+    expect(result.minutesUntilNext).toBeNull();
+  });
+
   // ── isTrading contract ─────────────────────────────────────────────────────
   it("isTrading is false for all non-trading statuses", () => {
     const nonTradingTimes = [

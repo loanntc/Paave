@@ -411,9 +411,9 @@ function formatIndexValue(value: number): string {
 }
 
 /**
- * Shows the current VN market session phase.
- * Re-evaluates every 60 seconds so the badge stays accurate if the user
- * keeps the screen open across a session boundary.
+ * Shows the current VN market session phase with a countdown during
+ * pre-open and lunch phases so users know exactly when trading resumes.
+ * Re-evaluates every 60 seconds so the badge stays accurate across transitions.
  */
 function MarketStatusPill() {
   const [marketStatus, setMarketStatus] = useState(() => getVNMarketStatus());
@@ -423,7 +423,12 @@ function MarketStatusPill() {
     return () => clearInterval(id);
   }, []);
 
-  const { status, label, isTrading } = marketStatus;
+  const { status, label, isTrading, minutesUntilNext } = marketStatus;
+
+  // Format minutes as "X:YY" (e.g. 8 → "0:08", 90 → "1:30")
+  const countdown = minutesUntilNext != null
+    ? `${Math.floor(minutesUntilNext / 60)}:${String(minutesUntilNext % 60).padStart(2, "0")}`
+    : null;
 
   return (
     <span
@@ -445,6 +450,9 @@ function MarketStatusPill() {
         />
       )}
       {label}
+      {countdown && (
+        <span className="tabular-nums opacity-80">· {countdown}</span>
+      )}
     </span>
   );
 }
