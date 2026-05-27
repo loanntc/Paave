@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Bell, BookmarkPlus, TrendingUp } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Bell, BookmarkPlus, TrendingDown, TrendingUp } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import { StockAICard } from "@/components/paave/stock-ai-card";
 import { PaperTradeSheet } from "@/components/paave/paper-trade-sheet";
@@ -44,6 +45,12 @@ interface SymbolData {
   industry: string | null;
 }
 
+interface HoldingData {
+  quantity: number;
+  avg_cost: number;
+  realized_pl: number;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -72,8 +79,10 @@ interface StockDetailViewProps {
 }
 
 export function StockDetailView({ ticker }: StockDetailViewProps) {
+  const router = useRouter();
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [symbol, setSymbol] = useState<SymbolData | null>(null);
+  const [holding, setHolding] = useState<HoldingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tradeSheetOpen, setTradeSheetOpen] = useState(false);
 
@@ -81,7 +90,8 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
     const db = getBrowserClient();
 
     async function fetchData() {
-      const [quoteRes, symbolRes] = await Promise.all([
+      // Auth + market data in parallel
+      const [quoteRes, symbolRes, sessionRes] = await Promise.all([
         db
           .from("symbol_quotes_latest")
           .select(
@@ -94,10 +104,42 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
           .select("code, name, short_name, exchange, sector, industry")
           .eq("code", ticker)
           .single(),
+        db.auth.getSession(),
       ]);
 
       setQuote(quoteRes.data ?? null);
       setSymbol(symbolRes.data ?? null);
+
+      // Fetch user's position for this ticker if logged in
+      const uid = sessionRes.data.session?.user?.id;
+      if (uid) {
+        const { data: acct } = await db
+          .from("virtual_sub_accounts")
+          .select("id")
+          .eq("user_id", uid)
+          .eq("status", "ACTIVE")
+          .limit(1)
+          .single();
+
+        if (acct) {
+          const { data: h } = await db
+            .from("virtual_holdings")
+            .select("quantity, avg_cost, realized_pl")
+            .eq("sub_account_id", acct.id)
+            .eq("symbol_code", ticker)
+            .gt("quantity", 0)
+            .single();
+
+          if (h) {
+            setHolding({
+              quantity: Number(h.quantity),
+              avg_cost: Number(h.avg_cost),
+              realized_pl: Number(h.realized_pl),
+            });
+          }
+        }
+      }
+
       setIsLoading(false);
     }
 
@@ -115,13 +157,13 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
 
       {/* ── Top navigation ───────────────────────────────────── */}
       <header className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-ink-violet-base/90 backdrop-blur border-b border-border-neo-subtle">
-        <Link
-          href="/"
+        <button
+          onClick={() => router.back()}
           aria-label="Go back"
           className="grid size-9 place-items-center rounded-full border border-border-neo bg-ink-violet-surface text-text-neo-secondary hover:text-text-neo-primary transition-colors"
         >
           <ArrowLeft className="size-4" strokeWidth={2} />
-        </Link>
+        </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-display text-[18px] font-bold text-text-neo-primary tracking-[-0.3px]">
@@ -180,6 +222,14 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
               <span className="text-text-neo-tertiary text-[12px]">hôm nay</span>
             </div>
           </section>
+        )}
+
+        {/* ── Open position (shown only when user holds this stock) ── */}
+        {holding && (
+          <PositionCard
+            holding={holding}
+            lastPrice={quote?.last_price ?? null}
+          />
         )}
 
         {/* ── Action buttons (FR-23 section 4) ─────────────────── */}
@@ -246,6 +296,87 @@ function ActionButton({
       {icon}
       <span>{label}</span>
     </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Position card
+// ---------------------------------------------------------------------------
+function PositionCard({
+  holding,
+  lastPrice,
+}: {
+  holding: HoldingData;
+  lastPrice: number | null;
+}) {
+  const unrealizedPL =
+    lastPrice != null
+      ? (lastPrice - holding.avg_cost) * holding.quantity
+      : null;
+  const unrealizedPct =
+    lastPrice != null && holding.avg_cost > 0
+      ? ((lastPrice - holding.avg_cost) / holding.avg_cost) * 100
+      : null;
+  const isUp = (unrealizedPL ?? 0) >= 0;
+
+  return (
+    <section
+      aria-label="Vị thế của bạn"
+      className="rounded-2xl bg-ink-violet-surface border border-border-neo px-4 py-3"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.6px] text-text-neo-tertiary mb-1">
+            Vị thế của bạn
+          </p>
+          <p className="font-display text-[14px] font-bold text-text-neo-primary">
+            {holding.quantity.toLocaleString()} CP
+          </p>
+          <p className="text-[12px] text-text-neo-tertiary">
+            Giá TB {formatVND(holding.avg_cost)}
+          </p>
+        </div>
+
+        {unrealizedPL != null && (
+          <div className="text-right">
+            <div
+              className={cn(
+                "inline-flex items-center gap-1 text-[13px] font-display tabular-nums font-bold",
+                isUp ? "text-positive" : "text-negative",
+              )}
+            >
+              {isUp ? (
+                <TrendingUp className="size-3.5" strokeWidth={2.5} />
+              ) : (
+                <TrendingDown className="size-3.5" strokeWidth={2.5} />
+              )}
+              {isUp ? "+" : ""}
+              {formatVND(Math.abs(unrealizedPL))}
+            </div>
+            {unrealizedPct != null && (
+              <p
+                className={cn(
+                  "text-[11px] tabular-nums",
+                  isUp ? "text-positive" : "text-negative",
+                )}
+              >
+                {isUp ? "+" : ""}
+                {unrealizedPct.toFixed(2)}% chưa TH
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-2 pt-2 border-t border-border-neo-subtle">
+        <Link
+          href="/portfolio"
+          className="text-[11px] text-text-neo-tertiary hover:text-text-neo-secondary transition-colors"
+        >
+          Xem danh mục →
+        </Link>
+      </div>
+    </section>
   );
 }
 
