@@ -8,16 +8,32 @@
 
 - **Actor:** Registered User
 - **Description:** Users earn XP for specific actions. XP total displayed on profile and contributes to Trader Score. XP events:
-  - Trade placed (paper): +10 XP
-  - Lesson completed: +25 XP
-  - Daily login: +5 XP
-  - Weekly challenge won: +100 XP
-  - Portfolio health improved (week-over-week grade improvement): +15 XP
+
+  | Event | XP | Idempotency | Capped? |
+  |---|---|---|---|
+  | Trade placed (paper) — per fill | +10 | Per `order_id` fill event | No |
+  | Lesson completed | +25 | Per `{user_id}:{lesson_id}` | Once per lesson per user |
+  | Daily login | +5 | Once per calendar day (user's local timezone) | Once per day |
+  | Weekly challenge won | +100 | Per `{user_id}:{challenge_week_id}` | Once per challenge week |
+  | Portfolio health improved (week-over-week grade improvement) | +15 | Per week evaluated | Once per week |
+  | Badge earned — Common (BADGE_FIRST_TRADE, BADGE_MARKET_SCHOLAR) | +50–75 | Per `{user_id}_{badge_id}_XP` | Once per badge |
+  | Badge earned — Uncommon (BADGE_GREEN_WEEK, BADGE_SHARP_SHOOTER) | +75–100 | Per `{user_id}_{badge_id}_XP` | Once per badge |
+  | Badge earned — Rare (BADGE_WHALE_WATCHER, BADGE_CHALLENGE_KING) | +150 | Per `{user_id}_{badge_id}_XP` | Once per badge |
+  | Badge earned — Epic (BADGE_STREAK_MASTER, BADGE_ZEN_TRADER) | +200–250 | Per `{user_id}_{badge_id}_XP` | Once per badge |
+  | Skill Tree node completed (varies by node) | +10–30 | Per `{user_id}_{node_id}_NODE_COMPLETE_XP` | Once per node |
+  | Skill Tree branch completed (XP burst) | +50 | Per `{user_id}_{branch_id}_BRANCH_COMPLETE_XP` | Once per branch |
+  | Daily mission completed | +5–40 (per mission) | Per `{user_id}_{mission_id}_{assigned_date}` | Once per mission per day |
+  | Seasonal event completed | +100–200 (per event) | Per `{user_id}_{event_id}_COMPLETION_XP` | Once per event |
+
+  > **Note:** Badge-specific XP values are defined in FR-GAME-06. Skill Tree node XP values are defined in FR-GAME-07-03. Mission XP values are defined in FR-GAME-08 mission catalogue.
+
 - **Key Rules:**
   - Daily login XP: once per calendar day (user's local timezone).
   - Trade XP: once per executed trade (not per order placed); deduped per fill event.
   - XP is never deducted.
   - XP total displayed on profile screen below tier badge.
+  - All XP events use idempotency keys; duplicate event delivery results in no double grant.
+  - XP events that fail are queued for retry; XP granted eventually (idempotent event ID).
 - **Acceptance Criteria:**
   - Given user completes a micro-lesson → XP counter on profile increments by 25.
   - Given user logs in twice in one day → daily login XP awarded only once.
@@ -110,4 +126,18 @@
 - **Priority:** P1
 
 ---
+
+## Extended Gamification Modules
+
+The following modules extend this document and are defined in `module-c-gamification-extended.md`:
+
+| Module | Feature | Depends On |
+|---|---|---|
+| FR-GAME-06 | Achievement Badge System (12 badges, rarity tiers, moment cards) | FR-GAME-01, FR-GAME-04, FR-GAME-05 |
+| FR-GAME-07 | Skill Tree (4 branches, 21 nodes, event-driven unlock) | FR-GAME-01, FR-GAME-06, F0 Learning Path |
+| FR-GAME-08 | Daily Missions (12-mission pool, 3/day, Today's Goals widget) | FR-GAME-01, FR-LEARN-12 |
+| FR-GAME-09 | Segmented Leaderboards (3 tier segments, weekly rankings) | FR-GAME-02, FR-GAME-03 |
+| FR-GAME-10 | Seasonal Events (time-limited themed challenges) | FR-GAME-01, FR-GAME-04 |
+
+> Gamification notification specifications (badge awards, tier upgrades, streak reminders, mission refresh, module unlock, leaderboard results) are defined in `07-notifications.md` §5.
 

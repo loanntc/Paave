@@ -264,6 +264,62 @@ The Home Screen is the first screen a user sees after login. It surfaces the use
 
 ---
 
+### FR-14.1: Today's Goals Widget (Daily Missions)
+
+- **Actor**: Authenticated user (all tiers)
+- **Description**: A compact widget displayed on the Home Screen (below the market snapshot section, above the watchlist) that shows the user's 3 daily mission assignments (FR-GAME-08). Missions show title, XP reward, and completion status. If Module 1 is not complete, the widget renders a locked state with a prompt. If the user has no mission assignments (inactive ≥15 days), the widget shows an empty state.
+- **Input**:
+  - `GET /api/v1/gamification/daily-missions/today`
+  - Response: `{ module1_complete: boolean, assignments: [ { mission_id, title_vi, xp_reward, status, deep_link } ] }`
+  - `module_progress.M1_status` (to determine locked vs live state)
+- **Output**:
+  - If M1 status = `COMPLETE` and assignments exist: 3 mission cards rendered with title, XP pill, status indicator (assigned/completed/expired)
+  - If M1 status ≠ `COMPLETE`: locked state with prompt message and CTA
+  - If M1 complete but no assignments (inactive user): empty state with "Quay lại sớm để nhận nhiệm vụ!" (Come back tomorrow for missions!)
+- **Precondition**: User is authenticated.
+- **Postcondition**: No state change; read-only display. Mission completion is triggered by the relevant action screen, not by this widget.
+
+**Widget States:**
+
+| State | Trigger | Visual |
+|---|---|---|
+| Locked | M1 status ≠ `COMPLETE` | Greyed placeholders + padlock + "Hoàn thành Module 1 để mở khóa" + "Bắt đầu học" CTA |
+| Active (missions assigned) | M1 complete + assignments exist | 3 mission rows: icon, title, XP pill, status badge |
+| Empty (inactive user) | M1 complete + no assignments | "Quay lại sớm để nhận nhiệm vụ!" text with calendar icon |
+
+**Mission Row Visual Spec:**
+
+| Status | Left icon | Right element |
+|---|---|---|
+| `ASSIGNED` | Category icon (⚡ trade, 📚 learn, 🔍 research, 💼 portfolio) | XP pill (Lime `#CAFD00`, dark text) |
+| `COMPLETED` | Green checkmark ✓ | "Đã nhận [XP]" (Earned [XP]) in green `#10B981` |
+| `EXPIRED` | Grey cross ✗ | "Mất rồi" (Missed) in grey `#ADAAAA` |
+
+**Mission row tap behaviour:** Opens the relevant screen (deep link per FR-GAME-08-03); does NOT complete the mission itself (completion is triggered by the action on the target screen).
+
+#### Acceptance Criteria
+
+| # | Given | When | Then |
+|---|---|---|---|
+| AC-14.1-01 | User has Module 1 complete and 3 missions assigned (0 completed) | Home tab loads | Widget shows 3 active mission rows with XP pills; no locked state |
+| AC-14.1-02 | User completes `MISSION_LESSON_1` | Home tab re-renders after lesson | That mission row shows green checkmark and "Đã nhận 25 XP" |
+| AC-14.1-03 | User has NOT completed Module 1 | Home tab loads | Widget shows locked state with "Hoàn thành Module 1 để mở khóa nhiệm vụ hàng ngày" and "Bắt đầu học" CTA |
+| AC-14.1-04 | Midnight ICT passes (new day) | User opens Home tab next morning | Widget shows freshly assigned missions; previous day's missions are gone |
+| AC-14.1-05 | User taps a mission row (`MISSION_RESEARCH_2`) | Tap on "Read the news" row | News tab opens; widget interaction is tracked (`session_progress.cta_interacted`) but mission not yet completed |
+| AC-14.1-06 | API call for missions fails | Home tab loads | Widget shows skeleton loader for 2s; then shows error state with retry button; other Home screen sections unaffected |
+
+#### Edge Cases
+
+| Case | Expected Behavior |
+|---|---|
+| User has missions assigned but one is `EXPIRED` and two are `ASSIGNED` | Widget shows all 3 rows: 1 expired (grey), 2 active |
+| New mission assignments race with Home tab render (midnight boundary) | If assignments are not yet ready at load time, widget shows "Missions loading…" skeleton; refreshes when API responds |
+| User taps locked state CTA "Bắt đầu học" | Navigates to Grow tab → Learning Path (same behaviour as FR-LEARN-12 locked CTA) |
+
+- **Priority**: P1
+
+---
+
 ## 3. Business Rules
 
 | ID | Rule | Violation Behavior |
