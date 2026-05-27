@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Bell, BookmarkCheck, BookmarkPlus, TrendingDown, TrendingUp } from "lucide-react";
 import { useWatchlist } from "@/lib/use-watchlist";
+import { usePriceAlerts } from "@/lib/use-price-alerts";
 import { createClient } from "@supabase/supabase-js";
 import { StockAICard } from "@/components/paave/stock-ai-card";
 import { PaperTradeSheet } from "@/components/paave/paper-trade-sheet";
+import { PriceAlertSheet } from "@/components/paave/price-alert-sheet";
 import { formatVND } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -77,7 +79,9 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
   const [holding, setHolding] = useState<HoldingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tradeSheetOpen, setTradeSheetOpen] = useState(false);
+  const [alertSheetOpen, setAlertSheetOpen] = useState(false);
   const { isWatched, toggleWatchlist } = useWatchlist();
+  const { hydrated: alertsHydrated, getAlertsForTicker, checkTriggered } = usePriceAlerts();
 
   useEffect(() => {
     const db = getBrowserClient();
@@ -225,6 +229,30 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
           />
         )}
 
+        {/* ── Triggered alert banner ───────────────────────────── */}
+        {alertsHydrated && quote?.last_price != null &&
+          (() => {
+            const triggered = checkTriggered(ticker, quote.last_price!);
+            if (!triggered) return null;
+            return (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-lime-signal-400/10 border border-lime-signal-400/40">
+                <Bell className="size-4 text-lime-signal-400 shrink-0" />
+                <p className="text-[13px] text-lime-signal-400 font-medium flex-1">
+                  Thông báo đã kích hoạt — {ticker}{" "}
+                  {triggered.condition === "above" ? "vượt lên" : "giảm xuống"}{" "}
+                  {formatVND(triggered.target)}
+                </p>
+                <button
+                  onClick={() => setAlertSheetOpen(true)}
+                  className="text-[11px] text-lime-signal-400/70 hover:text-lime-signal-400 transition-colors shrink-0"
+                >
+                  Quản lý
+                </button>
+              </div>
+            );
+          })()
+        }
+
         {/* ── Action buttons (FR-23 section 4) ─────────────────── */}
         <div className="grid grid-cols-3 gap-2" role="group" aria-label="Actions">
           <ActionButton
@@ -237,7 +265,12 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
             active={isWatched(ticker)}
             onClick={() => toggleWatchlist(ticker)}
           />
-          <ActionButton icon={<Bell className="size-4" strokeWidth={2} />} label="Alert" />
+          <ActionButton
+            icon={<Bell className="size-4" strokeWidth={2} />}
+            label="Thông báo"
+            active={alertsHydrated && getAlertsForTicker(ticker).length > 0}
+            onClick={() => setAlertSheetOpen(true)}
+          />
           <ActionButton
             icon={<TrendingUp className="size-4" strokeWidth={2} />}
             label="Paper Trade"
@@ -265,6 +298,14 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
         ticker={ticker}
         currentPrice={quote?.last_price ?? null}
         stockName={symbol?.name ?? null}
+      />
+
+      {/* ── Price alert sheet ───────────────────────────────────── */}
+      <PriceAlertSheet
+        isOpen={alertSheetOpen}
+        onClose={() => setAlertSheetOpen(false)}
+        ticker={ticker}
+        currentPrice={quote?.last_price ?? null}
       />
     </main>
   );
