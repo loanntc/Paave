@@ -21,6 +21,12 @@ export function AgeView() {
   // Show the blocked state immediately so the user can't re-enter a different DOB.
   const blockedByMiddleware = searchParams.get("blocked") === "true";
 
+  // When the middleware redirects a returning user (e.g. sign-in → /home → no age cookie),
+  // it adds ?next=/home so we can send them back to their destination after verification
+  // rather than funnelling them through the full first-time onboarding flow.
+  const nextPath = searchParams.get("next") ?? null;
+  const postVerifyPath = nextPath ?? "/onboarding/interests";
+
   const [dd, setDd] = useState("12");
   const [mm, setMm] = useState("06");
   const [yyyy, setYyyy] = useState("2009");
@@ -83,8 +89,8 @@ export function AgeView() {
         return;
       }
 
-      // Age verified — proceed to the next onboarding step.
-      router.push("/onboarding/interests");
+      // Age verified — proceed to the intended destination.
+      router.push(postVerifyPath);
     } catch {
       setSubmitError("Không thể kết nối. Vui lòng kiểm tra kết nối mạng.");
       setSubmitting(false);

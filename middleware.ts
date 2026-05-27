@@ -92,7 +92,11 @@ export async function middleware(request: NextRequest) {
 
     // 2. Must have completed age verification during onboarding
     if (!ageGate) {
-      return NextResponse.redirect(new URL("/onboarding/age", request.url));
+      // Pass the intended destination so age-view can send the user straight
+      // back here instead of starting the full first-time onboarding flow.
+      const url = new URL("/onboarding/age", request.url);
+      url.searchParams.set("next", pathname);
+      return NextResponse.redirect(url);
     }
 
     // 3. Under-16 users are blocked from all app routes
