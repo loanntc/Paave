@@ -167,6 +167,11 @@ export function LessonViewer({ lesson }: Props) {
 
   const module = MODULES_BY_ID[lesson.moduleId];
 
+  // XP awarded per completed lesson — derived from module config
+  const xpPerLesson = module
+    ? Math.round(module.lessonXP / module.lessons.length)
+    : 25;
+
   // Find the next lesson (within module, then across modules)
   const lessonIndexInModule = module
     ? module.lessons.findIndex((l) => l.id === lesson.id)
@@ -257,6 +262,7 @@ export function LessonViewer({ lesson }: Props) {
           nextLesson={nextLessonTarget}
           ctaRoute={currentCard.ctaAction ? (CTA_ROUTES[currentCard.ctaAction] ?? null) : null}
           onNavigate={(href) => router.push(href)}
+          xpPerLesson={xpPerLesson}
         />
       </div>
 
@@ -314,6 +320,7 @@ function LessonCardView({
   nextLesson,
   ctaRoute,
   onNavigate,
+  xpPerLesson,
 }: {
   card: LessonCard;
   selectedOption: string | null;
@@ -327,6 +334,7 @@ function LessonCardView({
   nextLesson: { id: string; titleVi: string } | null;
   ctaRoute: string | null;
   onNavigate: (href: string) => void;
+  xpPerLesson: number;
 }) {
   const typeCls = CARD_TYPE_COLORS[card.type] ?? "bg-ink-violet-surface text-text-neo-primary";
   const typeLabel = CARD_TYPES_LABEL[card.type] ?? card.type;
@@ -367,6 +375,7 @@ function LessonCardView({
             nextLesson={nextLesson}
             ctaRoute={ctaRoute}
             onNavigate={onNavigate}
+            xpPerLesson={xpPerLesson}
           />
         ) : (
           <TextCardBody body={card.body} />
@@ -376,7 +385,7 @@ function LessonCardView({
       {/* XP reward strip (bottom of every card) */}
       <div className="px-4 py-3 border-t border-border-neo-subtle flex items-center justify-end gap-1.5">
         <Zap className="size-3.5 text-lime-signal-400/60" strokeWidth={2} />
-        <span className="text-[11px] text-text-neo-tertiary">+25 XP bài học này</span>
+        <span className="text-[11px] text-text-neo-tertiary">+{xpPerLesson} XP bài học này</span>
       </div>
     </div>
   );
@@ -384,28 +393,152 @@ function LessonCardView({
 
 // ---------------------------------------------------------------------------
 // TextCardBody — Concept, Example, Myth-Buster cards
+// Supports: **bold**, - bullet lists, 1. numbered lists, | tables
 // ---------------------------------------------------------------------------
+
+/** Render a single line of inline text with **bold** support */
+function renderInline(text: string): React.ReactNode[] {
+  return text.split(/\*\*(.*?)\*\*/g).map((part, j) =>
+    j % 2 === 1 ? (
+      <strong key={j} className="text-text-neo-primary font-semibold">
+        {part}
+      </strong>
+    ) : (
+      <span key={j}>{part}</span>
+    ),
+  );
+}
+
+type BodyBlock =
+  | { kind: "para"; text: string }
+  | { kind: "bullet"; items: string[] }
+  | { kind: "ordered"; items: string[] }
+  | { kind: "table"; rows: string[][] };
+
+/** Parse body string into semantic blocks for structured rendering */
+function parseBodyBlocks(body: string): BodyBlock[] {
+  const blocks: BodyBlock[] = [];
+  let currentBullets: string[] | null = null;
+  let currentOrdered: string[] | null = null;
+  let currentTable: string[][] | null = null;
+
+  const flushBullets = () => {
+    if (currentBullets) { blocks.push({ kind: "bullet", items: currentBullets }); currentBullets = null; }
+  };
+  const flushOrdered = () => {
+    if (currentOrdered) { blocks.push({ kind: "ordered", items: currentOrdered }); currentOrdered = null; }
+  };
+  const flushTable = () => {
+    if (currentTable) { blocks.push({ kind: "table", rows: currentTable }); currentTable = null; }
+  };
+
+  for (const line of body.split("\n")) {
+    // Table separator row (e.g. |---|------|): skip entirely
+    if (/^\|[\s\-:|]+\|/.test(line)) continue;
+
+    if (line.startsWith("|")) {
+      // Table row — parse cells
+      flushBullets(); flushOrdered();
+      const cells = line.split("|").slice(1, -1).map((s) => s.trim());
+      if (!currentTable) currentTable = [];
+      currentTable.push(cells);
+    } else if (line.startsWith("- ")) {
+      // Unordered bullet
+      flushOrdered(); flushTable();
+      if (!currentBullets) currentBullets = [];
+      currentBullets.push(line.slice(2));
+    } else if (/^\d+\.\s/.test(line)) {
+      // Numbered list item
+      flushBullets(); flushTable();
+      if (!currentOrdered) currentOrdered = [];
+      currentOrdered.push(line.replace(/^\d+\.\s/, ""));
+    } else {
+      // Regular paragraph or empty line — flush pending groups first
+      flushBullets(); flushOrdered(); flushTable();
+      if (line.trim()) blocks.push({ kind: "para", text: line });
+    }
+  }
+  flushBullets(); flushOrdered(); flushTable();
+  return blocks;
+}
+
 function TextCardBody({ body }: { body: string }) {
-  // Convert basic markdown-ish **bold** and line breaks
-  const formatted = body
-    .split("\n")
-    .map((line, i) => {
-      const parts = line.split(/\*\*(.*?)\*\*/g);
-      return (
-        <p key={i} className={cn("text-[14px] leading-[1.6] text-text-neo-secondary", line.startsWith("|") ? "font-mono text-[12px]" : "")}>
-          {parts.map((part, j) =>
-            j % 2 === 1 ? (
-              <strong key={j} className="text-text-neo-primary font-semibold">
-                {part}
-              </strong>
-            ) : (
-              <span key={j}>{part}</span>
-            ),
-          )}
-        </p>
-      );
-    });
-  return <div className="space-y-1.5 py-2">{formatted}</div>;
+  const blocks = parseBodyBlocks(body);
+  return (
+    <div className="space-y-2 py-2">
+      {blocks.map((block, i) => {
+        if (block.kind === "para") {
+          return (
+            <p key={i} className="text-[14px] leading-[1.6] text-text-neo-secondary">
+              {renderInline(block.text)}
+            </p>
+          );
+        }
+        if (block.kind === "bullet") {
+          return (
+            <ul key={i} className="space-y-1.5">
+              {block.items.map((item, j) => (
+                <li key={j} className="flex items-start gap-2.5">
+                  <span className="mt-[7px] shrink-0 size-1.5 rounded-full bg-lime-signal-400/60" />
+                  <span className="text-[14px] leading-[1.6] text-text-neo-secondary">
+                    {renderInline(item)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+        if (block.kind === "ordered") {
+          return (
+            <ol key={i} className="space-y-1.5">
+              {block.items.map((item, j) => (
+                <li key={j} className="flex items-start gap-2.5">
+                  <span className="shrink-0 min-w-[18px] text-[12px] font-bold tabular-nums text-lime-signal-400/70 pt-[2px]">
+                    {j + 1}.
+                  </span>
+                  <span className="text-[14px] leading-[1.6] text-text-neo-secondary">
+                    {renderInline(item)}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          );
+        }
+        if (block.kind === "table") {
+          const [header, ...rows] = block.rows;
+          return (
+            <div key={i} className="overflow-x-auto rounded-xl border border-border-neo-subtle">
+              <table className="w-full text-[12px]">
+                {header && (
+                  <thead>
+                    <tr className="border-b border-border-neo">
+                      {header.map((cell, ci) => (
+                        <th key={ci} className="px-2.5 py-2 text-left text-[10px] font-bold uppercase tracking-[0.5px] text-text-neo-tertiary">
+                          {renderInline(cell)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                )}
+                <tbody>
+                  {rows.map((row, ri) => (
+                    <tr key={ri} className={ri < rows.length - 1 ? "border-b border-border-neo-subtle" : ""}>
+                      {row.map((cell, ci) => (
+                        <td key={ci} className="px-2.5 py-2 text-text-neo-secondary leading-snug">
+                          {renderInline(cell)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
+        return null;
+      })}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -530,6 +663,7 @@ function CTACardBody({
   nextLesson,
   ctaRoute,
   onNavigate,
+  xpPerLesson,
 }: {
   card: LessonCard;
   onAction: () => void;
@@ -537,6 +671,7 @@ function CTACardBody({
   nextLesson: { id: string; titleVi: string } | null;
   ctaRoute: string | null;
   onNavigate: (href: string) => void;
+  xpPerLesson: number;
 }) {
   return (
     <div className="py-4 space-y-4">
@@ -551,7 +686,7 @@ function CTACardBody({
               <p className="text-[14px] text-lime-signal-400 font-bold leading-snug">
                 Bài học hoàn thành!
               </p>
-              <p className="text-[11px] text-lime-signal-400/70">+25 XP được cộng vào hồ sơ của bạn</p>
+              <p className="text-[11px] text-lime-signal-400/70">+{xpPerLesson} XP được cộng vào hồ sơ của bạn</p>
             </div>
           </div>
 
@@ -595,7 +730,7 @@ function CTACardBody({
             {card.ctaLabel ?? "Thực hành ngay"}
           </button>
           <p className="text-[11px] text-text-neo-tertiary text-center">
-            Hoàn thành thực hành để nhận +25 XP và mở bài tiếp theo.
+            Hoàn thành thực hành để nhận +{xpPerLesson} XP và mở bài tiếp theo.
           </p>
         </>
       )}
