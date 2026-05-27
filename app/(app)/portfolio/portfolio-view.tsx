@@ -51,6 +51,7 @@ export function PortfolioView() {
   const [account, setAccount] = useState<AccountData | null>(null);
   const [holdings, setHoldings] = useState<HoldingRow[]>([]);
   const [trades, setTrades] = useState<TradeRow[]>([]);
+  const [quotes, setQuotes] = useState<Map<string, number>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"holdings" | "behavior" | "history">("holdings");
 
@@ -58,7 +59,6 @@ export function PortfolioView() {
     const db = getBrowserClient();
 
     async function fetchData() {
-      // Get current session
       const {
         data: { session },
       } = await db.auth.getSession();
@@ -71,94 +71,77 @@ export function PortfolioView() {
       const uid = session.user.id;
       setUserId(uid);
 
-      // Fetch sub-account + holdings in parallel
-      const [accountRes, holdingsRes] = await Promise.all([
-        db
-          .from("virtual_sub_accounts")
-          .select("cash_balance, starting_balance")
-          .eq("user_id", uid)
-          .eq("status", "ACTIVE")
-          .limit(1)
-          .single(),
+      // Single account query — include id so we don't need a second round-trip
+      const accountRes = await db
+        .from("virtual_sub_accounts")
+        .select("id, cash_balance, starting_balance")
+        .eq("user_id", uid)
+        .eq("status", "ACTIVE")
+        .limit(1)
+        .single();
 
+      if (!accountRes.data) {
+        setIsLoading(false);
+        return;
+      }
+
+      setAccount({
+        cash_balance: Number(accountRes.data.cash_balance),
+        starting_balance: Number(accountRes.data.starting_balance),
+      });
+
+      // Parallel: holdings + trades (both use the sub_account id we already have)
+      const subAccountId = accountRes.data.id;
+      const [holdingsRes, tradesRes] = await Promise.all([
         db
           .from("virtual_holdings")
           .select("symbol_code, quantity, avg_cost, realized_pl")
-          .eq(
-            "sub_account_id",
-            // We'll refetch with the real sub_account_id below once we have it
-            uid, // placeholder — overridden in second pass
-          )
-          .gt("quantity", 0),
+          .eq("sub_account_id", subAccountId)
+          .gt("quantity", 0)
+          .order("symbol_code"),
+
+        db
+          .from("virtual_trades")
+          .select("id, symbol_code, side, quantity, price, fees, executed_at")
+          .eq("sub_account_id", subAccountId)
+          .order("executed_at", { ascending: false })
+          .limit(50),
       ]);
 
-      if (accountRes.data) {
-        setAccount({
-          cash_balance: Number(accountRes.data.cash_balance),
-          starting_balance: Number(accountRes.data.starting_balance),
-        });
-      }
+      const holdingsList = (holdingsRes.data ?? []).map((h) => ({
+        symbol_code: h.symbol_code,
+        quantity: Number(h.quantity),
+        avg_cost: Number(h.avg_cost),
+        realized_pl: Number(h.realized_pl),
+      }));
 
-      // Now fetch holdings with real sub_account_id if we got the account
-      if (accountRes.data) {
-        const { data: accountWithId } = await db
-          .from("virtual_sub_accounts")
-          .select("id")
-          .eq("user_id", uid)
-          .eq("status", "ACTIVE")
-          .limit(1)
-          .single();
+      setHoldings(holdingsList);
 
-        if (accountWithId) {
-          const [holdingsRes2, tradesRes] = await Promise.all([
-            db
-              .from("virtual_holdings")
-              .select("symbol_code, quantity, avg_cost, realized_pl")
-              .eq("sub_account_id", accountWithId.id)
-              .gt("quantity", 0)
-              .order("symbol_code"),
+      setTrades(
+        (tradesRes.data ?? []).map((t) => ({
+          id: t.id,
+          symbol_code: t.symbol_code,
+          side: t.side as "BUY" | "SELL",
+          quantity: Number(t.quantity),
+          price: Number(t.price),
+          fees: Number(t.fees),
+          executed_at: t.executed_at,
+        })),
+      );
 
-            db
-              .from("virtual_trades")
-              .select("id, symbol_code, side, quantity, price, fees, executed_at")
-              .eq("sub_account_id", accountWithId.id)
-              .order("executed_at", { ascending: false })
-              .limit(50),
-          ]);
+      // Batch-fetch live quotes for all held symbols — one query, no N+1
+      if (holdingsList.length > 0) {
+        const codes = holdingsList.map((h) => h.symbol_code);
+        const quotesRes = await db
+          .from("symbol_quotes_latest")
+          .select("symbol_code, last_price")
+          .in("symbol_code", codes);
 
-          setHoldings(
-            (holdingsRes2.data ?? []).map((h) => ({
-              symbol_code: h.symbol_code,
-              quantity: Number(h.quantity),
-              avg_cost: Number(h.avg_cost),
-              realized_pl: Number(h.realized_pl),
-            })),
-          );
-
-          setTrades(
-            (tradesRes.data ?? []).map((t) => ({
-              id: t.id,
-              symbol_code: t.symbol_code,
-              side: t.side as "BUY" | "SELL",
-              quantity: Number(t.quantity),
-              price: Number(t.price),
-              fees: Number(t.fees),
-              executed_at: t.executed_at,
-            })),
-          );
+        const priceMap = new Map<string, number>();
+        for (const q of quotesRes.data ?? []) {
+          if (q.last_price != null) priceMap.set(q.symbol_code, Number(q.last_price));
         }
-      }
-
-      // Use holdingsRes as fallback if account fetch failed
-      if (!accountRes.data && holdingsRes.data) {
-        setHoldings(
-          holdingsRes.data.map((h) => ({
-            symbol_code: h.symbol_code,
-            quantity: Number(h.quantity),
-            avg_cost: Number(h.avg_cost),
-            realized_pl: Number(h.realized_pl),
-          })),
-        );
+        setQuotes(priceMap);
       }
 
       setIsLoading(false);
@@ -168,8 +151,9 @@ export function PortfolioView() {
   }, []);
 
   // ── Derived values ─────────────────────────────────────────────────────────
+  // Use live price where available; fall back to avg_cost (cost basis) otherwise
   const holdingsValue = holdings.reduce(
-    (s, h) => s + h.avg_cost * h.quantity,
+    (s, h) => s + (quotes.get(h.symbol_code) ?? h.avg_cost) * h.quantity,
     0,
   );
   const totalEquity = account
@@ -295,7 +279,11 @@ export function PortfolioView() {
                 </h2>
                 <div className="divide-y divide-border-neo-subtle">
                   {holdings.map((h) => (
-                    <HoldingRow key={h.symbol_code} holding={h} />
+                    <HoldingRow
+                      key={h.symbol_code}
+                      holding={h}
+                      lastPrice={quotes.get(h.symbol_code)}
+                    />
                   ))}
                 </div>
               </section>
@@ -356,9 +344,23 @@ export function PortfolioView() {
 // ---------------------------------------------------------------------------
 // Holding row
 // ---------------------------------------------------------------------------
-function HoldingRow({ holding }: { holding: HoldingRow }) {
-  const bookValue = holding.avg_cost * holding.quantity;
-  const realizedIsUp = holding.realized_pl >= 0;
+function HoldingRow({
+  holding,
+  lastPrice,
+}: {
+  holding: HoldingRow;
+  lastPrice?: number;
+}) {
+  const currentPrice = lastPrice ?? holding.avg_cost;
+  const currentValue = currentPrice * holding.quantity;
+  // Unrealized P&L only shown when we have a live price
+  const unrealizedPL =
+    lastPrice != null ? (lastPrice - holding.avg_cost) * holding.quantity : null;
+  const unrealizedPct =
+    lastPrice != null && holding.avg_cost > 0
+      ? ((lastPrice - holding.avg_cost) / holding.avg_cost) * 100
+      : null;
+  const isUp = (unrealizedPL ?? 0) >= 0;
 
   return (
     <Link
@@ -375,19 +377,34 @@ function HoldingRow({ holding }: { holding: HoldingRow }) {
       </div>
       <div className="text-right shrink-0 ml-4">
         <p className="font-display text-[14px] tabular-nums text-text-neo-primary">
-          {formatVND(bookValue)}
+          {formatVND(currentValue)}
         </p>
-        {holding.realized_pl !== 0 && (
+        {unrealizedPL !== null ? (
           <p
             className={cn(
               "text-[11px] tabular-nums",
-              realizedIsUp ? "text-positive" : "text-negative",
+              isUp ? "text-positive" : "text-negative",
             )}
           >
-            {realizedIsUp ? "+" : ""}
-            {formatVND(holding.realized_pl)} lãi TH
+            {isUp ? "+" : ""}
+            {formatVND(unrealizedPL)}
+            {unrealizedPct !== null && (
+              <span className="opacity-70">
+                {" "}({unrealizedPct >= 0 ? "+" : ""}{unrealizedPct.toFixed(1)}%)
+              </span>
+            )}
           </p>
-        )}
+        ) : holding.realized_pl !== 0 ? (
+          <p
+            className={cn(
+              "text-[11px] tabular-nums",
+              holding.realized_pl >= 0 ? "text-positive" : "text-negative",
+            )}
+          >
+            {holding.realized_pl >= 0 ? "+" : ""}
+            {formatVND(holding.realized_pl)} TH
+          </p>
+        ) : null}
       </div>
     </Link>
   );
