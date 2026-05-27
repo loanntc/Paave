@@ -73,7 +73,7 @@ App Root
 
 ```
 Stock Detail → [Set Alert CTA]  → Price Alert Setup (bottom sheet, full-height)
-Discover     → [Filter icon]    → Theme Filter (bottom sheet, half-height)
+Grow (Discover Feed sub-nav) → [Filter icon] → Theme Filter (bottom sheet, half-height)
 Markets      → [Stock row tap]  → Stock Detail (push)
 Portfolio    → [Holdings tap]   → Stock Detail (push)
 Any screen   → [Share button]   → Native share sheet
@@ -134,17 +134,45 @@ Step 13 → Success: "Sẽ thông báo khi giá đạt ₫X"
 ### Journey 3: Discovery — Explore Trending Stocks
 
 ```
-Step 1  → Tap Discover tab (bottom nav)
-Step 2  → Trending feed loads (skeleton → content)
-Step 3  → Editorial cards visible with "why it's hot" snippet
-Step 4  → Tap filter icon → Theme filter sheet
-Step 5  → Select theme: "Công nghệ" / "Ngân hàng" / "Năng lượng xanh"
-Step 6  → Feed filters, smooth transition
-Step 7  → Tap stock card → Stock Detail
-Step 8  → Read analysis, view chart
-Step 9  → "Theo dõi" CTA → added to watchlist
-Step 10 → Back to Discover feed
+Step 1  → Tap Grow tab (bottom nav)
+Step 2  → Tap "Discover Feed" sub-nav pill
+Step 3  → Trending feed loads (skeleton → content)
+Step 4  → Editorial cards visible with "why it's hot" snippet
+Step 5  → Tap filter icon → Theme filter sheet
+Step 6  → Select theme: "Công nghệ" / "Ngân hàng" / "Năng lượng xanh"
+Step 7  → Feed filters, smooth transition
+Step 8  → Tap stock card → Stock Detail
+Step 9  → Read analysis, view chart
+Step 10 → "Theo dõi" CTA → added to watchlist
+Step 11 → Back to Grow → Discover Feed
 ```
+
+---
+
+### Journey 3b: F0 New User — First Learning Module
+
+```
+Step 1  → First app launch after registration
+Step 2  → Welcome Modal appears full-screen (FR-LEARN-01)
+            Headline: "Học chứng khoán, không cần kinh nghiệm"
+            CTA A: "Bắt đầu Module 1" | CTA B: "Khám phá trước"
+Step 3a → [CTA A tapped] Navigate directly to L1.1 Lesson Viewer
+Step 3b → [CTA B tapped] Dismiss → Home tab; Grow tab has Learning prompt badge
+Step 4  → Lesson Viewer: card-stack with progress indicator "1/5"
+Step 5  → Swipe left through Concept → Example → Myth-Buster cards
+Step 6  → Card 4: Quiz — select answer → success feedback; can retry unlimited
+Step 7  → Card 5: CTA — "Thử ngay" button
+Step 8  → Tap "Thử ngay" → task-scoped paper trading modal pushes over lesson
+Step 9  → Complete or dismiss modal → back to Card 5
+Step 10 → Swipe left past CTA → Lesson completion triggered
+            +25 XP toast shown; completion animation
+Step 11 → Return to Grow → Learning Path; L1.1 shows checkmark; L1.2 available
+```
+
+**Notes:**
+- Welcome Modal persists to Card 5 swipe; cannot return to it.
+- CTA modal is always dismissible; lesson completes whether CTA is completed or not.
+- Streak count increments when lesson completes (FR-GAME-05).
 
 ---
 
@@ -212,17 +240,17 @@ Empty Watchlist (Home / Portfolio) →
   → Illustrated empty state (simple line art, no emoji)
   → Title: "Chưa có gì ở đây"
   → Subtitle: "Khám phá cổ phiếu và thêm vào danh sách theo dõi"
-  → CTA: "Khám phá ngay" → navigate to Discover tab
+  → CTA: "Khám phá ngay" → navigate to Grow tab → Discover Feed sub-nav
 
 Empty Portfolio →
   → Title: "Bắt đầu theo dõi danh mục"
   → Subtitle: "Thêm cổ phiếu bạn đang nắm giữ"
-  → CTA: "Thêm khoản đầu tư" → navigate to search / Discover
+  → CTA: "Thêm khoản đầu tư" → navigate to search / Grow → Discover Feed
 
 Empty Alerts (Profile > Alerts) →
   → Title: "Chưa có cảnh báo giá nào"
   → Subtitle: "Vào trang chi tiết cổ phiếu để đặt cảnh báo"
-  → CTA: "Khám phá cổ phiếu" → navigate to Discover
+  → CTA: "Khám phá cổ phiếu" → navigate to Grow → Discover Feed
 ```
 
 ---
@@ -235,10 +263,13 @@ Empty Alerts (Profile > Alerts) →
 | Onboarding Step N | Step N+1 | Slide left | Left → Right |
 | Onboarding Step 3 | Home | Fade (replace stack) | — |
 | Any Tab | Any Tab | Fade (no slide) | — |
-| Home / Discover / Markets | Stock Detail | Push (slide left) | Left → Right |
+| Home / Grow / Markets | Stock Detail | Push (slide left) | Left → Right |
 | Stock Detail | Back | Pop (slide right) | Right → Left |
 | Stock Detail | Price Alert Sheet | Slide up (sheet) | Bottom → Top |
-| Discover | Theme Filter Sheet | Slide up (sheet) | Bottom → Top |
+| Grow → Discover Feed | Theme Filter Sheet | Slide up (sheet) | Bottom → Top |
+| Grow → Learning Path | Lesson Viewer | Push (slide left) | Left → Right |
+| Grow → Skill Tree | Node Detail Sheet | Slide up (sheet) | Bottom → Top |
+| Grow → Badges | Badge Detail Modal | Slide up (sheet) | Bottom → Top |
 | Any sheet | Dismiss | Slide down | Top → Bottom |
 
 ---
@@ -247,7 +278,12 @@ Empty Alerts (Profile > Alerts) →
 
 ```
 paave://                    → Home
-paave://discover            → Discover tab
+paave://grow                → Grow tab (default: Learning Path sub-nav)
+paave://grow/learning       → Grow tab → Learning Path
+paave://grow/discover       → Grow tab → Discover Feed
+paave://grow/skill-tree     → Grow tab → Skill Tree
+paave://grow/badges         → Grow tab → My Badges
+paave://grow/leaderboard    → Grow tab → Leaderboards
 paave://markets             → Markets tab
 paave://markets/vn          → Markets tab, VN subtab
 paave://markets/kr          → Markets tab, KR subtab
@@ -280,9 +316,12 @@ paave://alert/{ticker}      → Price Alert setup for ticker
 ```
 Last active tab:            Persisted across sessions
 Markets last-viewed subtab: Persisted per session
-Discover filter selection:  Persisted per session (reset on app restart)
+Grow last-viewed sub-nav:   Persisted per session (resets to Learning Path on restart)
+Grow → Discover Feed filter: Persisted per session (reset on app restart)
 Onboarding completion:      Persisted permanently (skip on re-launch)
-Scroll position:            Home and Discover scroll restored on tab re-activate
+Scroll position:            Home and Grow → Discover Feed scroll restored on tab re-activate
+Skill Tree scroll position: Persisted per session
+Lesson card index:          Persisted server-side (resume from last saved card on relaunch)
 Stock Detail chart range:   Reset to 1D on each open
 ```
 
