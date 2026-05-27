@@ -24,6 +24,7 @@ import { useChatSheet } from "@/lib/ai/chat-context";
 import { useLearningProgress } from "@/lib/learning/use-learning-progress";
 import { usePriceAlerts } from "@/lib/use-price-alerts";
 import { MODULES } from "@/lib/learning/content";
+import { getVNMarketStatus } from "@/lib/market-status";
 import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -409,6 +410,45 @@ function formatIndexValue(value: number): string {
   return `${thousands},${decimal}`;
 }
 
+/**
+ * Shows the current VN market session phase.
+ * Re-evaluates every 60 seconds so the badge stays accurate if the user
+ * keeps the screen open across a session boundary.
+ */
+function MarketStatusPill() {
+  const [marketStatus, setMarketStatus] = useState(() => getVNMarketStatus());
+
+  useEffect(() => {
+    const id = setInterval(() => setMarketStatus(getVNMarketStatus()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const { status, label, isTrading } = marketStatus;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-display text-[10px] uppercase tracking-pulse",
+        status === "open"
+          ? "bg-positive/15 text-positive"
+          : status === "pre_open"
+            ? "bg-plasma/15 text-plasma"
+            : status === "atc"
+              ? "bg-lime/15 text-lime-soft"
+              : "bg-ink-600/60 text-fog",
+      )}
+    >
+      {isTrading && (
+        <span
+          aria-hidden
+          className="size-1.5 rounded-full bg-positive animate-pulse shrink-0"
+        />
+      )}
+      {label}
+    </span>
+  );
+}
+
 function MarketSnapshot({
   indices,
   isLoading,
@@ -419,9 +459,12 @@ function MarketSnapshot({
   return (
     <section aria-label="Thị trường Việt Nam" className="rounded-3xl bg-ink-800 p-6">
       <header className="flex items-center justify-between">
-        <h2 className="font-display text-[14px] uppercase tracking-drop text-lime-soft">
-          Thị trường VN
-        </h2>
+        <div className="flex items-center gap-2.5">
+          <h2 className="font-display text-[14px] uppercase tracking-drop text-lime-soft">
+            Thị trường VN
+          </h2>
+          <MarketStatusPill />
+        </div>
         <Link
           href="/discover"
           className="font-display text-[11px] uppercase tracking-pulse text-plasma"

@@ -238,6 +238,22 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
           </section>
         )}
 
+        {/* ── Company info chips (sector / industry) ──────────── */}
+        {!isLoading && symbol && (symbol.sector || symbol.industry) && (
+          <div className="flex items-center gap-1.5 flex-wrap" aria-label="Thông tin ngành">
+            {symbol.industry && (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-ink-violet-surface border border-border-neo text-text-neo-tertiary leading-none">
+                {symbol.industry}
+              </span>
+            )}
+            {symbol.sector && symbol.sector !== symbol.industry && (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-ink-violet-surface border border-border-neo text-text-neo-tertiary leading-none">
+                {symbol.sector}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* ── Daily price range bar (floor / ref / ceiling) ────── */}
         {!isLoading && quote?.floor_price != null && quote.ref_price != null && quote.ceiling_price != null && quote.last_price != null && (
           <PriceRangeBar
