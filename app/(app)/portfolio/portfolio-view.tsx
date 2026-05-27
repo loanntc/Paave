@@ -265,9 +265,15 @@ export function PortfolioView() {
                 <p className="text-[14px] text-text-neo-secondary mb-1">
                   Chưa có vị thế nào
                 </p>
-                <p className="text-[12px] text-text-neo-tertiary">
-                  Đặt lệnh giả lập từ trang chi tiết cổ phiếu để bắt đầu.
+                <p className="text-[12px] text-text-neo-tertiary mb-4">
+                  Tìm cổ phiếu và đặt lệnh giả lập đầu tiên của bạn.
                 </p>
+                <Link
+                  href="/discover"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-lime-signal-400 px-4 py-2 text-[12px] font-bold text-ink-violet-base"
+                >
+                  Khám phá cổ phiếu →
+                </Link>
               </div>
             ) : (
               <section
@@ -301,9 +307,15 @@ export function PortfolioView() {
                 <p className="text-[14px] text-text-neo-secondary mb-1">
                   Chưa có lệnh nào
                 </p>
-                <p className="text-[12px] text-text-neo-tertiary">
-                  Đặt lệnh giả lập đầu tiên từ trang chi tiết cổ phiếu.
+                <p className="text-[12px] text-text-neo-tertiary mb-4">
+                  Đặt lệnh mua giả lập đầu tiên của bạn.
                 </p>
+                <Link
+                  href="/discover"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-lime-signal-400 px-4 py-2 text-[12px] font-bold text-ink-violet-base"
+                >
+                  Khám phá cổ phiếu →
+                </Link>
               </div>
             ) : (
               <section
