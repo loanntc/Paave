@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   Bell,
+  Bookmark,
   BookOpen,
   Compass,
   Flame,
@@ -23,6 +24,7 @@ import { PaaveWordmark } from "@/components/brand/paave-wordmark";
 import { useChatSheet } from "@/lib/ai/chat-context";
 import { useLearningProgress } from "@/lib/learning/use-learning-progress";
 import { usePriceAlerts } from "@/lib/use-price-alerts";
+import { useWatchlist } from "@/lib/use-watchlist";
 import { MODULES } from "@/lib/learning/content";
 import { getVNMarketStatus } from "@/lib/market-status";
 import { formatVND, pctLabel } from "@/lib/format";
@@ -62,6 +64,11 @@ export function HomeView() {
   const [trending, setTrending] = useState<StockResult[]>([]);
   const [trendingLoading, setTrendingLoading] = useState(true);
   const { hydrated: alertsHydrated, alerts } = usePriceAlerts();
+
+  // Watchlist — hydrated from localStorage; prices fetched once known
+  const { hydrated: watchlistHydrated, watchlist } = useWatchlist();
+  const [watchlistStocks, setWatchlistStocks] = useState<StockResult[]>([]);
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
 
   useEffect(() => {
     const db = getBrowserClient();
@@ -177,6 +184,68 @@ export function HomeView() {
     fetchTrending();
   }, []);
 
+  // Fetch live prices for watchlisted tickers once localStorage has hydrated
+  useEffect(() => {
+    if (!watchlistHydrated || watchlist.length === 0) {
+      setWatchlistStocks([]);
+      return;
+    }
+
+    setWatchlistLoading(true);
+    const db = getBrowserClient();
+
+    async function fetchWatchlistPrices() {
+      const [quotesRes, symbolsRes] = await Promise.all([
+        db
+          .from("symbol_quotes_latest")
+          .select("symbol_code, last_price, pct_change, total_volume")
+          .in("symbol_code", watchlist),
+        db
+          .from("symbols")
+          .select("code, short_name, name, exchange, sector")
+          .in("code", watchlist),
+      ]);
+
+      const symbolMap = new Map<string, { short_name: string | null; name: string; exchange: string | null; sector: string | null }>();
+      for (const s of symbolsRes.data ?? []) {
+        symbolMap.set(s.code, { short_name: s.short_name, name: s.name, exchange: s.exchange, sector: s.sector });
+      }
+
+      const quoteMap = new Map<string, { last_price: number | null; pct_change: number | null; total_volume: number | null }>();
+      for (const q of quotesRes.data ?? []) {
+        quoteMap.set(q.symbol_code, {
+          last_price: q.last_price != null ? Number(q.last_price) : null,
+          pct_change: q.pct_change != null ? Number(q.pct_change) : null,
+          total_volume: q.total_volume != null ? Number(q.total_volume) : null,
+        });
+      }
+
+      // Preserve watchlist order (newest-saved first)
+      const ordered = watchlist.flatMap((code) => {
+        const sym = symbolMap.get(code);
+        const quote = quoteMap.get(code);
+        if (!sym && !quote) return [];
+        return [{
+          code,
+          name: sym?.name ?? code,
+          short_name: sym?.short_name ?? null,
+          exchange: sym?.exchange ?? null,
+          sector: sym?.sector ?? null,
+          last_price: quote?.last_price ?? null,
+          pct_change: quote?.pct_change ?? null,
+          total_volume: quote?.total_volume ?? null,
+        } satisfies StockResult];
+      });
+
+      setWatchlistStocks(ordered);
+      setWatchlistLoading(false);
+    }
+
+    fetchWatchlistPrices();
+  // watchlist array ref only changes when items are added/removed (useWatchlist uses useState)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchlistHydrated, watchlist]);
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-ink-900 pb-28">
       <AmbientBackground />
@@ -194,6 +263,9 @@ export function HomeView() {
         />
         <QuickActions />
         <MarketSnapshot indices={indices} isLoading={indicesLoading} />
+        {watchlistHydrated && watchlist.length > 0 && (
+          <WatchlistSection stocks={watchlistStocks} isLoading={watchlistLoading} />
+        )}
         <TrendingRow stocks={trending} isLoading={trendingLoading} />
         <LearningProgressCard />
       </section>
@@ -622,6 +694,79 @@ function TrendingRow({
 }
 
 // ---------------------------------------------------------------------------
+// WatchlistSection — stocks the user is tracking, with live prices
+// ---------------------------------------------------------------------------
+function WatchlistSection({
+  stocks,
+  isLoading,
+}: {
+  stocks: StockResult[];
+  isLoading: boolean;
+}) {
+  return (
+    <section aria-label="Danh sách theo dõi" className="space-y-4">
+      <header className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <Bookmark className="size-4 text-plasma" strokeWidth={2.5} />
+          <h2 className="font-display text-[14px] uppercase tracking-drop text-lime-soft">
+            Theo dõi
+          </h2>
+        </div>
+        <Link
+          href="/discover"
+          className="font-display text-[11px] uppercase tracking-pulse text-plasma"
+        >
+          Khám phá →
+        </Link>
+      </header>
+
+      {isLoading ? (
+        <ul className="flex gap-3 overflow-x-auto scrollbar-hide -mx-6 px-6">
+          {[1, 2, 3].map((i) => (
+            <li key={i} className="min-w-[160px] shrink-0">
+              <div className="rounded-2xl border border-edge bg-ink-800/60 p-4 space-y-2 animate-pulse">
+                <div className="flex justify-between">
+                  <div className="h-2 w-8 rounded bg-ink-700" />
+                  <div className="h-4 w-10 rounded-full bg-ink-700" />
+                </div>
+                <div className="h-5 w-12 rounded bg-ink-700 mt-1" />
+                <div className="h-2 w-20 rounded bg-ink-700" />
+                <div className="h-5 w-16 rounded bg-ink-700 mt-2" />
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul className="flex gap-3 overflow-x-auto scrollbar-hide -mx-6 px-6 snap-x snap-mandatory">
+          {stocks.map((s) => (
+            <li key={s.code} className="snap-start min-w-[160px] shrink-0">
+              <Link
+                href={`/stock/${s.code}`}
+                className="block rounded-2xl border border-edge bg-ink-800/60 p-4 backdrop-blur transition-colors hover:border-plasma/40 active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-display text-[10px] uppercase tracking-pulse text-fog">
+                    {s.exchange ?? "VN"}
+                  </span>
+                  {s.pct_change != null && <ChangePill value={s.pct_change} />}
+                </div>
+                <p className="font-display text-[18px] text-lime-soft">{s.code}</p>
+                <p className="font-body text-[11px] text-fog truncate mt-0.5">
+                  {s.short_name ?? s.name}
+                </p>
+                <p className="mt-3 font-display text-[16px] tabular-nums text-lime-soft">
+                  {s.last_price != null ? formatVND(s.last_price) : "—"}
+                </p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // LearningProgressCard — connects Home tab to the F0 Learning Path (Grow tab)
 // Shows contextual messaging based on the user's learning progress state.
 // ---------------------------------------------------------------------------
@@ -640,7 +785,7 @@ function LearningProgressCard() {
     if (status === "IN_PROGRESS" || status === "UNLOCKED") {
       const next = module.lessons.find((l) => !progress.lessons[l.id]?.completed);
       if (next) {
-        resumeHref = `/grow/lesson/${next.id.replace(".", "_")}`;
+        resumeHref = `/grow/lesson/${next.id}`;
         break;
       }
     }
