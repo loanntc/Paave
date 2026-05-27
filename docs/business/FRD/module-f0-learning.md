@@ -1153,8 +1153,41 @@
 | `welcome_modal_shown` | BOOLEAN | NOT NULL, DEFAULT false | Written on modal render; never reset |
 | `module1_gate_dismissed` | BOOLEAN | NOT NULL, DEFAULT false | User dismissed Daily Missions locked prompt |
 | `daily_missions_unlocked` | BOOLEAN | NOT NULL, DEFAULT false | Set to true when M1 completes |
+| `placement_quiz_attempted` | BOOLEAN | NOT NULL, DEFAULT false | Whether user has taken placement quiz |
+| `placement_quiz_passed` | BOOLEAN | NOT NULL, DEFAULT false | Whether placement quiz was passed (4/5+) |
 | `created_at` | TIMESTAMPTZ | NOT NULL | |
 | `updated_at` | TIMESTAMPTZ | NOT NULL | |
+
+---
+
+### Table: `user_learning_levels`
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `user_id` | BIGINT | PK, FK → `users.user_id` | |
+| `current_level_id` | VARCHAR(30) | NOT NULL, DEFAULT `LVL_F0_NEWCOMER` | Current learning level enum value |
+| `level_achieved_at` | TIMESTAMPTZ | NOT NULL | Timestamp of last level advancement |
+| `created_at` | TIMESTAMPTZ | NOT NULL | |
+| `updated_at` | TIMESTAMPTZ | NOT NULL | |
+
+**Valid `current_level_id` values:** `LVL_F0_NEWCOMER`, `LVL_F0_EXPLORING`, `LVL_F1_BASICS`, `LVL_F1_TRADER`, `LVL_F2_PORTFOLIO`, `LVL_F2_DISCIPLINED`
+
+---
+
+### Table: `module_knowledge_checks`
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PK | |
+| `user_id` | BIGINT | FK → `users.user_id`, NOT NULL | |
+| `module_id` | VARCHAR(5) | NOT NULL | M1, M2, M3, M4 |
+| `attempt_number` | SMALLINT | NOT NULL | Monotonically increasing per user+module |
+| `score` | SMALLINT | NOT NULL | 0–5 |
+| `passed` | BOOLEAN | NOT NULL | `score >= 3` |
+| `answers` | JSONB | NOT NULL | Array of `{question_id, selected_option, is_correct}` |
+| `attempted_at` | TIMESTAMPTZ | NOT NULL | |
+
+**Unique constraint on pass record:** At most one row per `(user_id, module_id)` where `passed = true` — enforced by application logic, not DB constraint (to allow multiple attempts).
 
 ---
 
