@@ -61,6 +61,14 @@ interface ProfileData {
   totalPL: number;
   totalPLPct: number;
   positionCount: number;
+  /** Win rate by stock: % of exited/partially-exited holdings with realized_pl > 0 */
+  winRatePct: number | null;
+  /** Number of closed or partially-closed stock positions used for the win-rate calc */
+  tradedStockCount: number;
+  /** Ticker of the best current holding by unrealized P&L % (null if no holdings) */
+  bestTicker: string | null;
+  /** Unrealized P&L % for the best holding */
+  bestPct: number | null;
 }
 
 export function ProfileView() {
@@ -113,13 +121,12 @@ export function ProfileView() {
         return;
       }
 
-      // Parallel: holdings + trade count
+      // Parallel: ALL holdings (incl. exited ones for win-rate) + trade count
       const [holdingsRes, tradesCountRes] = await Promise.all([
         db
           .from("virtual_holdings")
-          .select("symbol_code, quantity, avg_cost")
-          .eq("sub_account_id", acct.id)
-          .gt("quantity", 0),
+          .select("symbol_code, quantity, avg_cost, realized_pl")
+          .eq("sub_account_id", acct.id),
 
         db
           .from("virtual_trades")
@@ -127,8 +134,18 @@ export function ProfileView() {
           .eq("sub_account_id", acct.id),
       ]);
 
+      const allHoldings = (holdingsRes.data ?? []).map((h) => ({
+        symbol_code: h.symbol_code as string,
+        quantity: Number(h.quantity),
+        avg_cost: Number(h.avg_cost),
+        realized_pl: Number(h.realized_pl),
+      }));
+
+      // Active holdings only (quantity > 0) are used for equity calculation
+      const activeHoldings = allHoldings.filter((h) => h.quantity > 0);
+
       // Batch-fetch live prices so the profile shows mark-to-market equity
-      const codes = (holdingsRes.data ?? []).map((h) => h.symbol_code).filter(Boolean);
+      const codes = activeHoldings.map((h) => h.symbol_code).filter(Boolean);
       let priceMap = new Map<string, number>();
       if (codes.length > 0) {
         const { data: quotes } = await db
@@ -140,9 +157,9 @@ export function ProfileView() {
         }
       }
 
-      const holdingsValue = (holdingsRes.data ?? []).reduce(
+      const holdingsValue = activeHoldings.reduce(
         (s, h) =>
-          s + (priceMap.get(h.symbol_code) ?? Number(h.avg_cost)) * Number(h.quantity),
+          s + (priceMap.get(h.symbol_code) ?? h.avg_cost) * h.quantity,
         0,
       );
       const cashBalance = Number(acct.cash_balance);
@@ -152,6 +169,29 @@ export function ProfileView() {
       const totalPLPct = (totalPL / startingBalance) * 100;
       const totalTrades = tradesCountRes.count ?? 0;
 
+      // Win rate — computed from all holdings that have any realized activity
+      // (realized_pl ≠ 0 means we've at least partially exited the position)
+      const tradedHoldings = allHoldings.filter((h) => h.realized_pl !== 0);
+      const winCount = tradedHoldings.filter((h) => h.realized_pl > 0).length;
+      const winRatePct =
+        tradedHoldings.length > 0
+          ? (winCount / tradedHoldings.length) * 100
+          : null;
+
+      // Best performer — highest unrealized P&L % among active holdings
+      let bestTicker: string | null = null;
+      let bestPct: number | null = null;
+      for (const h of activeHoldings) {
+        const price = priceMap.get(h.symbol_code);
+        if (price != null && h.avg_cost > 0) {
+          const pct = ((price - h.avg_cost) / h.avg_cost) * 100;
+          if (bestPct === null || pct > bestPct) {
+            bestPct = pct;
+            bestTicker = h.symbol_code;
+          }
+        }
+      }
+
       setData({
         displayName,
         email: session.user.email ?? "",
@@ -159,7 +199,11 @@ export function ProfileView() {
         totalEquity,
         totalPL,
         totalPLPct,
-        positionCount: (holdingsRes.data ?? []).length,
+        positionCount: activeHoldings.length,
+        winRatePct,
+        tradedStockCount: tradedHoldings.length,
+        bestTicker,
+        bestPct,
       });
       setIsLoading(false);
     }
@@ -350,6 +394,17 @@ export function ProfileView() {
               </div>
             </section>
 
+            {/* ── Performance stats ───────────────────────────────────── */}
+            {(data.winRatePct !== null || (data.bestTicker !== null && data.positionCount >= 2)) && (
+              <PerformanceStatsCard
+                winRatePct={data.winRatePct}
+                tradedStockCount={data.tradedStockCount}
+                bestTicker={data.bestTicker}
+                bestPct={data.bestPct}
+                positionCount={data.positionCount}
+              />
+            )}
+
             {/* ── Learning stats ──────────────────────────────────────── */}
             {learningHydrated && (
               <LearningStatsCard
@@ -389,6 +444,56 @@ export function ProfileView() {
         )}
       </div>
     </main>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PerformanceStatsCard — trading performance metrics
+// Win rate is computed at stock level: % of holdings with realized_pl > 0
+// among holdings that have any realized activity (partial or full exits).
+// ---------------------------------------------------------------------------
+function PerformanceStatsCard({
+  winRatePct,
+  tradedStockCount,
+  bestTicker,
+  bestPct,
+  positionCount,
+}: {
+  winRatePct: number | null;
+  tradedStockCount: number;
+  bestTicker: string | null;
+  bestPct: number | null;
+  positionCount: number;
+}) {
+  return (
+    <section className="rounded-2xl bg-ink-violet-surface border border-border-neo overflow-hidden">
+      <h2 className="px-5 pt-4 pb-2 text-[11px] font-bold uppercase tracking-[0.8px] text-text-neo-tertiary">
+        Hiệu suất
+      </h2>
+      <div className="divide-y divide-border-neo-subtle">
+        {winRatePct !== null && (
+          <StatRow
+            label={`Tỷ lệ thắng (${tradedStockCount} CP)`}
+            value={`${winRatePct.toFixed(0)}%`}
+            tone={winRatePct >= 55 ? "positive" : winRatePct < 40 ? "negative" : undefined}
+            sub={
+              winRatePct >= 55
+                ? "Tốt · trên mức trung bình"
+                : winRatePct < 40
+                  ? "Cần cải thiện"
+                  : "Trung bình"
+            }
+          />
+        )}
+        {bestTicker !== null && bestPct !== null && positionCount >= 2 && (
+          <StatRow
+            label="Cổ phiếu tốt nhất"
+            value={`${bestTicker}  ${bestPct >= 0 ? "+" : ""}${bestPct.toFixed(1)}%`}
+            tone={bestPct >= 0 ? "positive" : "negative"}
+          />
+        )}
+      </div>
+    </section>
   );
 }
 
