@@ -6,11 +6,9 @@ import {
   Bell,
   Compass,
   Flame,
-  Home as HomeIcon,
   LineChart,
   MessageSquare,
   Trophy,
-  User,
   Wallet,
 } from "lucide-react";
 import { AmbientBackground } from "@/components/brand/ambient-background";
@@ -33,7 +31,6 @@ export function HomeView() {
         <WeeklyChallenge />
       </section>
 
-      <BottomNav />
     </main>
   );
 }
@@ -352,42 +349,5 @@ function WeeklyChallenge() {
         </div>
       </div>
     </section>
-  );
-}
-
-type NavItem = { label: string; icon: typeof HomeIcon; active?: boolean };
-const navItems: NavItem[] = [
-  { label: "Home", icon: HomeIcon, active: true },
-  { label: "Discover", icon: Compass },
-  { label: "Markets", icon: LineChart },
-  { label: "Wallet", icon: Wallet },
-  { label: "Profile", icon: User },
-];
-
-function BottomNav() {
-  return (
-    <nav
-      aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-[896px] items-center justify-around border-t border-edge bg-ink-900/90 px-4 pt-2 pb-6 backdrop-blur-xl"
-    >
-      {navItems.map(({ label, icon: Icon, active }) => (
-        <button
-          key={label}
-          aria-current={active ? "page" : undefined}
-          className={cn(
-            "flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-colors",
-            active ? "text-lime-soft" : "text-fog hover:text-lime-soft",
-          )}
-        >
-          <Icon
-            className={cn("size-5", active && "stroke-lime")}
-            strokeWidth={active ? 2.5 : 2}
-          />
-          <span className="font-display text-[10px] uppercase tracking-pulse">
-            {label}
-          </span>
-        </button>
-      ))}
-    </nav>
   );
 }
