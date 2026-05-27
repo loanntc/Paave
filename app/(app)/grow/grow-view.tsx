@@ -47,7 +47,7 @@ export function GrowView() {
     {welcomeOpen && (
       <WelcomeModal
         onMount={markWelcomeModalShown}
-        onStart={() => { setWelcomeOpen(false); router.push("/grow/lesson/L1_1"); }}
+        onStart={() => { setWelcomeOpen(false); router.push(`/grow/lesson/${MODULES[0].lessons[0].id}`); }}
         onExplore={() => setWelcomeOpen(false)}
       />
     )}
@@ -333,7 +333,7 @@ function ModuleCard({
                     >
                       {lesson.titleVi}
                     </p>
-                    <p className="text-[11px] text-text-neo-tertiary">5 thẻ · +25 XP</p>
+                    <p className="text-[11px] text-text-neo-tertiary">5 thẻ · +{Math.round(module.lessonXP / module.lessons.length)} XP</p>
                   </div>
                   {isCurrent && (
                     <Star className="size-4 text-lime-signal-400 shrink-0" strokeWidth={2} />
@@ -360,9 +360,11 @@ function ModuleCard({
 // Gives them a clear, prominent second invitation to begin Module 1.
 // ---------------------------------------------------------------------------
 function LearningPromptCard() {
+  const firstLesson = MODULES[0].lessons[0];
+  const xpPerLesson = Math.round(MODULES[0].lessonXP / MODULES[0].lessons.length);
   return (
     <Link
-      href="/grow/lesson/L1_1"
+      href={`/grow/lesson/${firstLesson.id}`}
       className="block rounded-2xl overflow-hidden border border-lime-signal-400/20 hover:border-lime-signal-400/40 transition-all active:scale-[0.99]"
       style={{
         background: "linear-gradient(135deg, rgba(181,232,47,0.08) 0%, rgba(127,119,221,0.12) 100%)",
@@ -403,7 +405,7 @@ function LearningPromptCard() {
         <div className="flex items-center gap-3 text-[11px] text-text-neo-tertiary">
           <span className="flex items-center gap-1">
             <Zap className="size-3 text-lime-signal-400" />
-            +25 XP / bài
+            +{xpPerLesson} XP / bài
           </span>
           <span className="flex items-center gap-1">
             <Trophy className="size-3 text-yellow-400" />
