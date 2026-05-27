@@ -1,10 +1,10 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { BookOpen, Trophy, Zap } from "lucide-react";
+import { BookOpen, Check, Pencil, Trophy, X, Zap } from "lucide-react";
 import { TierBadge, type TierLevel } from "@/components/paave/tier-badge";
 import { XPBar } from "@/components/paave/xp-bar";
 import { useLearningProgress } from "@/lib/learning/use-learning-progress";
@@ -68,6 +68,11 @@ export function ProfileView() {
   const [data, setData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  // Inline name edit state
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Learning progress from F0 learning path (stored in localStorage)
   const { hydrated: learningHydrated, progress: learningProgress } =
@@ -162,6 +167,44 @@ export function ProfileView() {
     fetchProfile();
   }, []);
 
+  function startEditingName() {
+    setNameInput(data?.displayName ?? "");
+    setEditingName(true);
+    // Focus is handled by a useEffect below
+  }
+
+  function cancelEditingName() {
+    setEditingName(false);
+    setNameInput("");
+  }
+
+  async function saveName() {
+    const trimmed = nameInput.trim();
+    if (!trimmed || trimmed === data?.displayName) {
+      cancelEditingName();
+      return;
+    }
+    setNameSaving(true);
+    try {
+      const db = getBrowserClient();
+      await db.auth.updateUser({ data: { full_name: trimmed } });
+      setData((prev) => prev ? { ...prev, displayName: trimmed } : prev);
+    } catch {
+      // Silent failure — keep the old name shown
+    } finally {
+      setNameSaving(false);
+      setEditingName(false);
+    }
+  }
+
+  // Focus the input when edit mode opens
+  useEffect(() => {
+    if (editingName) {
+      const t = setTimeout(() => nameInputRef.current?.focus(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [editingName]);
+
   const handleSignOut = async () => {
     setIsSigningOut(true);
     try {
@@ -211,10 +254,50 @@ export function ProfileView() {
 
                 {/* Name + email + tier */}
                 <div className="min-w-0 flex-1">
-                  <p className="font-display text-[17px] font-bold text-text-neo-primary truncate">
-                    {data.displayName}
-                  </p>
-                  <p className="text-[12px] text-text-neo-tertiary truncate">
+                  {editingName ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        ref={nameInputRef}
+                        type="text"
+                        value={nameInput}
+                        onChange={(e) => setNameInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveName();
+                          if (e.key === "Escape") cancelEditingName();
+                        }}
+                        maxLength={50}
+                        className="flex-1 min-w-0 bg-ink-violet-raised border border-lime-signal-400/60 rounded-lg px-2 py-1 font-display text-[15px] font-bold text-text-neo-primary outline-none"
+                        disabled={nameSaving}
+                      />
+                      <button
+                        onClick={saveName}
+                        disabled={nameSaving}
+                        aria-label="Lưu tên"
+                        className="grid size-7 place-items-center rounded-lg bg-lime-signal-400 text-ink-violet-base shrink-0"
+                      >
+                        <Check className="size-3.5" strokeWidth={3} />
+                      </button>
+                      <button
+                        onClick={cancelEditingName}
+                        aria-label="Huỷ"
+                        className="grid size-7 place-items-center rounded-lg bg-ink-violet-raised text-text-neo-tertiary hover:text-text-neo-primary shrink-0"
+                      >
+                        <X className="size-3.5" strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={startEditingName}
+                      className="group flex items-center gap-1.5 text-left max-w-full"
+                      aria-label="Chỉnh sửa tên"
+                    >
+                      <p className="font-display text-[17px] font-bold text-text-neo-primary truncate">
+                        {data.displayName}
+                      </p>
+                      <Pencil className="size-3.5 text-text-neo-tertiary shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={2} />
+                    </button>
+                  )}
+                  <p className="text-[12px] text-text-neo-tertiary truncate mt-0.5">
                     {data.email}
                   </p>
                   <div className="mt-2">

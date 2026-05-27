@@ -81,7 +81,7 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
   const [tradeSheetOpen, setTradeSheetOpen] = useState(false);
   const [alertSheetOpen, setAlertSheetOpen] = useState(false);
   const { isWatched, toggleWatchlist } = useWatchlist();
-  const { hydrated: alertsHydrated, getAlertsForTicker, checkTriggered } = usePriceAlerts();
+  const { hydrated: alertsHydrated, getAlertsForTicker, checkTriggered, removeAlert } = usePriceAlerts();
 
   useEffect(() => {
     const db = getBrowserClient();
@@ -242,9 +242,17 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
                   {triggered.condition === "above" ? "vượt lên" : "giảm xuống"}{" "}
                   {formatVND(triggered.target)}
                 </p>
+                {/* Quick-dismiss removes the alert without opening the full sheet */}
+                <button
+                  onClick={() => removeAlert(triggered.id)}
+                  aria-label="Xoá thông báo"
+                  className="text-[11px] text-lime-signal-400/70 hover:text-lime-signal-400 transition-colors shrink-0 px-2 py-1 rounded-lg hover:bg-lime-signal-400/10"
+                >
+                  Xoá
+                </button>
                 <button
                   onClick={() => setAlertSheetOpen(true)}
-                  className="text-[11px] text-lime-signal-400/70 hover:text-lime-signal-400 transition-colors shrink-0"
+                  className="text-[11px] text-lime-signal-400/70 hover:text-lime-signal-400 transition-colors shrink-0 px-2 py-1 rounded-lg hover:bg-lime-signal-400/10"
                 >
                   Quản lý
                 </button>
