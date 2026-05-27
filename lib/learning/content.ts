@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // F0 Learning Path — Complete Content Library
 // Source: docs/business/FRD/module-f0-learning-content.md
-// Modules M1 (full), M2–M4 (full content per FRD)
+// All 4 modules with complete card content (20 lessons × 5 cards)
 // ---------------------------------------------------------------------------
 
 import type { LearningModule, Lesson } from "./types";
@@ -465,58 +465,462 @@ const L2_5: Lesson = {
 };
 
 // ---------------------------------------------------------------------------
-// MODULE 3 — Thinking in Portfolios (abbreviated — full content pending)
+// MODULE 3 — Thinking in Portfolios
 // ---------------------------------------------------------------------------
 
-const L3_PLACEHOLDER = (id: string, index: number, titleVi: string, titleEn: string): Lesson => ({
-  id,
+const L3_1: Lesson = {
+  id: "L3.1",
   moduleId: "M3",
-  index,
-  titleVi,
-  titleEn,
+  index: 1,
+  titleVi: "Đa dạng hóa cơ bản",
+  titleEn: "Diversification Basics",
   cards: [
-    { type: "CONCEPT", heading: titleVi, body: "Nội dung đang được cập nhật. Vui lòng quay lại sau." },
-    { type: "EXAMPLE", heading: "Ví dụ thực tế", body: "Ví dụ từ thị trường VN sẽ được cập nhật." },
-    { type: "MYTH_BUSTER", heading: "Sự thật vs. Lầm tưởng", body: "Phân tích quan niệm sai lầm phổ biến sẽ được cập nhật." },
     {
-      type: "QUIZ", heading: "Câu hỏi kiểm tra", body: "",
-      options: [
-        { id: "A", text: "Đáp án A" }, { id: "B", text: "Đáp án B" },
-        { id: "C", text: "Đáp án C" }, { id: "D", text: "Đáp án D" },
-      ],
-      correctOption: "A",
-      hint: "Đọc lại thẻ Concept để tìm câu trả lời.",
+      type: "CONCEPT",
+      heading: "Đa dạng hóa: \"Đừng bỏ tất cả trứng vào một giỏ\"",
+      body: "**Đa dạng hóa (Diversification)** = trải vốn đầu tư ra nhiều cổ phiếu, nhiều ngành để giảm rủi ro.\n\n**Tại sao cần đa dạng hóa?**\n- Khi một ngành chịu tác động xấu, cổ phiếu ngành khác vẫn ổn định\n- Rủi ro không hệ thống (unsystematic risk) có thể giảm bằng đa dạng hóa\n- Rủi ro hệ thống (khủng hoảng toàn thị trường) thì không thể tránh dù đa dạng hóa\n\n**Quy tắc thực hành:**\n- Tối thiểu 5–7 cổ phiếu từ ít nhất 3 ngành khác nhau\n- Không có cổ phiếu nào chiếm > 30% tổng danh mục\n- Tối đa 20 cổ phiếu — quá nhiều sẽ khó theo dõi hiệu quả",
     },
-    { type: "CTA", heading: "Thực hành", body: "Áp dụng kiến thức vừa học vào paper trading.", ctaAction: "BROWSE_STOCK_LIST", ctaLabel: "Mở danh sách cổ phiếu" },
+    {
+      type: "EXAMPLE",
+      heading: "Danh mục A vs. Danh mục B — ai đa dạng hóa tốt hơn?",
+      body: "**Danh mục A:** VCB 40% + BID 30% + TCB 30% → 100% ngành Tài chính\n**Danh mục B:** VCB 20% + VNM 20% + FPT 20% + HPG 20% + VHM 20% → 5 ngành\n\nKhi SBV siết tín dụng Q1/2022:\n- Danh mục A: **−25%** (tất cả cùng giảm)\n- Danh mục B: **−8%** (VNM và FPT bù đắp)\n\nDanh mục A có 3 mã nhưng thực chất là **đặt cược vào 1 ngành**. Danh mục B mới là đa dạng hóa thực sự.",
+    },
+    {
+      type: "MYTH_BUSTER",
+      heading: "❌ \"Cứ mua nhiều mã cổ phiếu là đã đa dạng hóa\"",
+      body: "✅ **Sự thật:** 20 cổ phiếu ngân hàng không phải đa dạng hóa — đó là **tập trung theo ngành**. Khi chính sách tiền tệ thắt chặt, tất cả 20 mã đều giảm cùng nhau.\n\nĐa dạng hóa thực sự yêu cầu **tương quan thấp** giữa các vị thế — tức là các ngành phản ứng khác nhau với cùng một sự kiện kinh tế.",
+    },
+    {
+      type: "QUIZ",
+      heading: "Nhà đầu tư A có danh mục: VCB 40%, BID 35%, MBB 25%. Điểm yếu nghiêm trọng nhất là gì?",
+      body: "",
+      options: [
+        { id: "A", text: "Quá ít cổ phiếu" },
+        { id: "B", text: "Tập trung 100% vào ngành ngân hàng — không có đa dạng hóa ngành" },
+        { id: "C", text: "Giá cổ phiếu ngân hàng quá cao" },
+        { id: "D", text: "Không có cổ phiếu công nghệ" },
+      ],
+      correctOption: "B",
+      hint: "Đa dạng hóa = khác NGÀNH, không chỉ khác mã. Cả 3 mã đều là ngân hàng.",
+    },
+    {
+      type: "CTA",
+      heading: "Xem phân bổ ngành của danh mục",
+      body: "Vào Portfolio → Phân tích danh mục → Biểu đồ ngành. Xem danh mục giao dịch ảo đang tập trung vào ngành nào. Nếu > 50% trong một ngành, đây là tín hiệu cần đa dạng hóa.",
+      ctaAction: "OPEN_PNL_TAB",
+      ctaLabel: "Xem phân tích danh mục",
+    },
   ],
-});
+};
+
+const L3_2: Lesson = {
+  id: "L3.2",
+  moduleId: "M3",
+  index: 2,
+  titleVi: "Các ngành tại Việt Nam",
+  titleEn: "VN Sectors Crash Course",
+  cards: [
+    {
+      type: "CONCEPT",
+      heading: "11 ngành trên thị trường chứng khoán VN",
+      body: "| # | Ngành | Ví dụ mã tiêu biểu |\n|---|-------|-------------------|\n| 1 | Tài chính | VCB, BID, TCB, MBB |\n| 2 | Bất động sản | VHM, VIC, NLG, DXG |\n| 3 | Tiêu dùng thiết yếu | VNM, MCH, MSN, SAB |\n| 4 | Công nghệ thông tin | FPT, CMG |\n| 5 | Năng lượng | GAS, POW, PVD |\n| 6 | Vật liệu cơ bản | HPG, HSG, NKG |\n| 7 | Công nghiệp | HVN, GMD, HAH |\n| 8 | Y tế | DHG, IMP, TNH |\n| 9 | Tiện ích | REE, BWE, PC1 |\n| 10 | Tiêu dùng tùy ý | MWG, PNJ, FRT |\n| 11 | Viễn thông | FPT Telecom |",
+    },
+    {
+      type: "EXAMPLE",
+      heading: "Luân chuyển ngành (Sector Rotation) — VN 2021–2023",
+      body: "**2021:** Chứng khoán + BĐS bùng nổ (lãi suất thấp)\n→ SSI, VCI, VHM, NLG tăng 100–200%\n\n**2022:** SBV siết tín dụng BĐS → BĐS và Tài chính lao dốc\n→ VHM −45%, VCB −30%\n→ Trong khi đó: VNM (tiêu dùng) −12%; FPT (công nghệ) −18%\n\n**2023:** Chính phủ đẩy mạnh đầu tư công → Vật liệu hồi phục\n→ HPG +40%, HSG +55% từ đáy 2022\n\n**Bài học:** Đa dạng ngành giúp bạn luôn có phần \"thắng\" trong danh mục.",
+    },
+    {
+      type: "MYTH_BUSTER",
+      heading: "❌ \"Chỉ cần mua ngân hàng vì ngân hàng VN luôn có lợi nhuận\"",
+      body: "✅ **Sự thật:** Ngành ngân hàng VN chiếm ~30% vốn hóa HoSE và thường có lợi nhuận cao — nhưng cũng **nhạy cảm nhất với chính sách vĩ mô**. Một quyết định tăng lãi suất của SBV hay siết room tín dụng có thể khiến toàn ngành rơi 20–30% trong vài tuần.\n\nNgân hàng nên là **một phần** của danh mục đa dạng, không phải toàn bộ.",
+    },
+    {
+      type: "QUIZ",
+      heading: "Bạn muốn đầu tư vào cổ phiếu hưởng lợi trực tiếp từ tăng trưởng tiêu dùng nội địa. Ngành nào phù hợp nhất?",
+      body: "",
+      options: [
+        { id: "A", text: "Năng lượng (GAS, POW)" },
+        { id: "B", text: "Hàng tiêu dùng thiết yếu (VNM, MCH, MSN)" },
+        { id: "C", text: "Tài chính (VCB, BID)" },
+        { id: "D", text: "Vật liệu cơ bản (HPG, HSG)" },
+      ],
+      correctOption: "B",
+      hint: "Hàng tiêu dùng thiết yếu = sản phẩm người dùng mua mỗi ngày. Khi thu nhập tăng → chi tiêu tăng → doanh thu tăng.",
+    },
+    {
+      type: "CTA",
+      heading: "Lọc theo ngành trong Discover",
+      body: "Vào Discover → nhấn icon bộ lọc → Chọn ngành \"Hàng tiêu dùng thiết yếu\". Xem các cổ phiếu trong ngành. Thử lọc một ngành khác để so sánh.",
+      ctaAction: "BROWSE_STOCK_LIST",
+      ctaLabel: "Mở Discover",
+    },
+  ],
+};
+
+const L3_3: Lesson = {
+  id: "L3.3",
+  moduleId: "M3",
+  index: 3,
+  titleVi: "Danh sách theo dõi là gì?",
+  titleEn: "What is a Watchlist?",
+  cards: [
+    {
+      type: "CONCEPT",
+      heading: "Watchlist — \"Phòng chờ\" trước khi đầu tư",
+      body: "**Danh sách theo dõi (Watchlist)** = danh sách cổ phiếu bạn đang quan tâm nhưng chưa mua.\n\n**3 mục đích chính:**\n1. **Nghiên cứu:** Theo dõi biến động giá và tin tức trước khi ra quyết định\n2. **Chuẩn bị mua:** Khi giá đạt ngưỡng mong muốn → hành động ngay\n3. **So sánh:** Đặt nhiều cổ phiếu cùng ngành cạnh nhau để chọn mã tốt nhất\n\n**Thực hành tốt:**\n- Giữ watchlist 10–20 mã (không nhiều hơn — khó theo dõi hiệu quả)\n- Review mỗi cuối tuần: xóa mã không còn phù hợp, thêm mã mới\n- Đặt cảnh báo giá cho mã quan trọng nhất",
+    },
+    {
+      type: "EXAMPLE",
+      heading: "Nhà đầu tư dùng watchlist để mua đúng giá",
+      body: "Cuối 2022, Minh theo dõi MWG (Mobile World Group):\n- Thêm MWG vào watchlist khi giá 45,000 VND\n- Nhận xét: \"Công ty bán lẻ tốt nhất VN nhưng đang bị bán quá mức\"\n- Đặt cảnh báo tại 25,000 VND\n- Tháng 3/2023: cảnh báo kích hoạt khi MWG về 23,000 → Minh nghiên cứu lại → mua 200 cổ phiếu\n- Tháng 9/2023: MWG phục hồi về 47,000 VND → Minh lãi ~100% trong 6 tháng\n\n**Không có watchlist:** Minh có thể đã bỏ qua cơ hội hoặc mua vội khi giá vẫn còn cao.",
+    },
+    {
+      type: "MYTH_BUSTER",
+      heading: "❌ \"Theo dõi cổ phiếu mà không mua là lãng phí thời gian\"",
+      body: "✅ **Sự thật:** Nhà đầu tư chuyên nghiệp theo dõi hàng chục cổ phiếu trong **nhiều tháng** trước khi mua. Watchlist là giai đoạn **nghiên cứu và kiên nhẫn** — hai yếu tố quan trọng nhất của đầu tư thành công.\n\nMua vội mà không có watchlist thường dẫn đến mua ở giá cao, không có luận điểm đầu tư rõ ràng — và bán hoảng loạn khi giá giảm.",
+    },
+    {
+      type: "QUIZ",
+      heading: "Mục đích chính của danh sách theo dõi (watchlist) là gì?",
+      body: "",
+      options: [
+        { id: "A", text: "Tự động mua khi giá giảm" },
+        { id: "B", text: "Cho app biết cổ phiếu bạn thích" },
+        { id: "C", text: "Theo dõi biến động giá và chuẩn bị cho quyết định mua" },
+        { id: "D", text: "Nhận cổ tức từ cổ phiếu đang theo dõi" },
+      ],
+      correctOption: "C",
+      hint: "Watchlist = phòng chờ. Bạn quan sát nhưng chưa cam kết.",
+    },
+    {
+      type: "CTA",
+      heading: "Xây watchlist đầu tiên — 5 cổ phiếu đa ngành",
+      body: "Thêm 5 cổ phiếu đa dạng vào watchlist: **VHM** (BĐS), **VIC** (Tập đoàn đa ngành), **VNM** (Tiêu dùng), **FPT** (Công nghệ), **HPG** (Vật liệu). Đây là bước đầu tiên xây dựng danh mục nghiên cứu có kỷ luật.",
+      ctaAction: "BROWSE_STOCK_LIST",
+      ctaLabel: "Mở danh sách cổ phiếu",
+    },
+  ],
+};
+
+const L3_4: Lesson = {
+  id: "L3.4",
+  moduleId: "M3",
+  index: 4,
+  titleVi: "Đặt cảnh báo giá",
+  titleEn: "Setting a Price Alert",
+  cards: [
+    {
+      type: "CONCEPT",
+      heading: "Cảnh báo giá — \"Trợ lý theo dõi thị trường 24/7\"",
+      body: "**Cảnh báo giá (Price Alert)** = thông báo push khi cổ phiếu đạt ngưỡng giá bạn đặt.\n\n**2 loại cảnh báo:**\n\n| Loại | Khi nào kích hoạt | Dùng để làm gì |\n|------|------------------|----------------|\n| **Cảnh báo trên** | Giá ≥ mức đặt | Chốt lời, bán tại kháng cự |\n| **Cảnh báo dưới** | Giá ≤ mức đặt | Mua thêm, cắt lỗ, mua tại hỗ trợ |\n\n**3 use case thực tế:**\n1. **Buy alert:** \"Thông báo khi HPG về 30,000\" → cơ hội mua rẻ\n2. **Take-profit alert:** \"Thông báo khi VNM lên 90,000\" → chốt lời\n3. **Stop-loss alert:** \"Thông báo khi VIC xuống 45,000\" → xem xét cắt lỗ\n\n⚠️ **Quan trọng:** Cảnh báo chỉ THÔNG BÁO — không tự đặt lệnh.",
+    },
+    {
+      type: "EXAMPLE",
+      heading: "Chiến lược cảnh báo có hệ thống cho HPG",
+      body: "HPG hiện ở 35,000 VND:\n- Vùng kháng cự: 40,000 VND (giá thường bị bán ra tại đây)\n- Vùng hỗ trợ: 30,000 VND (giá thường có người mua vào)\n\n**Chiến lược cảnh báo:**\n- ✅ Cảnh báo dưới tại 30,500 VND: \"Giá tiếp cận vùng hỗ trợ — cơ hội mua tốt\"\n- ✅ Cảnh báo trên tại 39,500 VND: \"Giá tiếp cận vùng kháng cự — cân nhắc chốt lời\"\n\n**Kết quả:** Không cần nhìn màn hình mỗi giờ. Cảnh báo thông báo đúng lúc cần hành động.",
+    },
+    {
+      type: "MYTH_BUSTER",
+      heading: "❌ \"Đặt cảnh báo giá = tự động mua/bán\"",
+      body: "✅ **Sự thật:** Cảnh báo giá chỉ gửi **thông báo**. Bạn phải mở app, xem xét tình hình, và đặt lệnh thủ công. Đây là thiết kế có chủ ý: để bảo vệ bạn khỏi các tín hiệu sai và đảm bảo quyết định đầu tư luôn có con người kiểm soát.\n\nAuto-trading (giao dịch tự động) là tính năng hoàn toàn khác, đòi hỏi kiến thức nâng cao và rủi ro cao hơn nhiều.",
+    },
+    {
+      type: "QUIZ",
+      heading: "Bạn mua VNM tại 82,000 và muốn được thông báo để chốt lời khi giá đạt 90,000. Loại cảnh báo nào cần đặt?",
+      body: "",
+      options: [
+        { id: "A", text: "Cảnh báo khi giá xuống dưới 90,000" },
+        { id: "B", text: "Cảnh báo khi giá lên trên 90,000" },
+        { id: "C", text: "Cảnh báo khi giá bằng đúng 90,000" },
+        { id: "D", text: "Không cần cảnh báo, tự theo dõi" },
+      ],
+      correctOption: "B",
+      hint: "Chốt lời = bán khi giá ĐẠT MỨC CAO. Dùng cảnh báo TRÊN.",
+    },
+    {
+      type: "CTA",
+      heading: "Đặt cảnh báo giá đầu tiên",
+      body: "Chọn cổ phiếu đầu tiên trong watchlist vừa tạo. Đặt một cảnh báo phía trên (giá tham chiếu + 5%) và một cảnh báo phía dưới (giá tham chiếu − 5%). Đây là bộ cảnh báo hai chiều cơ bản cho mọi vị thế.",
+      ctaAction: "OPEN_PRICE_BOARD",
+      ctaLabel: "Mở bảng giá",
+    },
+  ],
+};
+
+const L3_5: Lesson = {
+  id: "L3.5",
+  moduleId: "M3",
+  index: 5,
+  titleVi: "Kiểm tra sức khỏe danh mục",
+  titleEn: "Portfolio Health Check",
+  cards: [
+    {
+      type: "CONCEPT",
+      heading: "Điểm sức khỏe danh mục — AI đánh giá rủi ro",
+      body: "Điểm sức khỏe (0–100) được AI tính dựa trên 4 yếu tố:\n\n| Yếu tố | Trọng số | Đánh giá gì |\n|--------|---------|-------------|\n| Đa dạng hóa ngành | 35% | Số ngành; cổ phiếu tập trung nhất < 30%? |\n| Thanh khoản | 25% | KLGD trung bình ngày của các cổ phiếu nắm giữ |\n| Biến động | 25% | Độ lệch chuẩn giá lịch sử của danh mục |\n| Hành vi giao dịch | 15% | Tần suất FOMO, bán hoảng loạn, giao dịch quá mức |\n\n**Thang điểm:**\n- 75–100: 🟢 Tốt — danh mục được quản lý rủi ro tốt\n- 50–74: 🟡 Cần chú ý — có một số điểm yếu\n- 0–49: 🔴 Rủi ro cao — cần xem xét tái cơ cấu",
+    },
+    {
+      type: "EXAMPLE",
+      heading: "So sánh 2 danh mục — điểm sức khỏe khác nhau như thế nào?",
+      body: "**Danh mục Tập trung** (VCB 50% + BID 30% + TCB 20%):\n- Đa dạng hóa: 10/35 (100% ngành Tài chính)\n- Thanh khoản: 25/25 (blue-chip)\n- Biến động: 15/25\n- Hành vi: 12/15\n- **Tổng: 62/100** 🟡\n\n**Danh mục Cân bằng** (VCB 20% + VNM 20% + FPT 20% + HPG 20% + VHM 20%):\n- Đa dạng hóa: 32/35 (5 ngành khác nhau)\n- Thanh khoản: 24/25\n- Biến động: 20/25 (đa dạng giúp giảm biến động)\n- Hành vi: 13/15\n- **Tổng: 89/100** 🟢",
+    },
+    {
+      type: "MYTH_BUSTER",
+      heading: "❌ \"Điểm sức khỏe cao nghĩa là danh mục lời nhiều\"",
+      body: "✅ **Sự thật:** Điểm sức khỏe đo lường **quản lý rủi ro**, không phải lợi nhuận. Một danh mục tập trung có thể lời 50% trong bull market, nhưng cũng có thể lỗ 50% trong bear market.\n\nDanh mục sức khỏe tốt thường cho **lợi nhuận điều chỉnh theo rủi ro** tốt hơn về dài hạn — nghĩa là lợi nhuận ổn định hơn, biến động ít hơn.",
+    },
+    {
+      type: "QUIZ",
+      heading: "Điểm sức khỏe danh mục chủ yếu đo lường điều gì?",
+      body: "",
+      options: [
+        { id: "A", text: "Mức lợi nhuận kỳ vọng" },
+        { id: "B", text: "Chất lượng quản lý rủi ro và đa dạng hóa" },
+        { id: "C", text: "Số lượng giao dịch thực hiện" },
+        { id: "D", text: "Tổng giá trị tài khoản" },
+      ],
+      correctOption: "B",
+      hint: "Health = khả năng chịu đựng biến động, không phải lợi nhuận.",
+    },
+    {
+      type: "CTA",
+      heading: "Xem AI Insights — điểm sức khỏe danh mục",
+      body: "Mở AI Insights → Portfolio Health. Đọc điểm tổng và từng yếu tố thành phần. Nếu có cờ cảnh báo (ví dụ \"Tập trung ngành cao\"), nhấn vào để đọc lời khuyên cụ thể từ AI.",
+      ctaAction: "OPEN_PNL_TAB",
+      ctaLabel: "Xem danh mục",
+    },
+  ],
+};
 
 // ---------------------------------------------------------------------------
-// MODULE 4 — Trader Psychology (abbreviated)
+// MODULE 4 — Trader Psychology
 // ---------------------------------------------------------------------------
 
-const L4_PLACEHOLDER = (id: string, index: number, titleVi: string, titleEn: string): Lesson => ({
-  id,
+const L4_1: Lesson = {
+  id: "L4.1",
   moduleId: "M4",
-  index,
-  titleVi,
-  titleEn,
+  index: 1,
+  titleVi: "FOMO là gì?",
+  titleEn: "What is FOMO?",
   cards: [
-    { type: "CONCEPT", heading: titleVi, body: "Nội dung đang được cập nhật. Vui lòng quay lại sau." },
-    { type: "EXAMPLE", heading: "Ví dụ thực tế", body: "Ví dụ từ thị trường VN sẽ được cập nhật." },
-    { type: "MYTH_BUSTER", heading: "Sự thật vs. Lầm tưởng", body: "Phân tích quan niệm sai lầm phổ biến sẽ được cập nhật." },
     {
-      type: "QUIZ", heading: "Câu hỏi kiểm tra", body: "",
-      options: [
-        { id: "A", text: "Đáp án A" }, { id: "B", text: "Đáp án B" },
-        { id: "C", text: "Đáp án C" }, { id: "D", text: "Đáp án D" },
-      ],
-      correctOption: "A",
-      hint: "Đọc lại thẻ Concept để tìm câu trả lời.",
+      type: "CONCEPT",
+      heading: "FOMO — Kẻ thù thầm lặng của nhà đầu tư",
+      body: "**FOMO = Fear Of Missing Out** (Sợ bỏ lỡ cơ hội)\n\nKhi một cổ phiếu tăng mạnh và mọi người đều nói về nó → bạn cảm thấy phải mua ngay kẻo \"trễ tàu\". Đây là FOMO.\n\n**4 dấu hiệu nhận biết lệnh FOMO:**\n1. Cổ phiếu đã tăng **>15%** trước khi bạn mua\n2. Bạn mua trong vòng **30 phút** sau khi thấy tin tức/mạng xã hội\n3. **Chưa nghiên cứu** cơ bản công ty\n4. Đặt lệnh **lớn hơn bình thường** vì sợ bỏ lỡ\n\n**Tâm lý đằng sau:** Social proof (mọi người mua → mình phải mua) + Loss aversion (sợ lỗ vì không mua) = quyết định cảm xúc.",
     },
-    { type: "CTA", heading: "Thực hành", body: "Áp dụng kiến thức vào danh mục của bạn.", ctaAction: "BROWSE_STOCK_LIST", ctaLabel: "Mở danh sách cổ phiếu" },
+    {
+      type: "EXAMPLE",
+      heading: "VHM 2021: FOMO và hậu quả",
+      body: "Tháng 6/2021: VHM (Vinhomes) tăng từ 85,000 → 115,000 VND trong 3 tuần (+35%).\n- Mạng xã hội đầy tin \"VHM đang sóng mạnh, mua ngay kẻo muộn\"\n- Nhà đầu tư FOMO mua vào ở mức 110,000–115,000 (gần đỉnh)\n\nKết quả sau 6 tuần: VHM điều chỉnh về 85,000 VND (−22% từ đỉnh).\n\n**Nhà đầu tư FOMO mua ở 115,000:** lỗ −22% sau 6 tuần.\n\n**Nhà đầu tư mua có kế hoạch từ 85,000–90,000:** đã lãi 20–30% trước khi sóng FOMO xảy ra, có thể chốt lời thoải mái.",
+    },
+    {
+      type: "MYTH_BUSTER",
+      heading: "❌ \"Cổ phiếu đã tăng 30% thì sẽ còn tăng nữa\"",
+      body: "✅ **Sự thật:** Cổ phiếu đã tăng mạnh thường **thu hút người bán chốt lời nhiều hơn người mua mới**. Sau một đợt tăng lớn, xác suất điều chỉnh cao hơn xác suất tiếp tục tăng trong ngắn hạn.\n\nCác nhà đầu tư chuyên nghiệp **mua khi không ai quan tâm** và **bán khi mọi người FOMO mua vào**. FOMO của bạn chính là lúc họ đang chốt lời.",
+    },
+    {
+      type: "QUIZ",
+      heading: "Dấu hiệu nào thể hiện FOMO rõ nhất?",
+      body: "",
+      options: [
+        { id: "A", text: "Mua sau khi nghiên cứu kỹ 2 tuần" },
+        { id: "B", text: "Mua cổ phiếu đã tăng 40% chỉ vì thấy mọi người đang mua" },
+        { id: "C", text: "Đặt cảnh báo giá trước khi quyết định" },
+        { id: "D", text: "Mua theo cổ tức cao và P/E thấp" },
+      ],
+      correctOption: "B",
+      hint: "FOMO = hành động vì SỢ BỎ LỠ, không phải vì phân tích. Câu nào mô tả quyết định cảm xúc?",
+    },
+    {
+      type: "CTA",
+      heading: "Xem lịch sử lệnh và phát hiện mẫu FOMO",
+      body: "Vào Portfolio → Lịch sử giao dịch. AI sẽ đánh dấu các lệnh đặt trong vòng 30 phút sau khi cổ phiếu tăng >10% (mẫu FOMO tiềm năng). Xem xét các lệnh này: kết quả ra sao so với lệnh không có đặc điểm FOMO?",
+      ctaAction: "OPEN_PNL_TAB",
+      ctaLabel: "Xem lịch sử giao dịch",
+    },
   ],
-});
+};
+
+const L4_2: Lesson = {
+  id: "L4.2",
+  moduleId: "M4",
+  index: 2,
+  titleVi: "Mô hình bán hoảng loạn",
+  titleEn: "The Panic Sell Pattern",
+  cards: [
+    {
+      type: "CONCEPT",
+      heading: "Bán hoảng loạn — Khoá lỗ tạm thời thành lỗ vĩnh viễn",
+      body: "**Bán hoảng loạn (Panic sell)** = bán ra khi giá giảm nhanh vì sợ hãi — không phải vì cơ bản doanh nghiệp thay đổi.\n\n**Quy trình điển hình:**\n1. Cổ phiếu giảm 5–8% trong một phiên\n2. Nhà đầu tư lo sợ mất thêm → bán ngay\n3. Cổ phiếu hồi phục 3–5 ngày sau\n4. Nhà đầu tư nhận ra đã bán đúng đáy → mua lại giá cao hơn\n\n**Khi nào NÊN bán:** Cơ bản doanh nghiệp xấu đi; đạt mức cắt lỗ đã định (−8%); cần tiền.\n\n**Khi nào KHÔNG nên bán:** Chỉ vì giá giảm mạnh trong ngày mà không có lý do cơ bản.",
+    },
+    {
+      type: "EXAMPLE",
+      heading: "Tháng 3/2020: Ai bán hoảng loạn, ai kiên nhẫn?",
+      body: "VN-Index rơi từ 950 → 660 điểm trong 3 tuần (−30%). HPG giảm từ 22,000 → 15,000 VND.\n\n**Nhà đầu tư A (bán hoảng loạn):**\n- Bán HPG ở 15,500 VND (gần đáy), lỗ −30%\n- Tháng 12/2020: HPG đạt 38,000 VND\n- Chi phí của bán hoảng loạn: bỏ lỡ +145% từ đáy\n\n**Nhà đầu tư B (kiên nhẫn):**\n- Tự hỏi: \"Hòa Phát có còn sản xuất thép không? Có.\" → Giữ nguyên\n- Tháng 12/2020: lãi +73% tính từ giá mua ban đầu 22,000 VND\n\n**Khác biệt duy nhất:** Phản ứng với biến động ngắn hạn.",
+    },
+    {
+      type: "MYTH_BUSTER",
+      heading: "❌ \"Bán khi thị trường giảm là khôn ngoan để bảo toàn vốn\"",
+      body: "✅ **Sự thật:** Nếu bạn bán vì **cơ bản doanh nghiệp thay đổi** → đó là quyết định thông minh. Nếu bạn bán vì **giá giảm nhanh và bạn hoảng sợ** → đó là bán hoảng loạn.\n\nCách kiểm tra: Trước khi bán, trả lời câu hỏi: *\"Có điều gì thay đổi về kinh doanh của công ty này không?\"* Nếu không → chờ, đừng bán vì sợ hãi.",
+    },
+    {
+      type: "QUIZ",
+      heading: "HPG giảm 6% trong buổi sáng do lo ngại lãi suất vĩ mô. Không có tin xấu về kinh doanh của HPG. Hành động nào ĐÚNG nhất?",
+      body: "",
+      options: [
+        { id: "A", text: "Bán ngay để tránh lỗ thêm" },
+        { id: "B", text: "Mua thêm ngay lập tức" },
+        { id: "C", text: "Xem lại luận điểm đầu tư ban đầu; giữ nếu cơ bản không đổi" },
+        { id: "D", text: "Đợi giá về giá mua để hòa vốn rồi mới bán" },
+      ],
+      correctOption: "C",
+      hint: "Bán nên dựa trên CƠ BẢN DOANH NGHIỆP, không phải biến động giá ngắn hạn.",
+    },
+    {
+      type: "CTA",
+      heading: "Xem AI phát hiện mẫu hành vi",
+      body: "Vào AI Insights → Behavioral Flags. Xem danh sách các giao dịch được đánh dấu là có dấu hiệu bán hoảng loạn (bán trong vòng 15 phút sau khi giá giảm >3% từ đỉnh 1 giờ). Nhìn lại các lệnh đó: cổ phiếu có phục hồi sau đó không?",
+      ctaAction: "OPEN_PNL_TAB",
+      ctaLabel: "Xem lịch sử giao dịch",
+    },
+  ],
+};
+
+const L4_3: Lesson = {
+  id: "L4.3",
+  moduleId: "M4",
+  index: 3,
+  titleVi: "Giao dịch quá mức",
+  titleEn: "Overtrading Explained",
+  cards: [
+    {
+      type: "CONCEPT",
+      heading: "Chi phí ẩn của giao dịch quá nhiều",
+      body: "**Phí giao dịch tại VN (điển hình):** 0.1% – 0.35% giá trị lệnh. Một round-trip (mua + bán) = 0.2% – 0.7% phí tổng.\n\n**Tác động cộng dồn:**\n\n| Round-trips/tuần | Phí/tuần | Phí/năm |\n|-----------------|---------|--------|\n| 1 | 0.5% | ~26% |\n| 3 | 1.5% | ~78% |\n| 10 | 5.0% | ~260% |\n\nNếu giao dịch 10 lần/tuần với phí 0.5%/round-trip, bạn cần kiếm ít nhất **5%/tuần chỉ để hòa vốn sau phí**.\n\n**Dấu hiệu giao dịch quá mức:**\n- Xem màn hình giá >5 lần/ngày\n- Mua rồi bán cùng 1 mã trong 1 tuần\n- P&L biến động nhưng không tăng theo thời gian",
+    },
+    {
+      type: "EXAMPLE",
+      heading: "Trader A vs. Trader B — cùng thị trường, khác kết quả",
+      body: "**Trader A (giao dịch nhiều):**\n- 10 round-trips/tuần, mỗi lần +0.5% trước phí\n- Phí/round-trip: 0.5%\n- Net/round-trip: 0.5% − 0.5% = **0%**\n- Kết quả sau 1 năm: ~0% (trước khi tính lần lỗ)\n\n**Trader B (kiên nhẫn):**\n- 1–2 round-trips/tháng, mỗi lần nhắm +5–10%\n- Phí/round-trip: 0.5% (không đáng kể so với target)\n- Net/round-trip: ~4.5–9.5%\n- Kết quả sau 1 năm: tiềm năng +60–100%\n\n**Lợi thế của nhà đầu tư cá nhân:** Không bị áp lực giao dịch. Hãy dùng lợi thế này — **chờ cơ hội thực sự**.",
+    },
+    {
+      type: "MYTH_BUSTER",
+      heading: "❌ \"Giao dịch nhiều hơn = nhiều cơ hội kiếm tiền hơn\"",
+      body: "✅ **Sự thật:** Với nhà đầu tư cá nhân, **nhiều giao dịch hơn = nhiều phí hơn = ít lợi nhuận hơn**. Các quỹ HFT (High-Frequency Trading) giao dịch hàng triệu lần/ngày vì họ có phí gần 0 và thuật toán tinh vi. Bạn không thể cạnh tranh với họ về tốc độ — hãy cạnh tranh bằng **kiên nhẫn và nghiên cứu**.",
+    },
+    {
+      type: "QUIZ",
+      heading: "Phí giao dịch mỗi lệnh là 0.25%. Bạn mua rồi bán VNM (2 lệnh). Tổng phí là bao nhiêu?",
+      body: "",
+      options: [
+        { id: "A", text: "0.25%" },
+        { id: "B", text: "0.5%" },
+        { id: "C", text: "0.1%" },
+        { id: "D", text: "1.0%" },
+      ],
+      correctOption: "B",
+      hint: "Mỗi lệnh (mua hoặc bán) tính phí riêng. Mua (0.25%) + Bán (0.25%) = ?",
+    },
+    {
+      type: "CTA",
+      heading: "Xem tổng phí đã trả trong lịch sử giao dịch",
+      body: "Vào Portfolio → P&L → Dòng phí giao dịch. Xem tổng phí tích lũy từ khi bắt đầu. So sánh với tổng P&L đã thực hiện: phí chiếm bao nhiêu % lợi nhuận của bạn?",
+      ctaAction: "OPEN_PNL_TAB",
+      ctaLabel: "Xem tab P&L",
+    },
+  ],
+};
+
+const L4_4: Lesson = {
+  id: "L4.4",
+  moduleId: "M4",
+  index: 4,
+  titleVi: "Tỷ lệ thắng vs. Hệ số lợi nhuận",
+  titleEn: "Win Rate vs. Profit Factor",
+  cards: [
+    {
+      type: "CONCEPT",
+      heading: "Tại sao tỷ lệ thắng một mình không có nghĩa gì",
+      body: "**Tỷ lệ thắng (Win Rate):** % số lần giao dịch có lãi.\n> Ví dụ: 6 lãi / 10 giao dịch = **60% win rate**\n\n**Hệ số lợi nhuận (Profit Factor):** Tổng lãi ÷ Tổng lỗ.\n> Ví dụ: 6,000,000 VND lãi ÷ 3,000,000 VND lỗ = **Profit Factor 2.0**\n\n**Kích thước thắng/thua quan trọng hơn win rate:**\n\n| Nhà đầu tư | Win rate | Mỗi lần thắng | Mỗi lần thua | Net/10 giao dịch |\n|-----------|---------|--------------|--------------|------------------|\n| X | 70% | +100,000 | −400,000 | 7×100K − 3×400K = **−500,000** 🔴 |\n| Y | 40% | +500,000 | −100,000 | 4×500K − 6×100K = **+1,400,000** 🟢 |",
+    },
+    {
+      type: "EXAMPLE",
+      heading: "Tỷ lệ thắng 30% nhưng vẫn có lãi — có thể không?",
+      body: "**Nhà đầu tư chuyên nghiệp với 30% win rate:**\n- 3 lần thắng × +20% mỗi lần = +60%\n- 7 lần thua × −3% mỗi lần = −21%\n- **Net: +39%** cho 10 giao dịch ✅\n\nChìa khóa: Cắt lỗ nhỏ (−3%), để lãi chạy dài (+20%). Đây là kỷ luật \"cut losses, let winners run.\"\n\n**Nhà đầu tư mới điển hình — 60% win rate nhưng thua lỗ:**\n- 6 lần thắng × +2% = +12%\n- 4 lần thua × −10% = −40% (không chịu cắt lỗ, giữ mãi)\n- **Net: −28%** ❌",
+    },
+    {
+      type: "MYTH_BUSTER",
+      heading: "❌ \"Tỷ lệ thắng cao là bí quyết thành công trong đầu tư\"",
+      body: "✅ **Sự thật:** Nhiều nhà đầu tư cố gắng tối đa hóa tỷ lệ thắng bằng cách **không chịu cắt lỗ** (để tránh \"hiện thực hóa thua\"). Kết quả: hàng chục lệnh thắng nhỏ và vài lệnh thua rất lớn — tổng âm.\n\n**Bí quyết thực sự:** Tỷ lệ Lãi/Lỗ (Risk-Reward Ratio) > 2:1. Tức là mỗi lần thắng kiếm ít nhất gấp đôi mỗi lần thua.",
+    },
+    {
+      type: "QUIZ",
+      heading: "Nhà đầu tư X: 60% tỷ lệ thắng. Mỗi lần thắng +100,000 VND. Mỗi lần thua −300,000 VND. Sau 10 giao dịch, kết quả là?",
+      body: "",
+      options: [
+        { id: "A", text: "Lãi 240,000 VND" },
+        { id: "B", text: "Hòa vốn" },
+        { id: "C", text: "Lỗ 600,000 VND" },
+        { id: "D", text: "Lãi 600,000 VND" },
+      ],
+      correctOption: "C",
+      hint: "Tính: (6 × 100,000) − (4 × 300,000) = 600,000 − 1,200,000 = ?",
+    },
+    {
+      type: "CTA",
+      heading: "Xem P&L thực hiện theo lệnh",
+      body: "Vào Portfolio → Lịch sử giao dịch đã đóng. Tính tay hoặc xem AI: tỷ lệ thắng của bạn là bao nhiêu %? Trung bình mỗi lần thắng là bao nhiêu VND? Mỗi lần thua? Profit Factor của bạn hiện tại > 1 không?",
+      ctaAction: "OPEN_PNL_TAB",
+      ctaLabel: "Xem lịch sử P&L",
+    },
+  ],
+};
+
+const L4_5: Lesson = {
+  id: "L4.5",
+  moduleId: "M4",
+  index: 5,
+  titleVi: "Xây dựng quy tắc giao dịch",
+  titleEn: "Building Your Trading Rules",
+  cards: [
+    {
+      type: "CONCEPT",
+      heading: "Quy tắc giao dịch — Loại bỏ cảm xúc khỏi quyết định",
+      body: "Quy tắc giao dịch là tập hợp các cam kết **được viết ra trước** để không bị cảm xúc chi phối khi thị trường biến động mạnh.\n\n**5 quy tắc nền tảng cho F0 trader:**\n\n| # | Quy tắc | Lý do |\n|---|---------|-------|\n| 1 | Không có cổ phiếu nào > 25% tổng danh mục | Giới hạn tổn thất nếu một mã sụp đổ |\n| 2 | Cắt lỗ tối đa −8% từ giá mua | Ngăn lỗ nhỏ thành lỗ lớn |\n| 3 | Không mua cổ phiếu đã tăng >15% mà không nghiên cứu trước | Chống FOMO |\n| 4 | Tối đa 3 giao dịch mới mỗi tuần | Chống overtrading |\n| 5 | Đợi 24 giờ trước khi bán khi thị trường điều chỉnh mạnh | Chống bán hoảng loạn |",
+    },
+    {
+      type: "EXAMPLE",
+      heading: "\"Sổ quy tắc\" của một nhà đầu tư F0 sau Module 4",
+      body: "*Quy tắc giao dịch của tôi:*\n\n1. \"Tôi không bao giờ đặt hơn 20% danh mục vào một mã duy nhất.\"\n2. \"Khi bất kỳ cổ phiếu nào lỗ −8% từ giá mua, tôi bán ra và xem xét lại luận điểm trước khi mua lại.\"\n3. \"Trước khi mua, tôi phải có thể giải thích tại sao tôi mua trong 2 câu đơn giản.\"\n4. \"Khi thị trường giảm >3% trong ngày, tôi không đặt lệnh bán ngay — chờ ít nhất 24 giờ.\"\n5. \"Tôi review danh mục mỗi Chủ nhật, không phải mỗi giờ.\"",
+    },
+    {
+      type: "MYTH_BUSTER",
+      heading: "❌ \"Quy tắc cứng nhắc, thực tế phải linh hoạt\"",
+      body: "✅ **Sự thật:** \"Linh hoạt\" không có quy tắc = quyết định theo cảm xúc. Các nhà đầu tư huyền thoại (Warren Buffett, Ray Dalio, Peter Lynch) đều có **hệ thống quy tắc nghiêm ngặt**. Buffett: \"Quy tắc 1: Đừng mất tiền. Quy tắc 2: Đừng quên Quy tắc 1.\"\n\nLinh hoạt **trong khung quy tắc** là kỹ năng. Linh hoạt **để phá vỡ quy tắc khi cần nhất** là tự sabotage.",
+    },
+    {
+      type: "QUIZ",
+      heading: "Bạn đặt quy tắc cắt lỗ −8%. VNM đang lỗ −9% sau 5 ngày. Không có tin xấu về công ty. Hành động nào ĐÚNG với kỷ luật giao dịch?",
+      body: "",
+      options: [
+        { id: "A", text: "Giữ thêm vì VNM là công ty tốt" },
+        { id: "B", text: "Mua thêm để hạ giá vốn" },
+        { id: "C", text: "Tuân thủ quy tắc: bán và xem xét lại luận điểm trước khi mua lại" },
+        { id: "D", text: "Đợi hồi phục về giá mua rồi mới bán" },
+      ],
+      correctOption: "C",
+      hint: "Quy tắc đặt ra để THỰC HIỆN khi khó nhất. Nếu chỉ tuân thủ khi dễ thì không cần quy tắc.",
+    },
+    {
+      type: "CTA",
+      heading: "Chia sẻ 3 quy tắc giao dịch của bạn với cộng đồng",
+      body: "Mở trình soạn thảo bài đăng cộng đồng. Template đã được điền sẵn:\n\n*\"3 quy tắc giao dịch của tôi:*\n*1. ___*\n*2. ___*\n*3. ___\"*\n\nĐiền vào 3 quy tắc cá nhân của bạn. Đăng lên cộng đồng để giữ mình có trách nhiệm — và truyền cảm hứng cho F0 trader khác.",
+      ctaAction: "BROWSE_STOCK_LIST",
+      ctaLabel: "Chia sẻ quy tắc",
+    },
+  ],
+};
 
 // ---------------------------------------------------------------------------
 // Module registry
@@ -553,13 +957,7 @@ export const MODULES: readonly LearningModule[] = [
     titleVi: "Tư duy Danh mục",
     titleEn: "Thinking in Portfolios",
     description: "Đa dạng hóa, ngành kinh tế VN, watchlist và sức khỏe danh mục AI.",
-    lessons: [
-      L3_PLACEHOLDER("L3.1", 1, "Đa dạng hóa cơ bản", "Diversification Basics"),
-      L3_PLACEHOLDER("L3.2", 2, "Các ngành tại Việt Nam", "VN Sectors Crash Course"),
-      L3_PLACEHOLDER("L3.3", 3, "Danh sách theo dõi là gì?", "What is a Watchlist?"),
-      L3_PLACEHOLDER("L3.4", 4, "Đặt cảnh báo giá", "Setting a Price Alert"),
-      L3_PLACEHOLDER("L3.5", 5, "Kiểm tra sức khỏe danh mục", "Portfolio Health Check"),
-    ],
+    lessons: [L3_1, L3_2, L3_3, L3_4, L3_5],
     lessonXP: 125,
     bonusXP: 25,
     badgeName: "Portfolio Thinker",
@@ -572,13 +970,7 @@ export const MODULES: readonly LearningModule[] = [
     titleVi: "Tâm lý Giao dịch",
     titleEn: "Trader Psychology",
     description: "FOMO, bán hoảng loạn, overtrading và xây dựng quy tắc giao dịch cá nhân.",
-    lessons: [
-      L4_PLACEHOLDER("L4.1", 1, "FOMO là gì?", "What is FOMO?"),
-      L4_PLACEHOLDER("L4.2", 2, "Mô hình bán hoảng loạn", "The Panic Sell Pattern"),
-      L4_PLACEHOLDER("L4.3", 3, "Giao dịch quá mức", "Overtrading Explained"),
-      L4_PLACEHOLDER("L4.4", 4, "Tỷ lệ thắng vs. Hệ số lợi nhuận", "Win Rate vs. Profit Factor"),
-      L4_PLACEHOLDER("L4.5", 5, "Xây dựng quy tắc giao dịch", "Building Your Trading Rules"),
-    ],
+    lessons: [L4_1, L4_2, L4_3, L4_4, L4_5],
     lessonXP: 125,
     bonusXP: 75,
     badgeName: "Market Scholar",
