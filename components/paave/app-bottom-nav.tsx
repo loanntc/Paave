@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart2,
+  BookOpen,
   Compass,
   Home as HomeIcon,
   User,
@@ -22,10 +23,11 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Trang chủ", href: "/home", icon: HomeIcon },
-  { label: "Danh mục", href: "/portfolio", icon: BarChart2 },
-  { label: "Khám phá", href: "/discover", icon: Compass },
-  { label: "Hồ sơ",   href: "/profile",  icon: User },
+  { label: "Trang chủ", href: "/home",      icon: HomeIcon  },
+  { label: "Học hỏi",   href: "/grow",      icon: BookOpen  },
+  { label: "Danh mục",  href: "/portfolio", icon: BarChart2 },
+  { label: "Khám phá",  href: "/discover",  icon: Compass   },
+  { label: "Hồ sơ",     href: "/profile",   icon: User      },
 ];
 
 // ---------------------------------------------------------------------------
