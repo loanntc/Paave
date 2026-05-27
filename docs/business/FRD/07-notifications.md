@@ -386,3 +386,234 @@ Example: "VIC moved +6.23% today. Tap to see details."
 - **Notification type icons**: Price alert → bell icon; Market open/close → clock icon; Watchlist movement → chart icon; AI nudge → sparkle icon; Portfolio health → heart icon.
 - **Swipe to delete**: Individual notifications can be swiped left in the inbox to delete. "Delete all" button available at top of inbox.
 - **Auto-delete implementation**: Server-side batch job runs daily; deletes inbox entries with `created_at < now() - 30 days`.
+
+---
+
+## 5. Gamification Notifications (FR-NOTIF-02 through FR-NOTIF-09)
+
+> **Context:** These notification types are introduced by the gamification system (FR-GAME-01 through FR-GAME-10) and the F0 Learning Path (FR-LEARN-*). They extend the notification inbox and push system defined in §2 above using the same delivery infrastructure (push token registration in FR-42, deep link routing in FR-NOTIF-01).
+
+---
+
+### FR-NOTIF-02: Badge Awarded Notification
+
+- **Priority:** P1
+- **Trigger:** FR-GAME-06 badge award event (`badge_awards` row inserted)
+- **Actor:** System → Authenticated user
+- **Description:** When any badge is awarded (FR-GAME-06), a push notification and inbox entry are created immediately.
+
+**Notification Specification:**
+
+| Field | Value |
+|---|---|
+| Push title | "Thành tích mở khóa!" (Achievement Unlocked!) |
+| Push body | "Bạn đã nhận huy hiệu **[badge name]**! Xem ngay." (You earned the [badge name] badge! View now.) |
+| Deep link | `paave://badges/{badge_id}` → Badge detail modal on Profile screen |
+| Inbox icon | Badge artwork thumbnail (32×32px) |
+| Additional CTA for Rare/Epic | Second line in push body: "Thẻ thành tích của bạn đã sẵn sàng để chia sẻ." (Your achievement card is ready to share.) |
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|---|---|---|
+| AC-NOTIF-02-1 | User earns `BADGE_FIRST_TRADE` | Badge awarded | Push sent with badge name; deep link opens badge detail modal |
+| AC-NOTIF-02-2 | User earns `BADGE_ZEN_TRADER` (Epic) | Badge awarded | Push includes share CTA; moment card available at deep link destination |
+| AC-NOTIF-02-3 | `notifications_enabled = false` | Badge awarded | No push sent; inbox entry created; badge visible on profile without push |
+
+**Business Rules:**
+
+| # | Rule |
+|---|---|
+| BR-NOTIF-02-1 | One push per badge award. Fired once; not repeatable. |
+| BR-NOTIF-02-2 | Inbox entry retained for 30 days (standard inbox TTL). |
+| BR-NOTIF-02-3 | Notification does not fire for the Branch Completion badges if the badge award push and the XP burst notification would arrive simultaneously — they are sent as a single combined push (XP + badge in one message, max 1 push per event batch per user per second). |
+
+---
+
+### FR-NOTIF-03: Tier Upgrade Notification
+
+- **Priority:** P1
+- **Trigger:** FR-GAME-02 tier re-evaluation (weekly Sunday batch) detects tier increase
+- **Actor:** System → Authenticated user
+- **Description:** When a user's Trader Tier increases (FR-GAME-02, evaluated weekly on Sunday), a push notification celebrates the upgrade.
+
+**Notification Specification:**
+
+| Field | Value |
+|---|---|
+| Push title | "Thăng hạng! 🎉" (Tier Up! 🎉) |
+| Push body | "Chúc mừng! Bạn đã đạt **[new tier name in VN]** với [cumulative score] điểm." |
+| Deep link | `paave://profile` → Profile screen (shows new tier badge) |
+
+**Business Rules:**
+
+| # | Rule |
+|---|---|
+| BR-NOTIF-03-1 | Notification fires once per tier-level crossing. Firing again for the same tier is a no-op. |
+| BR-NOTIF-03-2 | Tier is re-evaluated Sunday midnight UTC; notification sent after successful evaluation (target: before 08:00 ICT Monday). |
+
+---
+
+### FR-NOTIF-04: Streak Reminder Notification
+
+- **Priority:** P2
+- **Trigger:** Scheduled daily at 20:00 ICT per user; fires only if learning streak > 0 AND no lesson completed today
+- **Actor:** System → Authenticated user
+- **Description:** If the user has an active learning streak (≥1) and has NOT completed any lesson today by 20:00 ICT, a reminder push is sent to encourage lesson completion before streak reset at midnight.
+
+**Notification Specification:**
+
+| Field | Value |
+|---|---|
+| Push title | "Đừng để mất chuỗi học!" (Don't break your streak!) |
+| Push body | "Bạn đang có chuỗi **[X ngày]** liên tiếp. Hoàn thành 1 bài học trước nửa đêm để duy trì!" (You have a [X-day] streak. Complete 1 lesson before midnight to keep it going!) |
+| Deep link | `paave://grow/learning` → Grow tab, Learning Path, next incomplete lesson |
+
+**Business Rules:**
+
+| # | Rule |
+|---|---|
+| BR-NOTIF-04-1 | Notification fires at 20:00 ICT only if: `learning_streak > 0` AND no `lesson_completions` record with `completed_at` in today's ICT calendar day. |
+| BR-NOTIF-04-2 | Maximum 1 reminder per user per day. Not sent if user has already completed a lesson today. |
+| BR-NOTIF-04-3 | Not sent if user's learning streak = 0 (no streak to protect). |
+| BR-NOTIF-04-4 | Streak Freeze state is accounted for: if user has already activated a Freeze for today, this notification is suppressed. |
+
+---
+
+### FR-NOTIF-05: Skill Tree Node Unlocked Notification
+
+- **Priority:** P2
+- **Trigger:** FR-GAME-07 node state transition to `AVAILABLE` (newly unlocked)
+- **Actor:** System → Authenticated user
+- **Description:** When one or more Skill Tree nodes transition from `LOCKED` to `AVAILABLE`, a single batched push notification is sent. Multiple nodes unlocked in the same evaluation are reported as a single notification (not one per node).
+
+**Notification Specification:**
+
+| Field | Value |
+|---|---|
+| Push title | "Kỹ năng mới mở khóa!" (New skill unlocked!) |
+| Push body (1 node) | "**[Node name]** đã sẵn sàng trong Cây Kỹ Năng." ([Node name] is now available in your Skill Tree.) |
+| Push body (2+ nodes) | "**[N] kỹ năng mới** đã sẵn sàng trong Cây Kỹ Năng." ([N] new skills are now available in your Skill Tree.) |
+| Deep link | `paave://grow/skill-tree` → Skill Tree screen |
+
+**Business Rules:**
+
+| # | Rule |
+|---|---|
+| BR-NOTIF-05-1 | Maximum 1 notification per evaluation run, regardless of how many nodes become `AVAILABLE`. |
+| BR-NOTIF-05-2 | Notification fires only on first unlock of a node (transition from `LOCKED` → `AVAILABLE`). Subsequent state transitions (`AVAILABLE` → `IN_PROGRESS` → `COMPLETE`) do not generate notifications. |
+
+---
+
+### FR-NOTIF-06: Weekly Challenge Notifications
+
+- **Priority:** P1
+- **Trigger:** Three separate sub-events from FR-GAME-04 weekly challenge lifecycle
+- **Actor:** System → Authenticated user
+- **Description:** Three notification types cover the weekly challenge lifecycle: challenge start (Monday), challenge end reminder (Sunday), and winner announcement (Sunday night after scoring).
+
+**Sub-type Specification:**
+
+| Sub-type | Trigger | Push Title | Push Body | Deep Link |
+|---|---|---|---|---|
+| FR-NOTIF-06.1 (Start) | Monday 08:00 ICT | "Thử thách tuần mới bắt đầu!" | "Thử thách: **[challenge title]**. Thời gian: 7 ngày. Phần thưởng: +100 XP và huy hiệu!" | `paave://grow/challenges` |
+| FR-NOTIF-06.2 (Reminder) | Sunday 12:00 ICT | "Còn 12 giờ để hoàn thành thử thách!" | "Vị trí hiện tại của bạn: #[rank]. Hãy nỗ lực thêm!" | `paave://grow/challenges` |
+| FR-NOTIF-06.3 (Result) | Sunday 23:30 ICT (after scoring) | "Kết quả thử thách tuần này!" | If winner: "🏆 Bạn thắng! +100 XP và huy hiệu đã được trao." / If not: "Thử thách tuần này đã kết thúc. Kết quả của bạn: #[rank]." | `paave://grow/challenges` |
+
+**Business Rules:**
+
+| # | Rule |
+|---|---|
+| BR-NOTIF-06-1 | FR-NOTIF-06.1 fires every Monday regardless of whether the user participated last week. |
+| BR-NOTIF-06-2 | FR-NOTIF-06.2 fires only if the user was enrolled in the challenge (logged in on Monday). |
+| BR-NOTIF-06-3 | FR-NOTIF-06.3 fires after FR-GAME-04 winner evaluation completes; always sent to enrolled users. |
+| BR-NOTIF-06-4 | User rank in push body is their standing at the time the notification is sent (best-effort, not final rank for FR-NOTIF-06.2). |
+
+---
+
+### FR-NOTIF-07: Daily Mission Refresh Notification
+
+- **Priority:** P2
+- **Trigger:** Midnight ICT daily mission assignment batch (FR-GAME-08-01), conditional on prior day engagement
+- **Actor:** System → Authenticated user
+- **Description:** When new daily missions are assigned at midnight ICT, a push notification is sent — but ONLY if the user completed at least 1 mission the previous day. This prevents notification fatigue for disengaged users.
+
+**Notification Specification:**
+
+| Field | Value |
+|---|---|
+| Push title | "Nhiệm vụ mới hôm nay!" (New missions today!) |
+| Push body | "3 nhiệm vụ mới đang chờ bạn. Hoàn thành để nhận XP!" (3 new missions are waiting. Complete them to earn XP!) |
+| Deep link | `paave://home` → Home tab (Today's Goals widget) |
+
+**Business Rules:**
+
+| # | Rule |
+|---|---|
+| BR-NOTIF-07-1 | Notification fires ONLY if user completed ≥1 daily mission in the previous calendar day (ICT). |
+| BR-NOTIF-07-2 | Notification fires at 08:00 ICT (not at midnight when batch runs), to avoid disrupting sleep. |
+| BR-NOTIF-07-3 | Users who have not completed Module 1 do not receive this notification (no missions assigned). |
+
+---
+
+### FR-NOTIF-08: Module Unlock Notification
+
+- **Priority:** P1
+- **Trigger:** FR-LEARN-08 module unlock evaluation → module transitions from `LOCKED` to `UNLOCKED`
+- **Actor:** System → Authenticated user
+- **Description:** When any learning module transitions to `UNLOCKED` state (per FR-LEARN-08), an immediate push notification is sent with deep link to the newly unlocked module.
+
+**Notification Specification:**
+
+| Module | Push Title | Push Body |
+|---|---|---|
+| M2 | "Module 2 đã mở khóa!" | "Bạn đã hoàn thành Module 1! **Giao dịch đầu tiên của bạn** đang chờ." |
+| M3 | "Module 3 đã mở khóa!" | "Bạn đủ điều kiện học **Tư duy danh mục**. Bắt đầu ngay!" |
+| M4 | "Module 4 đã mở khóa!" | "Giao dịch viên tâm lý học đang chờ bạn. Học **Tâm lý Trader** ngay!" |
+
+| Field | Value |
+|---|---|
+| Deep link | `paave://grow/learning?module={module_id}` → Grow tab, scrolled to unlocked module card |
+
+**Business Rules:**
+
+| # | Rule |
+|---|---|
+| BR-NOTIF-08-1 | One notification per module unlock per user. Idempotency enforced: if module is already `UNLOCKED`, no re-notification. |
+| BR-NOTIF-08-2 | Fires immediately when unlock evaluation completes (not on a schedule). |
+
+---
+
+### FR-NOTIF-09: Weekly Score & Leaderboard Position Notification
+
+- **Priority:** P2
+- **Trigger:** FR-GAME-03 Sunday midnight UTC Trader Score computation completes; FR-GAME-09 leaderboard snapshot created
+- **Actor:** System → Authenticated user
+- **Description:** After Sunday's Trader Score computation and leaderboard update, each active user receives a personal summary push notification with their weekly score and leaderboard rank.
+
+**Notification Specification:**
+
+| Field | Value |
+|---|---|
+| Push title | "Kết quả tuần của bạn!" (Your weekly results!) |
+| Push body | "Điểm tuần này: **[score]**. Xếp hạng: **#[rank]** trong nhóm [segment name in VN]." (This week's score: [score]. Rank: #[rank] in [segment name].) |
+| Deep link | `paave://grow/leaderboard?segment={user_segment}` → Leaderboard screen, user's segment |
+
+**Business Rules:**
+
+| # | Rule |
+|---|---|
+| BR-NOTIF-09-1 | Fires after leaderboard snapshot is created for the user's segment (target: before Monday 08:00 ICT). |
+| BR-NOTIF-09-2 | Users with no activity that week receive the notification with score = their computed minimal score. They are not excluded. |
+| BR-NOTIF-09-3 | Notification fires only once per week per user; keyed by `(user_id, iso_week)`. |
+
+---
+
+## 6. Gamification Notification Business Rules (Global)
+
+| ID | Rule | Violation Behavior |
+|---|---|---|
+| BR-NOTIF-GAME-01 | Gamification push notifications (FR-NOTIF-02 through FR-NOTIF-09) respect `notifications_enabled` flag. If `false`, notifications are not sent; inbox entries are still created (except FR-NOTIF-07 which requires push to be meaningful). | If push sent to user with `notifications_enabled = false`, treat as delivery failure; no retry |
+| BR-NOTIF-GAME-02 | Maximum 3 gamification push notifications per user per day (aggregate across FR-NOTIF-02 through FR-NOTIF-09). If daily cap is reached, lower-priority notifications are queued for next day. Priority order: FR-NOTIF-02 > FR-NOTIF-03 > FR-NOTIF-08 > FR-NOTIF-06 > FR-NOTIF-04 > FR-NOTIF-05 > FR-NOTIF-07 > FR-NOTIF-09. | 4th notification in same day: held and sent at 08:00 ICT next day (unless it is time-sensitive, e.g., streak reminder — those are discarded if cap reached rather than delayed) |
+| BR-NOTIF-GAME-03 | All gamification notifications use the same deep link routing infrastructure as FR-NOTIF-01 (cold start handling, JWT refresh, `pending_deep_link` with 5-minute TTL). | Same as BR-NOTIF-01 |
+| BR-NOTIF-GAME-04 | Gamification inbox entries are labelled with a category icon: badge → ★; tier → ↑; streak → 🔥; skill tree → 🌿; challenge → ⚔; mission → ✓; module → 📚; leaderboard → 🏆 | Missing category icon = UI bug, P2 |

@@ -11,7 +11,7 @@
 
 ```
 Tab 1: Home       — Icon: house        — Label: "Trang chủ" / "홈" / "Home"
-Tab 2: Discover   — Icon: compass      — Label: "Khám phá" / "탐색" / "Discover"
+Tab 2: Grow       — Icon: sprout       — Label: "Phát triển" / "성장" / "Grow"
 Tab 3: Markets    — Icon: bar-chart-2  — Label: "Thị trường" / "시장" / "Markets"
 Tab 4: Portfolio  — Icon: briefcase    — Label: "Danh mục" / "포트폴리오" / "Portfolio"
 Tab 5: Profile    — Icon: user         — Label: "Tôi" / "내 정보" / "Profile"
@@ -36,9 +36,19 @@ App Root
 └── Main App (bottom nav)
     ├── Tab 1: Home Dashboard
     │   └── → Stock Detail (push, from any stock tap)
-    ├── Tab 2: Discover / Trending Feed
-    │   ├── → Stock Detail (push)
-    │   └── → Theme Filter (bottom sheet)
+    ├── Tab 2: Grow
+    │   ├── Sub-nav pill 1: Learning Path (default)
+    │   │   ├── Module cards (M1–M4)
+    │   │   └── → Lesson Viewer (push, card-stack format)
+    │   ├── Sub-nav pill 2: Discover Feed
+    │   │   ├── → Stock Detail (push)
+    │   │   └── → Theme Filter (bottom sheet)
+    │   ├── Sub-nav pill 3: Skill Tree
+    │   │   └── → Node Detail (bottom sheet, locked node info)
+    │   ├── Sub-nav pill 4: My Badges
+    │   │   └── → Badge Detail Modal (moment card / share)
+    │   └── Sub-nav pill 5: Leaderboards
+    │       └── Segment tabs: Beginners / Intermediate / Advanced
     ├── Tab 3: Markets
     │   ├── VN Tab (default for VN users)
     │   ├── KR Tab (default for KR users)
