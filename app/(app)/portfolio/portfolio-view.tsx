@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
-import { BehaviorAnalysisCard } from "@/components/paave/behavior-analysis-card";
+import {
+  BehaviorAnalysisCard,
+  BehaviorMetricPanel,
+} from "@/components/paave/behavior-analysis-card";
 import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -164,6 +167,47 @@ export function PortfolioView() {
     ? (totalPL / account.starting_balance) * 100
     : 0;
   const isUp = totalPL >= 0;
+
+  // ── Behavior metrics — computed from available trades + holdings ────────────
+  //
+  // These are approximations: trades is capped at 50, and win-rate only counts
+  // active holdings with partial exits. Real depth analysis is done by the AI card.
+  //
+  // tradesPerWeek — frequency proxy from the span between oldest and newest trade
+  const tradesPerWeek = (() => {
+    if (trades.length === 0) return 0;
+    if (trades.length === 1) return 0.23; // ~1/month
+    const newestMs = new Date(trades[0].executed_at).getTime();
+    const oldestMs = new Date(trades[trades.length - 1].executed_at).getTime();
+    const spanDays = Math.max(1, (newestMs - oldestMs) / (1_000 * 60 * 60 * 24));
+    return (trades.length / spanDays) * 7;
+  })();
+
+  // winRatePct — active holdings where at least one partial exit was profitable
+  const winRatePct = (() => {
+    const traded = holdings.filter((h) => h.realized_pl !== 0);
+    if (traded.length === 0) return null;
+    return (traded.filter((h) => h.realized_pl > 0).length / traded.length) * 100;
+  })();
+
+  // feeBurnPct — total fees as % of starting balance
+  const feeBurnPct = account
+    ? (trades.reduce((s, t) => s + t.fees, 0) / account.starting_balance) * 100
+    : 0;
+
+  // Radar scores [0–100] — each dimension mapped from the metrics above
+  const behaviorScores = {
+    // Higher = more overtrading (axis is inverted in the radar component)
+    overtrading: Math.min(100, tradesPerWeek * 20),
+    // Higher = more diversified
+    diversification: Math.min(100, holdings.length * 20),
+    // Higher = better win rate (or neutral 50 when no data)
+    discipline: winRatePct ?? 50,
+    // Higher = lower fee burn (100 = no fees, 0 = >1% burn)
+    fee_awareness: Math.max(0, 100 - feeBurnPct * 100),
+    // Placeholder — avgHoldDays not tracked per-trade in current schema
+    patience: 50,
+  };
 
   return (
     <main className="min-h-screen bg-ink-violet-base text-text-neo-primary pb-24">
@@ -337,7 +381,20 @@ export function PortfolioView() {
 
         {/* ── Behavior tab ─────────────────────────────────────────────── */}
         {activeTab === "behavior" && userId && (
-          <BehaviorAnalysisCard userId={userId} />
+          <>
+            {/* Quantitative overview — radar + metric pills */}
+            {!isLoading && (
+              <BehaviorMetricPanel
+                scores={behaviorScores}
+                tradesPerWeek={tradesPerWeek}
+                winRatePct={winRatePct}
+                avgHoldDays={null}
+                feeBurnPct={feeBurnPct}
+              />
+            )}
+            {/* Qualitative AI narrative — fires on mount, streams from Anthropic */}
+            <BehaviorAnalysisCard userId={userId} />
+          </>
         )}
 
         {activeTab === "behavior" && !userId && !isLoading && (
