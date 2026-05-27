@@ -400,8 +400,6 @@ describe("localStorage persistence", () => {
   });
 });
 
-function result1complete(
-  r: ReturnType<typeof renderHook<ReturnType<typeof useLearningProgress>>>["result"],
-) {
+function result1complete(r: { current: ReturnType<typeof useLearningProgress> }) {
   r.current.completeLesson("L1.1", "M1");
 }
