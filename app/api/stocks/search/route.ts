@@ -33,6 +33,8 @@ export interface StockResult {
 //             "volume"  → top stocks by total trading volume
 //             "gainers" → top positive movers by pct_change (VN stocks)
 //             "losers"  → top negative movers by pct_change (VN stocks)
+//   sector — sector name filter (case-insensitive, partial match)
+//             Applied only in the default view (when 'q' is empty).
 //   limit  — max results (1–30, default 20)
 // ---------------------------------------------------------------------------
 type SortMode = "volume" | "gainers" | "losers";
@@ -43,6 +45,7 @@ export async function GET(req: NextRequest) {
   const rawSort = searchParams.get("sort");
   const sort: SortMode =
     rawSort === "gainers" ? "gainers" : rawSort === "losers" ? "losers" : "volume";
+  const sector = (searchParams.get("sector") ?? "").trim();
   const rawLimit = Number(searchParams.get("limit") ?? DEFAULT_LIMIT);
   const limit = Math.min(Math.max(1, Number.isFinite(rawLimit) ? rawLimit : DEFAULT_LIMIT), MAX_LIMIT);
 
@@ -50,9 +53,28 @@ export async function GET(req: NextRequest) {
 
   // ── Default view: top stocks (by volume or by gains) ─────────────────────
   if (q.length === 0) {
+    // When a sector filter is active, resolve the matching symbol codes first
+    let allowedCodes: string[] | null = null;
+    if (sector.length > 0) {
+      const { data: sectorSymbols } = await db
+        .from("symbols")
+        .select("code")
+        .ilike("sector", `%${sector}%`);
+      allowedCodes = (sectorSymbols ?? []).map((s) => s.code);
+      // If the sector matches nothing, return an empty result set immediately
+      if (allowedCodes.length === 0) {
+        return NextResponse.json({ results: [], query: "", sort, sector });
+      }
+    }
+
     let quotesQuery = db
       .from("symbol_quotes_latest")
       .select("symbol_code, last_price, pct_change, total_volume");
+
+    // Apply sector code filter if active
+    if (allowedCodes !== null) {
+      quotesQuery = quotesQuery.in("symbol_code", allowedCodes);
+    }
 
     if (sort === "gainers") {
       // Top positive movers — filter out non-positive and sort descending
@@ -87,7 +109,7 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ results, query: "", sort });
+    return NextResponse.json({ results, query: "", sort, sector });
   }
 
   // ── Search: match code prefix first, then name ────────────────────────────

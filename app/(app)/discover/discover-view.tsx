@@ -43,6 +43,8 @@ const SORT_SECTION_LABELS: Record<SortMode, string> = {
 export function DiscoverView() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortMode>("volume");
+  const [selectedSector, setSelectedSector] = useState<string | null>(null);
+  const [sectors, setSectors] = useState<string[]>([]);
   const [results, setResults] = useState<StockResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [section, setSection] = useState("Khối lượng cao nhất");
@@ -102,7 +104,15 @@ export function DiscoverView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, alertsHydrated, watchlist.join(","), alerts.map((a) => a.id).join(",")]);
 
-  // Fetch on mount, on query change, and on sort change
+  // Fetch distinct sector names on mount (one-time, sectors rarely change)
+  useEffect(() => {
+    fetch("/api/stocks/sectors")
+      .then((r) => r.json())
+      .then((d: { sectors: string[] }) => setSectors(d.sectors))
+      .catch(() => {/* Keep empty — sector chips just won't show */});
+  }, []);
+
+  // Fetch on mount, on query change, on sort change, or on sector change
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -111,16 +121,24 @@ export function DiscoverView() {
     debounceRef.current = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const url = query
-          ? `/api/stocks/search?q=${encodeURIComponent(query)}`
-          : `/api/stocks/search?sort=${sort}`;
+        let url: string;
+        if (query) {
+          url = `/api/stocks/search?q=${encodeURIComponent(query)}`;
+        } else {
+          url = `/api/stocks/search?sort=${sort}`;
+          if (selectedSector) {
+            url += `&sector=${encodeURIComponent(selectedSector)}`;
+          }
+        }
         const res = await fetch(url);
         const data: { results: StockResult[]; query: string } = await res.json();
         setResults(data.results);
         setSection(
           data.query.length > 0
             ? `Kết quả cho "${data.query}"`
-            : SORT_SECTION_LABELS[sort],
+            : selectedSector
+              ? `Ngành: ${selectedSector}`
+              : SORT_SECTION_LABELS[sort],
         );
       } catch {
         setResults([]);
@@ -132,7 +150,7 @@ export function DiscoverView() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, sort]);
+  }, [query, sort, selectedSector]);
 
   return (
     <main className="min-h-screen bg-ink-violet-base text-text-neo-primary pb-24">
@@ -242,10 +260,19 @@ export function DiscoverView() {
           </section>
         )}
 
+        {/* Sector filter chips — shown only when not searching */}
+        {!query && sectors.length > 0 && (
+          <SectorFilterRow
+            sectors={sectors}
+            selected={selectedSector}
+            onSelect={(s) => setSelectedSector(s === selectedSector ? null : s)}
+          />
+        )}
+
         {isLoading ? (
           <SearchSkeleton />
         ) : results.length === 0 ? (
-          <EmptyState query={query} />
+          <EmptyState query={query} sector={selectedSector} />
         ) : (
           <section
             aria-label={section}
@@ -434,15 +461,51 @@ function WatchlistChip({
 }
 
 // ---------------------------------------------------------------------------
+// SectorFilterRow — horizontal scrolling sector chip bar
+// ---------------------------------------------------------------------------
+function SectorFilterRow({
+  sectors,
+  selected,
+  onSelect,
+}: {
+  sectors: string[];
+  selected: string | null;
+  onSelect: (sector: string) => void;
+}) {
+  return (
+    <section aria-label="Lọc theo ngành">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
+        {sectors.map((s) => (
+          <button
+            key={s}
+            onClick={() => onSelect(s)}
+            className={cn(
+              "shrink-0 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors border whitespace-nowrap",
+              selected === s
+                ? "bg-violet-deep-300/15 border-violet-deep-300/50 text-violet-deep-200"
+                : "bg-ink-violet-surface border-border-neo text-text-neo-tertiary hover:text-text-neo-secondary hover:border-border-neo",
+            )}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Empty + skeleton states
 // ---------------------------------------------------------------------------
-function EmptyState({ query }: { query: string }) {
+function EmptyState({ query, sector }: { query: string; sector: string | null }) {
   return (
     <div className="rounded-2xl bg-ink-violet-surface border border-border-neo px-4 py-10 text-center">
       <p className="text-[14px] text-text-neo-secondary mb-1">
         {query.length > 0
           ? `Không tìm thấy kết quả cho "${query}"`
-          : "Không có dữ liệu thị trường"}
+          : sector
+            ? `Chưa có dữ liệu cho ngành "${sector}"`
+            : "Không có dữ liệu thị trường"}
       </p>
       {query.length > 0 && (
         <p className="text-[12px] text-text-neo-tertiary">
