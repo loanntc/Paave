@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 function getEnv(key: string): string {
   const value = process.env[key];
@@ -34,4 +36,33 @@ export function createAnonClient(accessToken?: string) {
     client.auth.setSession({ access_token: accessToken, refresh_token: "" });
   }
   return client;
+}
+
+/**
+ * Cookie-based Supabase client for Route Handlers and Server Components.
+ * Reads the session from the request cookies — use this to verify auth server-side.
+ * Call `supabase.auth.getUser()` after creation to get the authenticated user.
+ */
+export async function createCookieClient() {
+  const cookieStore = await cookies();
+  return createServerClient(
+    getEnv("NEXT_PUBLIC_SUPABASE_URL"),
+    getEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options),
+            );
+          } catch {
+            // Ignored when called from a read-only context (e.g. Server Component)
+          }
+        },
+      },
+    },
+  );
 }

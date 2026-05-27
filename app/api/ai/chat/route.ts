@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { runAgent } from "@/lib/ai/agent";
 import type { AgentContext, SupportedLanguage } from "@/lib/ai/system-prompt";
+import { createCookieClient } from "@/lib/supabase/server";
 
 const SUPPORTED_LANGUAGES: SupportedLanguage[] = ["vi", "ko", "en"];
 
@@ -11,10 +12,11 @@ function isSupportedLanguage(value: unknown): value is SupportedLanguage {
 /**
  * POST /api/ai/chat
  *
+ * Requires an authenticated session (cookie-based). Returns 401 otherwise.
+ *
  * Body:
  *   message   string   — the user's question (required)
  *   ticker    string?  — stock context, e.g. "VIC"
- *   userId    string?  — authenticated user's UUID (for portfolio access)
  *   language  string?  — "vi" | "ko" | "en" (default: "vi")
  *
  * Returns:
@@ -24,6 +26,15 @@ function isSupportedLanguage(value: unknown): value is SupportedLanguage {
  *     { type: "error", message: "..." }  — error
  */
 export async function POST(req: NextRequest) {
+  const supabase = await createCookieClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -49,7 +60,7 @@ export async function POST(req: NextRequest) {
   const ctx: AgentContext = {
     language,
     ticker: typeof body.ticker === "string" ? body.ticker.toUpperCase() : undefined,
-    userId: typeof body.userId === "string" ? body.userId : undefined,
+    userId: user.id, // verified from session — body.userId is intentionally ignored
   };
 
   const encoder = new TextEncoder();

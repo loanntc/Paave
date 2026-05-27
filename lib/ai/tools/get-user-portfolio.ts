@@ -20,9 +20,9 @@ export const getUserPortfolioTool: ToolDefinition = {
   },
 
   async execute({ user_id }, { serviceClient, userId }) {
-    // Security: only allow querying the authenticated user's own data
+    // Security: require a verified server-side userId and reject any mismatch
     const requestedId = String(user_id);
-    if (userId && requestedId !== userId) {
+    if (!userId || requestedId !== userId) {
       return { error: "Cannot access another user's portfolio" };
     }
 
