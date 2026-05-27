@@ -339,10 +339,10 @@ function QuickActions() {
   const router = useRouter();
 
   const actions = [
-    { label: "Discover", icon: Compass, tone: "lime" as const, onClick: () => router.push("/discover") },
-    { label: "Markets", icon: LineChart, tone: "plasma" as const, onClick: () => router.push("/discover") },
-    { label: "Ask AI", icon: MessageSquare, tone: "lime" as const, onClick: () => openChat({ language: "vi" }) },
-    { label: "Wallet", icon: Wallet, tone: "plasma" as const, onClick: () => router.push("/portfolio") },
+    { label: "Khám phá", icon: Compass, tone: "lime" as const, onClick: () => router.push("/discover") },
+    { label: "Học tập", icon: BookOpen, tone: "lime" as const, onClick: () => router.push("/grow") },
+    { label: "Hỏi AI", icon: MessageSquare, tone: "plasma" as const, onClick: () => openChat({ language: "vi" }) },
+    { label: "Danh mục", icon: Wallet, tone: "plasma" as const, onClick: () => router.push("/portfolio") },
   ];
 
   return (
