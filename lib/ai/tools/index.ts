@@ -6,6 +6,7 @@ import { getStockBarsTool } from "./get-stock-bars";
 import { getStockNewsTool } from "./get-stock-news";
 import { getStockFundamentalsTool } from "./get-stock-fundamentals";
 import { getUserPortfolioTool } from "./get-user-portfolio";
+import { getTradeAnalyticsTool } from "./get-trade-analytics";
 
 // ---------------------------------------------------------------------------
 // Registry — add new tools here
@@ -16,6 +17,7 @@ const TOOL_REGISTRY: ToolDefinition[] = [
   getStockNewsTool,
   getStockFundamentalsTool,
   getUserPortfolioTool,
+  getTradeAnalyticsTool,
 ];
 
 const toolMap = new Map<string, ToolDefinition>(
