@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -8,23 +9,127 @@ import {
   Flame,
   LineChart,
   MessageSquare,
+  TrendingDown,
   Trophy,
   Wallet,
 } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 import { AmbientBackground } from "@/components/brand/ambient-background";
 import { PaaveWordmark } from "@/components/brand/paave-wordmark";
 import { useChatSheet } from "@/lib/ai/chat-context";
+import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+// ---------------------------------------------------------------------------
+// Supabase browser client
+// ---------------------------------------------------------------------------
+function getBrowserClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Portfolio summary type (live data for the hero card)
+// ---------------------------------------------------------------------------
+interface PortfolioSummary {
+  totalEquity: number;
+  totalPL: number;
+  totalPLPct: number;
+  cashBalance: number;
+  holdingsValue: number;
+  positionCount: number;
+}
+
+// ---------------------------------------------------------------------------
+// HomeView
+// ---------------------------------------------------------------------------
 export function HomeView() {
+  const [displayName, setDisplayName] = useState<string>("bạn");
+  const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
+
+  useEffect(() => {
+    const db = getBrowserClient();
+
+    async function fetchHomeData() {
+      const {
+        data: { session },
+      } = await db.auth.getSession();
+
+      if (!session?.user) {
+        setPortfolioLoading(false);
+        return;
+      }
+
+      const uid = session.user.id;
+
+      // Derive a friendly display name from user metadata or email
+      const meta = session.user.user_metadata ?? {};
+      const name: string =
+        (meta.full_name as string | undefined)?.split(" ").at(-1) ??
+        (meta.name as string | undefined)?.split(" ").at(-1) ??
+        session.user.email?.split("@")[0] ??
+        "bạn";
+      setDisplayName(name);
+
+      // Two-step fetch: sub-account → holdings
+      const { data: acct } = await db
+        .from("virtual_sub_accounts")
+        .select("id, cash_balance, starting_balance")
+        .eq("user_id", uid)
+        .eq("status", "ACTIVE")
+        .limit(1)
+        .single();
+
+      if (!acct) {
+        setPortfolioLoading(false);
+        return;
+      }
+
+      const { data: holdings } = await db
+        .from("virtual_holdings")
+        .select("quantity, avg_cost")
+        .eq("sub_account_id", acct.id)
+        .gt("quantity", 0);
+
+      const holdingsValue = (holdings ?? []).reduce(
+        (s, h) => s + Number(h.avg_cost) * Number(h.quantity),
+        0,
+      );
+      const cashBalance = Number(acct.cash_balance);
+      const startingBalance = Number(acct.starting_balance);
+      const totalEquity = cashBalance + holdingsValue;
+      const totalPL = totalEquity - startingBalance;
+      const totalPLPct = (totalPL / startingBalance) * 100;
+
+      setPortfolio({
+        totalEquity,
+        totalPL,
+        totalPLPct,
+        cashBalance,
+        holdingsValue,
+        positionCount: (holdings ?? []).length,
+      });
+      setPortfolioLoading(false);
+    }
+
+    fetchHomeData();
+  }, []);
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-ink-900 pb-28">
       <AmbientBackground />
 
-      <HomeHeader name="Alex" />
+      <HomeHeader name={displayName} />
 
       <section className="relative z-10 mx-auto flex w-full max-w-[896px] flex-col gap-5 px-6">
-        <PortfolioHero />
+        <PortfolioHero
+          name={displayName}
+          data={portfolio}
+          isLoading={portfolioLoading}
+        />
         <QuickActions />
         <MarketSnapshot />
         <TrendingRow />
@@ -35,7 +140,7 @@ export function HomeView() {
   );
 }
 
-function HomeHeader({ name }: { name: string }) {
+function HomeHeader({ name }: { name: string; }) {
   return (
     <header className="relative z-20 flex w-full items-center justify-between px-6 pt-4 pb-6">
       <div className="flex items-center gap-3">
@@ -60,40 +165,102 @@ function HomeHeader({ name }: { name: string }) {
   );
 }
 
-function PortfolioHero() {
+function PortfolioHero({
+  name,
+  data,
+  isLoading,
+}: {
+  name: string;
+  data: PortfolioSummary | null;
+  isLoading: boolean;
+}) {
+  const isUp = data ? data.totalPL >= 0 : true;
+
+  if (isLoading) {
+    return (
+      <div className="relative overflow-hidden rounded-[32px] bg-ink-800 px-7 pb-7 pt-8 space-y-3 animate-pulse">
+        <div className="h-3 w-40 rounded bg-ink-700" />
+        <div className="h-12 w-56 rounded-xl bg-ink-700" />
+        <div className="h-7 w-44 rounded-full bg-ink-700" />
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-2xl bg-ink-600/60 p-3 space-y-1.5">
+              <div className="h-2.5 w-12 rounded bg-ink-700" />
+              <div className="h-4 w-16 rounded bg-ink-700" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <section
-      aria-label="Portfolio"
-      className="relative overflow-hidden rounded-[32px] bg-ink-800 px-7 pb-7 pt-8"
+    <Link
+      href="/portfolio"
+      aria-label="Xem danh mục đầu tư"
+      className="group relative block overflow-hidden rounded-[32px] bg-ink-800 px-7 pb-7 pt-8 transition-opacity hover:opacity-90 active:scale-[0.99]"
     >
       <div
         aria-hidden
         className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-lime/10 blur-3xl"
       />
+
       <p className="font-display text-[12px] uppercase tracking-pulse text-fog">
-        Yo, Alex — your pulse
-      </p>
-      <p className="mt-2 font-display text-[44px] font-bold leading-[1.05] tracking-display tabular-nums text-lime-soft">
-        $12,480.<span className="text-lime-soft/70">52</span>
+        Danh mục của {name}
       </p>
 
-      <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-positive/15 px-3 py-1">
-        <ArrowUpRight
-          className="size-3.5 text-positive"
-          strokeWidth={2.5}
-          aria-hidden
-        />
-        <span className="font-display text-[13px] tabular-nums text-positive">
-          +$312.40 · +2.56% today
-        </span>
-      </div>
+      {data ? (
+        <>
+          <p className="mt-2 font-display text-[40px] font-bold leading-[1.05] tracking-display tabular-nums text-lime-soft">
+            {formatVND(data.totalEquity)}
+          </p>
 
-      <dl className="mt-6 grid grid-cols-3 gap-3">
-        <MiniStat label="Invested" value="$10,000" />
-        <MiniStat label="P&L" value="+$2,480" tone="positive" />
-        <MiniStat label="Positions" value="7" />
-      </dl>
-    </section>
+          <div
+            className={cn(
+              "mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1",
+              isUp ? "bg-positive/15" : "bg-negative/15",
+            )}
+          >
+            {isUp ? (
+              <ArrowUpRight
+                className="size-3.5 text-positive"
+                strokeWidth={2.5}
+                aria-hidden
+              />
+            ) : (
+              <TrendingDown
+                className="size-3.5 text-negative"
+                strokeWidth={2.5}
+                aria-hidden
+              />
+            )}
+            <span
+              className={cn(
+                "font-display text-[13px] tabular-nums",
+                isUp ? "text-positive" : "text-negative",
+              )}
+            >
+              {isUp ? "+" : ""}
+              {formatVND(data.totalPL)} · {pctLabel(data.totalPLPct)}
+            </span>
+          </div>
+
+          <dl className="mt-6 grid grid-cols-3 gap-3">
+            <MiniStat label="Đầu tư" value={formatVND(data.holdingsValue)} />
+            <MiniStat
+              label="Lãi/lỗ"
+              value={`${isUp ? "+" : ""}${formatVND(data.totalPL)}`}
+              tone={isUp ? "positive" : "negative"}
+            />
+            <MiniStat label="Vị thế" value={String(data.positionCount)} />
+          </dl>
+        </>
+      ) : (
+        <p className="mt-4 font-display text-[15px] text-fog">
+          Đăng nhập để xem danh mục.
+        </p>
+      )}
+    </Link>
   );
 }
 
