@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   Bell,
+  BookOpen,
   Compass,
   Flame,
   LineChart,
@@ -13,6 +14,7 @@ import {
   TrendingDown,
   Trophy,
   Wallet,
+  Zap,
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import type { MarketIndex } from "@/app/api/market/indices/route";
@@ -20,6 +22,8 @@ import type { StockResult } from "@/app/api/stocks/search/route";
 import { AmbientBackground } from "@/components/brand/ambient-background";
 import { PaaveWordmark } from "@/components/brand/paave-wordmark";
 import { useChatSheet } from "@/lib/ai/chat-context";
+import { useLearningProgress } from "@/lib/learning/use-learning-progress";
+import { MODULES } from "@/lib/learning/content";
 import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -172,7 +176,7 @@ export function HomeView() {
         <QuickActions />
         <MarketSnapshot indices={indices} isLoading={indicesLoading} />
         <TrendingRow stocks={trending} isLoading={trendingLoading} />
-        <WeeklyChallenge />
+        <LearningProgressCard />
       </section>
 
     </main>
@@ -542,37 +546,115 @@ function TrendingRow({
   );
 }
 
-function WeeklyChallenge() {
+// ---------------------------------------------------------------------------
+// LearningProgressCard — connects Home tab to the F0 Learning Path (Grow tab)
+// Shows contextual messaging based on the user's learning progress state.
+// ---------------------------------------------------------------------------
+function LearningProgressCard() {
+  const { hydrated, progress, getModuleStatus } = useLearningProgress();
+
+  const totalLessons = MODULES.reduce((s, m) => s + m.lessons.length, 0);
+  const completedLessons = Object.values(progress.lessons).filter((l) => l.completed).length;
+  const pct = totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
+  const allDone = completedLessons === totalLessons && totalLessons > 0;
+
+  // Find the first incomplete lesson across all unlocked modules
+  let resumeHref = "/grow";
+  for (const module of MODULES) {
+    const status = getModuleStatus(module.id);
+    if (status === "IN_PROGRESS" || status === "UNLOCKED") {
+      const next = module.lessons.find((l) => !progress.lessons[l.id]?.completed);
+      if (next) {
+        resumeHref = `/grow/lesson/${next.id.replace(".", "_")}`;
+        break;
+      }
+    }
+  }
+
+  const hasStarted = completedLessons > 0 || Object.keys(progress.lessons).length > 0;
+
+  if (!hydrated) {
+    return (
+      <section
+        aria-label="Tiến độ học tập"
+        className="rounded-3xl border border-edge bg-ink-800 p-6 animate-pulse"
+      >
+        <div className="h-3 w-24 rounded bg-ink-700" />
+        <div className="mt-2 h-5 w-48 rounded bg-ink-700" />
+        <div className="mt-4 h-2 w-full rounded-full bg-ink-700" />
+        <div className="mt-4 h-9 w-36 rounded-xl bg-ink-700" />
+      </section>
+    );
+  }
+
   return (
-    <section
-      aria-label="Weekly challenge"
-      className="relative overflow-hidden rounded-3xl border border-edge bg-gradient-to-br from-ink-800 to-ink-900 p-6"
+    <Link
+      href={hasStarted ? resumeHref : "/grow"}
+      aria-label="Đến trang học tập"
+      className="group relative block overflow-hidden rounded-3xl border border-edge bg-gradient-to-br from-ink-800 to-ink-900 p-6 transition-opacity hover:opacity-90 active:scale-[0.99]"
     >
+      {/* Glow blob */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-12 -top-12 size-40 rounded-full bg-plasma/20 blur-3xl"
+        className="pointer-events-none absolute -right-10 -top-10 size-36 rounded-full bg-lime/10 blur-3xl"
       />
+
       <div className="relative flex items-start gap-4">
-        <div className="grid size-12 place-items-center rounded-2xl bg-plasma-drop text-white">
-          <Trophy className="size-5" strokeWidth={2} />
+        <div className="grid size-12 place-items-center rounded-2xl bg-lime-drop text-lime-ink shrink-0">
+          {allDone ? (
+            <Trophy className="size-5" strokeWidth={2} />
+          ) : (
+            <BookOpen className="size-5" strokeWidth={2} />
+          )}
         </div>
-        <div className="flex-1">
+
+        <div className="flex-1 min-w-0">
           <p className="font-display text-[11px] uppercase tracking-pulse text-plasma">
-            Weekly Challenge · 3 days left
+            {allDone
+              ? "Hoàn thành · F0 Master"
+              : hasStarted
+                ? `Tiến độ · ${completedLessons}/${totalLessons} bài học`
+                : "Lộ trình F0 · Bắt đầu ngay"}
           </p>
-          <h3 className="mt-1 font-display text-[18px] uppercase tracking-[-0.45px] text-lime-soft">
-            Build a 3-stock VN portfolio
+
+          <h3 className="mt-1 font-display text-[18px] uppercase tracking-[-0.45px] text-lime-soft leading-tight">
+            {allDone
+              ? "Bạn đã chinh phục toàn bộ!"
+              : hasStarted
+                ? "Tiếp tục học tập"
+                : "Hiểu chứng khoán từ đầu"}
           </h3>
+
           <p className="mt-2 font-body text-[13px] leading-[1.55] text-fog">
-            Allocate ₫10.000.000 across three Vietnam tickers. Share it with
-            your crew — the top return takes the drop.
+            {allDone
+              ? `${progress.totalLearningXP} XP kiếm được · Giao dịch giả lập đang chờ bạn.`
+              : hasStarted
+                ? `${progress.totalLearningXP} XP · ${100 - pct}% còn lại để hoàn thành lộ trình F0.`
+                : "4 module · 20 bài học · Không cần kinh nghiệm. Học trong ~60 phút."}
           </p>
-          <button className="mt-4 inline-flex items-center gap-2 rounded-lg bg-lime-drop px-5 py-2 font-display text-[12px] uppercase tracking-drop text-lime-ink shadow-glow-lime">
-            Accept Challenge
+
+          {/* Progress bar */}
+          {hasStarted && !allDone && (
+            <div className="mt-4 space-y-1.5">
+              <div className="h-1.5 rounded-full bg-ink-600 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-lime transition-all duration-500"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-fog">
+                <Zap className="size-3 text-lime shrink-0" />
+                <span>{progress.totalLearningXP} XP kiếm được</span>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-lime-drop px-5 py-2 font-display text-[12px] uppercase tracking-drop text-lime-ink shadow-glow-lime">
+            {allDone ? "Ôn tập" : hasStarted ? "Tiếp tục" : "Bắt đầu học"}
             <ArrowUpRight className="size-3.5" strokeWidth={2.5} />
-          </button>
+          </div>
         </div>
       </div>
-    </section>
+    </Link>
   );
 }
