@@ -24,7 +24,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "Trang chủ", href: "/home", icon: HomeIcon },
   { label: "Danh mục", href: "/portfolio", icon: BarChart2 },
-  { label: "Khám phá", href: "/discover", icon: Compass, disabled: true },
+  { label: "Khám phá", href: "/discover", icon: Compass },
   { label: "Hồ sơ",   href: "/profile",  icon: User,    disabled: true },
 ];
 
