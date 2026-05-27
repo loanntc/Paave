@@ -29,15 +29,20 @@ export interface StockResult {
 // Query params:
 //   q      — search term (ticker code or company name prefix)
 //             When absent/empty: uses 'sort' to determine default view
-//   sort   — "volume" (default) | "gainers"
+//   sort   — "volume" (default) | "gainers" | "losers"
 //             "volume"  → top stocks by total trading volume
 //             "gainers" → top positive movers by pct_change (VN stocks)
+//             "losers"  → top negative movers by pct_change (VN stocks)
 //   limit  — max results (1–30, default 20)
 // ---------------------------------------------------------------------------
+type SortMode = "volume" | "gainers" | "losers";
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const q = (searchParams.get("q") ?? "").trim();
-  const sort = searchParams.get("sort") === "gainers" ? "gainers" : "volume";
+  const rawSort = searchParams.get("sort");
+  const sort: SortMode =
+    rawSort === "gainers" ? "gainers" : rawSort === "losers" ? "losers" : "volume";
   const rawLimit = Number(searchParams.get("limit") ?? DEFAULT_LIMIT);
   const limit = Math.min(Math.max(1, Number.isFinite(rawLimit) ? rawLimit : DEFAULT_LIMIT), MAX_LIMIT);
 
@@ -52,6 +57,9 @@ export async function GET(req: NextRequest) {
     if (sort === "gainers") {
       // Top positive movers — filter out non-positive and sort descending
       quotesQuery = quotesQuery.gt("pct_change", 0).order("pct_change", { ascending: false });
+    } else if (sort === "losers") {
+      // Worst performers — filter out non-negative and sort ascending (most negative first)
+      quotesQuery = quotesQuery.lt("pct_change", 0).order("pct_change", { ascending: true });
     } else {
       quotesQuery = quotesQuery.order("total_volume", { ascending: false });
     }

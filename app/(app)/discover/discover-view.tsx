@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BookmarkCheck, Search, TrendingDown, TrendingUp, X } from "lucide-react";
+import { BookmarkCheck, Flame, Search, TrendingDown, TrendingUp, X } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import type { StockResult } from "@/app/api/stocks/search/route";
 import { formatVND, pctLabel } from "@/lib/format";
@@ -24,8 +24,23 @@ interface WatchlistQuote {
 // ---------------------------------------------------------------------------
 // DiscoverView
 // ---------------------------------------------------------------------------
+type SortMode = "volume" | "gainers" | "losers";
+
+const SORT_OPTIONS: { mode: SortMode; label: string }[] = [
+  { mode: "volume", label: "Khối lượng" },
+  { mode: "gainers", label: "Tăng mạnh" },
+  { mode: "losers", label: "Giảm mạnh" },
+];
+
+const SORT_SECTION_LABELS: Record<SortMode, string> = {
+  volume: "Khối lượng cao nhất",
+  gainers: "Tăng mạnh nhất hôm nay",
+  losers: "Giảm mạnh nhất hôm nay",
+};
+
 export function DiscoverView() {
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortMode>("volume");
   const [results, setResults] = useState<StockResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [section, setSection] = useState("Khối lượng cao nhất");
@@ -60,7 +75,7 @@ export function DiscoverView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, watchlist.join(",")]);
 
-  // Fetch on mount (default = top by volume) and on query change
+  // Fetch on mount, on query change, and on sort change
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -69,12 +84,16 @@ export function DiscoverView() {
     debounceRef.current = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const url = `/api/stocks/search${query ? `?q=${encodeURIComponent(query)}` : ""}`;
+        const url = query
+          ? `/api/stocks/search?q=${encodeURIComponent(query)}`
+          : `/api/stocks/search?sort=${sort}`;
         const res = await fetch(url);
         const data: { results: StockResult[]; query: string } = await res.json();
         setResults(data.results);
         setSection(
-          data.query.length > 0 ? `Kết quả cho "${data.query}"` : "Khối lượng cao nhất",
+          data.query.length > 0
+            ? `Kết quả cho "${data.query}"`
+            : SORT_SECTION_LABELS[sort],
         );
       } catch {
         setResults([]);
@@ -86,7 +105,7 @@ export function DiscoverView() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query]);
+  }, [query, sort]);
 
   return (
     <main className="min-h-screen bg-ink-violet-base text-text-neo-primary pb-24">
@@ -125,6 +144,33 @@ export function DiscoverView() {
             </button>
           )}
         </div>
+
+        {/* Sort filter chips — hidden while searching */}
+        {!query && (
+          <div className="flex gap-2">
+            {SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.mode}
+                onClick={() => setSort(opt.mode)}
+                className={cn(
+                  "flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors border",
+                  sort === opt.mode
+                    ? opt.mode === "gainers"
+                      ? "bg-positive/10 border-positive/40 text-positive"
+                      : opt.mode === "losers"
+                        ? "bg-negative/10 border-negative/40 text-negative"
+                        : "bg-lime-signal-400/10 border-lime-signal-400/40 text-lime-signal-400"
+                    : "bg-ink-violet-surface border-border-neo text-text-neo-tertiary hover:text-text-neo-secondary",
+                )}
+              >
+                {opt.mode === "gainers" && <TrendingUp className="size-3" strokeWidth={2.5} />}
+                {opt.mode === "losers" && <TrendingDown className="size-3" strokeWidth={2.5} />}
+                {opt.mode === "volume" && <Flame className="size-3" strokeWidth={2.5} />}
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
       </header>
 
       {/* ── Results ────────────────────────────────────────────────────── */}
