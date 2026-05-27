@@ -1,10 +1,14 @@
 "use client";
 
+import type React from "react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { BookOpen, Trophy, Zap } from "lucide-react";
 import { TierBadge, type TierLevel } from "@/components/paave/tier-badge";
 import { XPBar } from "@/components/paave/xp-bar";
+import { useLearningProgress } from "@/lib/learning/use-learning-progress";
+import { MODULES } from "@/lib/learning/content";
 import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +68,10 @@ export function ProfileView() {
   const [data, setData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
+
+  // Learning progress from F0 learning path (stored in localStorage)
+  const { hydrated: learningHydrated, progress: learningProgress } =
+    useLearningProgress();
 
   useEffect(() => {
     const db = getBrowserClient();
@@ -245,6 +253,17 @@ export function ProfileView() {
               </div>
             </section>
 
+            {/* ── Learning stats ──────────────────────────────────────── */}
+            {learningHydrated && (
+              <LearningStatsCard
+                totalXP={learningProgress.totalLearningXP}
+                completedLessons={
+                  Object.values(learningProgress.lessons).filter((l) => l.completed).length
+                }
+                totalLessons={MODULES.reduce((s, m) => s + m.lessons.length, 0)}
+              />
+            )}
+
             {/* ── Actions ─────────────────────────────────────────────── */}
             <section className="rounded-2xl bg-ink-violet-surface border border-border-neo overflow-hidden">
               <h2 className="px-5 pt-4 pb-2 text-[11px] font-bold uppercase tracking-[0.8px] text-text-neo-tertiary">
@@ -277,6 +296,69 @@ export function ProfileView() {
 }
 
 // ---------------------------------------------------------------------------
+// LearningStatsCard — F0 Learning Path progress summary
+// ---------------------------------------------------------------------------
+function LearningStatsCard({
+  totalXP,
+  completedLessons,
+  totalLessons,
+}: {
+  totalXP: number;
+  completedLessons: number;
+  totalLessons: number;
+}) {
+  const pct = totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
+
+  return (
+    <section className="rounded-2xl bg-ink-violet-surface border border-border-neo overflow-hidden">
+      <h2 className="px-5 pt-4 pb-2 text-[11px] font-bold uppercase tracking-[0.8px] text-text-neo-tertiary">
+        Học tập
+      </h2>
+      <div className="divide-y divide-border-neo-subtle">
+        <StatRow
+          label="Điểm học tập"
+          value={
+            <span className="flex items-center gap-1 justify-end">
+              <Zap className="size-3 text-lime-signal-400" />
+              <span className="text-lime-signal-400">{totalXP} XP</span>
+            </span>
+          }
+        />
+        <StatRow
+          label="Bài học hoàn thành"
+          value={
+            <span className="flex items-center gap-1.5 justify-end">
+              <BookOpen className="size-3 text-text-neo-tertiary" />
+              {completedLessons} / {totalLessons}
+            </span>
+          }
+        />
+        <div className="px-5 py-3 space-y-1.5">
+          <div className="flex justify-between text-[11px] text-text-neo-tertiary">
+            <span>Tiến độ tổng thể</span>
+            <span className="text-lime-signal-400 font-bold">{pct}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-ink-violet-raised overflow-hidden">
+            <div
+              className="h-full rounded-full bg-lime-signal-400 transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+        {completedLessons === totalLessons && totalLessons > 0 && (
+          <div className="px-5 py-3 flex items-center gap-2">
+            <Trophy className="size-4 text-yellow-400 shrink-0" />
+            <span className="text-[12px] text-text-neo-secondary font-medium">
+              F0 Master — học xong toàn bộ lộ trình!
+            </span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // StatRow
 // ---------------------------------------------------------------------------
 function StatRow({
@@ -286,7 +368,7 @@ function StatRow({
   tone,
 }: {
   label: string;
-  value: string;
+  value: string | React.ReactNode;
   sub?: string;
   tone?: "positive" | "negative";
 }) {
