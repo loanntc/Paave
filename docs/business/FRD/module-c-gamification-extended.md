@@ -215,14 +215,33 @@ The Achievement Badge System awards permanent, non-revocable digital badges to u
 - **Actor:** System (event-driven, fires on BUY order fill event)
 - **Description:** When a BUY order for stock ticker X fills for user U, the system checks whether stock X has been on any of user U's watchlists continuously for at least 30 calendar days prior to the fill date without being removed.
 
+#### Acceptance Criteria
+
+| # | Given | When | Then |
+|---|---|---|---|
+| AC-06-05-1 | User added VNM to watchlist on Day 1, kept it there, and places first BUY for VNM on Day 35 | BUY fills | Badge `BADGE_WHALE_WATCHER` awarded |
+| AC-06-05-2 | User added VNM to watchlist on Day 1, removed it on Day 10, re-added on Day 11, places BUY on Day 35 | BUY fills | Badge NOT awarded (continuity broken on Day 10) |
+| AC-06-05-3 | User added VNM to watchlist on Day 1, places BUY on Day 25 | BUY fills | Badge NOT awarded (only 25 days, < 30 required) |
+| AC-06-05-4 | User places second BUY for VNM (first BUY was on Day 35 without triggering the badge) | Second BUY fills | Badge evaluation does NOT run again for the same stock |
+| AC-06-05-5 | User removes stock from watchlist and re-adds after previously qualifying | New BUY event | New 30-day period must be satisfied again; prior qualified period does not carry over |
+
+#### Edge Cases
+
+| # | Scenario | Expected Behaviour |
+|---|---|---|
+| EC-06-05-1 | Stock is on multiple watchlists; removed from one but retained on another | Continuity is per-stock, not per-watchlist; as long as at least one watchlist contains the stock, continuity is maintained |
+| EC-06-05-2 | Watchlist history records are purged or missing for a gap period | System treats the gap as a removal; badge is not awarded |
+| EC-06-05-3 | BUY fill event and watchlist removal event arrive simultaneously (same second) | System uses the state as of 1 second before the fill; the watchlist record must exist at `filled_at − 1 second` |
+
 #### Business Rules
 
 | # | Rule |
 |---|---|
-| BR-06-05-1 | Continuity evaluated via `watchlist_symbol_history` across all user watchlists. |
-| BR-06-05-2 | Trigger fires only on the first BUY fill for the given `stock_code`. |
+| BR-06-05-1 | Continuity is evaluated by querying `watchlist_symbol_history` for the stock across all user watchlists. A continuous period requires no removal events for the stock between `filled_at − 30 days` and `filled_at`. |
+| BR-06-05-2 | Trigger fires only on the first BUY fill for the given `stock_code`. Subsequent BUY fills on the same stock are ignored. |
 | BR-06-05-3 | The 30-day period is in calendar days (not trading days). |
-| BR-06-05-4 | XP grant: +150. Idempotency key: `"{user_id}_BADGE_WHALE_WATCHER_XP"`. |
+| BR-06-05-4 | Cross-watchlist continuity applies: if the stock is on any one of the user's watchlists at any point, it is considered "on watchlist" for that period. |
+| BR-06-05-5 | XP grant: +150. Idempotency key: `"{user_id}_BADGE_WHALE_WATCHER_XP"`. |
 
 ---
 

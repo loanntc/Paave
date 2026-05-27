@@ -16,16 +16,23 @@
   | Daily login | +5 | Once per calendar day (user's local timezone) | Once per day |
   | Weekly challenge won | +100 | Per `{user_id}:{challenge_week_id}` | Once per challenge week |
   | Portfolio health improved (week-over-week grade improvement) | +15 | Per week evaluated | Once per week |
-  | Badge earned — Common (BADGE_FIRST_TRADE, BADGE_MARKET_SCHOLAR) | +50–75 | Per `{user_id}_{badge_id}_XP` | Once per badge |
-  | Badge earned — Uncommon (BADGE_GREEN_WEEK, BADGE_SHARP_SHOOTER) | +75–100 | Per `{user_id}_{badge_id}_XP` | Once per badge |
-  | Badge earned — Rare (BADGE_WHALE_WATCHER, BADGE_CHALLENGE_KING) | +150 | Per `{user_id}_{badge_id}_XP` | Once per badge |
-  | Badge earned — Epic (BADGE_STREAK_MASTER, BADGE_ZEN_TRADER) | +200–250 | Per `{user_id}_{badge_id}_XP` | Once per badge |
+  | Badge earned — `BADGE_FIRST_TRADE` (Common) | +50 | `{user_id}_BADGE_FIRST_TRADE_XP` | Once per badge |
+  | Badge earned — `BADGE_MARKET_SCHOLAR` (Common) | +75 | `{user_id}_BADGE_MARKET_SCHOLAR_XP` | Once per badge |
+  | Badge earned — `BADGE_SHARP_SHOOTER` (Uncommon) | +75 | `{user_id}_BADGE_SHARP_SHOOTER_XP` | Once per badge |
+  | Badge earned — `BADGE_GREEN_WEEK` (Uncommon) | +100 | `{user_id}_BADGE_GREEN_WEEK_XP` | Once per badge |
+  | Badge earned — `BADGE_WHALE_WATCHER` (Rare) | +150 | `{user_id}_BADGE_WHALE_WATCHER_XP` | Once per badge |
+  | Badge earned — `BADGE_CHALLENGE_KING` (Rare) | +150 | `{user_id}_BADGE_CHALLENGE_KING_XP` | Once per badge |
+  | Badge earned — `BADGE_STREAK_MASTER` (Epic) | +200 | `{user_id}_BADGE_STREAK_MASTER_XP` | Once per badge |
+  | Badge earned — `BADGE_ZEN_TRADER` (Epic) | +250 | `{user_id}_BADGE_ZEN_TRADER_XP` | Once per badge |
+  | Badge earned — Branch Completion (Epic, any branch) | +0 XP from badge; +50 XP from FR-GAME-07 branch burst separately | `{user_id}_{branch_id}_BRANCH_COMPLETE_XP` | Once per branch |
   | Skill Tree node completed (varies by node) | +10–30 | Per `{user_id}_{node_id}_NODE_COMPLETE_XP` | Once per node |
   | Skill Tree branch completed (XP burst) | +50 | Per `{user_id}_{branch_id}_BRANCH_COMPLETE_XP` | Once per branch |
   | Daily mission completed | +5–40 (per mission) | Per `{user_id}_{mission_id}_{assigned_date}` | Once per mission per day |
   | Seasonal event completed | +100–200 (per event) | Per `{user_id}_{event_id}_COMPLETION_XP` | Once per event |
 
-  > **Note:** Badge-specific XP values are defined in FR-GAME-06. Skill Tree node XP values are defined in FR-GAME-07-03. Mission XP values are defined in FR-GAME-08 mission catalogue.
+  > **Note:** Badge-specific XP values are authoritative in this table; FR-GAME-06 sub-sections confirm the same values. Skill Tree node XP values are defined in FR-GAME-07-03. Mission XP values are defined in FR-GAME-08 mission catalogue.
+  >
+  > **Idempotency key design note:** Two separate idempotency keys exist per badge event — (1) `{user_id}_{badge_id}` guards the badge award record itself in `badge_awards.idempotency_key`; (2) `{user_id}_{badge_id}_XP` guards the XP grant via FR-GAME-01. These are intentionally separate: a badge can be re-evaluated without re-granting XP if the badge row already exists.
 
 - **Key Rules:**
   - Daily login XP: once per calendar day (user's local timezone).
