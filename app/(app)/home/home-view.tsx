@@ -8,12 +8,14 @@ import {
   Flame,
   Home as HomeIcon,
   LineChart,
+  MessageSquare,
   Trophy,
   User,
   Wallet,
 } from "lucide-react";
 import { AmbientBackground } from "@/components/brand/ambient-background";
 import { PaaveWordmark } from "@/components/brand/paave-wordmark";
+import { useChatSheet } from "@/lib/ai/chat-context";
 import { cn } from "@/lib/utils";
 
 export function HomeView() {
@@ -126,17 +128,21 @@ function MiniStat({
 }
 
 function QuickActions() {
+  const { open: openChat } = useChatSheet();
+
   const actions = [
-    { label: "Discover", icon: Compass, tone: "lime" as const },
-    { label: "Markets", icon: LineChart, tone: "plasma" as const },
-    { label: "Alerts", icon: Bell, tone: "lime" as const },
-    { label: "Wallet", icon: Wallet, tone: "plasma" as const },
+    { label: "Discover", icon: Compass, tone: "lime" as const, onClick: undefined as (() => void) | undefined },
+    { label: "Markets", icon: LineChart, tone: "plasma" as const, onClick: undefined },
+    { label: "Ask AI", icon: MessageSquare, tone: "lime" as const, onClick: () => openChat({ language: "vi" }) },
+    { label: "Wallet", icon: Wallet, tone: "plasma" as const, onClick: undefined },
   ];
+
   return (
     <section aria-label="Quick actions" className="grid grid-cols-4 gap-3">
-      {actions.map(({ label, icon: Icon, tone }) => (
+      {actions.map(({ label, icon: Icon, tone, onClick }) => (
         <button
           key={label}
+          onClick={onClick}
           className="group flex flex-col items-center gap-2 rounded-2xl border border-edge bg-ink-800/60 px-3 py-4 backdrop-blur transition-all hover:bg-ink-700 active:scale-[0.98]"
         >
           <span
