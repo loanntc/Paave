@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, CheckCircle2, Lock, Play, RotateCcw, Star, Trophy, Zap } from "lucide-react";
+import { BookOpen, CheckCircle2, Lock, Play, RotateCcw, Sparkles, Star, Trophy, Zap } from "lucide-react";
 import { MODULES } from "@/lib/learning/content";
 import { useLearningProgress } from "@/lib/learning/use-learning-progress";
 import { WelcomeModal } from "@/components/paave/welcome-modal";
@@ -82,6 +82,14 @@ export function GrowView() {
             completed={Object.values(progress.lessons).filter((l) => l.completed).length}
           />
         )}
+
+        {/* ── FR-LEARN-02: Learning prompt card ─────────────────────────── */}
+        {/* Shown after the welcome modal is dismissed without starting a lesson */}
+        {hydrated &&
+          progress.welcomeModalShown &&
+          Object.keys(progress.lessons).length === 0 && (
+            <LearningPromptCard />
+          )}
 
         {/* ── Module cards ───────────────────────────────────────────────── */}
         {!hydrated ? (
@@ -344,6 +352,70 @@ function ModuleCard({
 
   // Complete modules link to first lesson in review
   return cardContent;
+}
+
+// ---------------------------------------------------------------------------
+// LearningPromptCard — FR-LEARN-02
+// Shown when the user dismissed the welcome modal without starting any lesson.
+// Gives them a clear, prominent second invitation to begin Module 1.
+// ---------------------------------------------------------------------------
+function LearningPromptCard() {
+  return (
+    <Link
+      href="/grow/lesson/L1_1"
+      className="block rounded-2xl overflow-hidden border border-lime-signal-400/20 hover:border-lime-signal-400/40 transition-all active:scale-[0.99]"
+      style={{
+        background: "linear-gradient(135deg, rgba(181,232,47,0.08) 0%, rgba(127,119,221,0.12) 100%)",
+      }}
+    >
+      <div className="px-4 pt-4 pb-3">
+        {/* Eyebrow */}
+        <div className="flex items-center gap-1.5 mb-2">
+          <Sparkles className="size-3 text-lime-signal-400" strokeWidth={2.5} />
+          <span className="text-[10px] font-bold uppercase tracking-[0.8px] text-lime-signal-400">
+            Bắt đầu học
+          </span>
+        </div>
+
+        {/* Headline */}
+        <h2 className="font-display text-[17px] font-bold text-text-neo-primary leading-tight mb-1">
+          Hành trình F0 đang chờ bạn
+        </h2>
+        <p className="text-[12px] text-text-neo-tertiary leading-relaxed">
+          Module 1 · 5 bài học · ~15 phút để hiểu thị trường chứng khoán từ đầu.
+        </p>
+
+        {/* Lesson preview chips */}
+        <div className="flex gap-2 mt-3 flex-wrap">
+          {["Cổ phiếu là gì?", "Sàn HOSE & HNX", "Mua/Bán thế nào?"].map((label) => (
+            <span
+              key={label}
+              className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-lime-signal-400/10 text-lime-signal-400 border border-lime-signal-400/15"
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer CTA */}
+      <div className="px-4 py-3 flex items-center justify-between border-t border-lime-signal-400/10">
+        <div className="flex items-center gap-3 text-[11px] text-text-neo-tertiary">
+          <span className="flex items-center gap-1">
+            <Zap className="size-3 text-lime-signal-400" />
+            +25 XP / bài
+          </span>
+          <span className="flex items-center gap-1">
+            <Trophy className="size-3 text-yellow-400" />
+            Huy hiệu F0
+          </span>
+        </div>
+        <span className="text-[13px] font-bold text-lime-signal-400 flex items-center gap-1">
+          Bắt đầu <Play className="size-3.5 fill-lime-signal-400" strokeWidth={0} />
+        </span>
+      </div>
+    </Link>
+  );
 }
 
 // ---------------------------------------------------------------------------
