@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Bell, BookmarkPlus, TrendingUp } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import { StockAICard } from "@/components/paave/stock-ai-card";
+import { PaperTradeSheet } from "@/components/paave/paper-trade-sheet";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -74,6 +75,7 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [symbol, setSymbol] = useState<SymbolData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [tradeSheetOpen, setTradeSheetOpen] = useState(false);
 
   useEffect(() => {
     const db = getBrowserClient();
@@ -188,6 +190,7 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
             icon={<TrendingUp className="size-4" strokeWidth={2} />}
             label="Paper Trade"
             primary
+            onClick={() => setTradeSheetOpen(true)}
           />
         </div>
 
@@ -202,6 +205,15 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
         <StockAICard ticker={ticker} language="vi" />
 
       </div>
+
+      {/* ── Paper trade sheet (FR-23) ───────────────────────────── */}
+      <PaperTradeSheet
+        isOpen={tradeSheetOpen}
+        onClose={() => setTradeSheetOpen(false)}
+        ticker={ticker}
+        currentPrice={quote?.last_price ?? null}
+        stockName={symbol?.name ?? null}
+      />
     </main>
   );
 }
@@ -214,13 +226,16 @@ function ActionButton({
   icon,
   label,
   primary = false,
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   primary?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
+      onClick={onClick}
       className={cn(
         "flex flex-col items-center gap-1.5 rounded-2xl py-3 px-2 text-[11px] font-bold uppercase tracking-[0.5px] transition-all active:scale-[0.97]",
         primary
