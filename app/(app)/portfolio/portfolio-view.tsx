@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowLeft, ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import { BehaviorAnalysisCard } from "@/components/paave/behavior-analysis-card";
 import { cn } from "@/lib/utils";
@@ -32,6 +32,16 @@ interface HoldingRow {
   realized_pl: number;
 }
 
+interface TradeRow {
+  id: string;
+  symbol_code: string;
+  side: "BUY" | "SELL";
+  quantity: number;
+  price: number;
+  fees: number;
+  executed_at: string;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -54,8 +64,9 @@ export function PortfolioView() {
   const [userId, setUserId] = useState<string | null>(null);
   const [account, setAccount] = useState<AccountData | null>(null);
   const [holdings, setHoldings] = useState<HoldingRow[]>([]);
+  const [trades, setTrades] = useState<TradeRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"holdings" | "behavior">("holdings");
+  const [activeTab, setActiveTab] = useState<"holdings" | "behavior" | "history">("holdings");
 
   useEffect(() => {
     const db = getBrowserClient();
@@ -113,19 +124,40 @@ export function PortfolioView() {
           .single();
 
         if (accountWithId) {
-          const { data: realHoldings } = await db
-            .from("virtual_holdings")
-            .select("symbol_code, quantity, avg_cost, realized_pl")
-            .eq("sub_account_id", accountWithId.id)
-            .gt("quantity", 0)
-            .order("symbol_code");
+          const [holdingsRes2, tradesRes] = await Promise.all([
+            db
+              .from("virtual_holdings")
+              .select("symbol_code, quantity, avg_cost, realized_pl")
+              .eq("sub_account_id", accountWithId.id)
+              .gt("quantity", 0)
+              .order("symbol_code"),
+
+            db
+              .from("virtual_trades")
+              .select("id, symbol_code, side, quantity, price, fees, executed_at")
+              .eq("sub_account_id", accountWithId.id)
+              .order("executed_at", { ascending: false })
+              .limit(50),
+          ]);
 
           setHoldings(
-            (realHoldings ?? []).map((h) => ({
+            (holdingsRes2.data ?? []).map((h) => ({
               symbol_code: h.symbol_code,
               quantity: Number(h.quantity),
               avg_cost: Number(h.avg_cost),
               realized_pl: Number(h.realized_pl),
+            })),
+          );
+
+          setTrades(
+            (tradesRes.data ?? []).map((t) => ({
+              id: t.id,
+              symbol_code: t.symbol_code,
+              side: t.side as "BUY" | "SELL",
+              quantity: Number(t.quantity),
+              price: Number(t.price),
+              fees: Number(t.fees),
+              executed_at: t.executed_at,
             })),
           );
         }
@@ -236,8 +268,8 @@ export function PortfolioView() {
         )}
 
         {/* ── Tab switcher ─────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 gap-1 rounded-2xl bg-ink-violet-surface border border-border-neo p-1">
-          {(["holdings", "behavior"] as const).map((tab) => (
+        <div className="grid grid-cols-3 gap-1 rounded-2xl bg-ink-violet-surface border border-border-neo p-1">
+          {(["holdings", "history", "behavior"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -248,7 +280,7 @@ export function PortfolioView() {
                   : "text-text-neo-tertiary hover:text-text-neo-secondary",
               )}
             >
-              {tab === "holdings" ? "Danh mục" : "Hành vi"}
+              {tab === "holdings" ? "Vị thế" : tab === "history" ? "Lịch sử" : "Hành vi"}
             </button>
           ))}
         </div>
@@ -278,6 +310,38 @@ export function PortfolioView() {
                 <div className="divide-y divide-border-neo-subtle">
                   {holdings.map((h) => (
                     <HoldingRow key={h.symbol_code} holding={h} />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
+        )}
+
+        {/* ── History tab ──────────────────────────────────────────────── */}
+        {activeTab === "history" && (
+          <>
+            {isLoading ? (
+              <HistorySkeleton />
+            ) : trades.length === 0 ? (
+              <div className="rounded-2xl bg-ink-violet-surface border border-border-neo px-4 py-8 text-center">
+                <p className="text-[14px] text-text-neo-secondary mb-1">
+                  Chưa có lệnh nào
+                </p>
+                <p className="text-[12px] text-text-neo-tertiary">
+                  Đặt lệnh giả lập đầu tiên từ trang chi tiết cổ phiếu.
+                </p>
+              </div>
+            ) : (
+              <section
+                aria-label="Trade history"
+                className="rounded-2xl bg-ink-violet-surface border border-border-neo overflow-hidden"
+              >
+                <h2 className="px-4 pt-4 pb-2 text-[11px] font-bold uppercase tracking-[0.8px] text-text-neo-tertiary">
+                  50 lệnh gần nhất
+                </h2>
+                <div className="divide-y divide-border-neo-subtle">
+                  {trades.map((t) => (
+                    <TradeHistoryRow key={t.id} trade={t} />
                   ))}
                 </div>
               </section>
@@ -372,5 +436,81 @@ function HoldingsSkeleton() {
         </div>
       ))}
     </div>
+  );
+}
+
+function HistorySkeleton() {
+  return (
+    <div className="rounded-2xl bg-ink-violet-surface border border-border-neo p-4 space-y-3 animate-pulse">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="flex items-center gap-3">
+          <div className="h-7 w-14 rounded-lg bg-ink-violet-raised shrink-0" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-3 w-12 rounded bg-ink-violet-raised" />
+            <div className="h-2.5 w-28 rounded bg-ink-violet-raised" />
+          </div>
+          <div className="space-y-1.5 text-right shrink-0">
+            <div className="h-3 w-20 rounded bg-ink-violet-raised" />
+            <div className="h-2.5 w-16 rounded bg-ink-violet-raised" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Trade history row
+// ---------------------------------------------------------------------------
+function TradeHistoryRow({ trade }: { trade: TradeRow }) {
+  const isBuy = trade.side === "BUY";
+  const gross = trade.price * trade.quantity;
+
+  // e.g. "27/05 · 14:32"
+  const date = new Date(trade.executed_at);
+  const dateLabel = `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")} · ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
+  return (
+    <Link
+      href={`/stock/${trade.symbol_code}`}
+      className="flex items-center gap-3 px-4 py-3 hover:bg-ink-violet-raised transition-colors"
+    >
+      {/* Side badge */}
+      <span
+        className={cn(
+          "shrink-0 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.4px]",
+          isBuy
+            ? "bg-positive/10 text-positive border border-positive/20"
+            : "bg-negative/10 text-negative border border-negative/20",
+        )}
+      >
+        {isBuy ? (
+          <ArrowDownLeft className="size-3" strokeWidth={2.5} />
+        ) : (
+          <ArrowUpRight className="size-3" strokeWidth={2.5} />
+        )}
+        {isBuy ? "Mua" : "Bán"}
+      </span>
+
+      {/* Symbol + meta */}
+      <div className="min-w-0 flex-1">
+        <p className="font-display text-[14px] font-bold text-text-neo-primary">
+          {trade.symbol_code}
+        </p>
+        <p className="text-[11px] text-text-neo-tertiary">
+          {trade.quantity.toLocaleString()} CP · {dateLabel}
+        </p>
+      </div>
+
+      {/* Value */}
+      <div className="text-right shrink-0">
+        <p className="font-display text-[14px] tabular-nums text-text-neo-primary">
+          {formatVND(gross)}
+        </p>
+        <p className="text-[11px] tabular-nums text-text-neo-tertiary">
+          Phí {formatVND(trade.fees)}
+        </p>
+      </div>
+    </Link>
   );
 }
