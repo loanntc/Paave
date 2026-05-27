@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BookOpen, CheckCircle2, Lock, Play, RotateCcw, Star, Trophy, Zap } from "lucide-react";
 import { MODULES } from "@/lib/learning/content";
 import { useLearningProgress } from "@/lib/learning/use-learning-progress";
+import { WelcomeModal } from "@/components/paave/welcome-modal";
 import type { LearningModule } from "@/lib/learning/types";
 import { cn } from "@/lib/utils";
 
@@ -12,14 +15,43 @@ import { cn } from "@/lib/utils";
 // FRD: FR-LEARN-02
 // ---------------------------------------------------------------------------
 export function GrowView() {
+  const router = useRouter();
   const {
     hydrated,
     getModuleStatus,
     getModuleCompletedLessons,
     progress,
+    markWelcomeModalShown,
   } = useLearningProgress();
 
+  // ── Welcome modal (FR-LEARN-01) ────────────────────────────────────────────
+  // Open state is set exactly once after hydration; the progress flag is only
+  // read at that moment so the modal never re-appears during the same session.
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const didInitModal = useRef(false);
+
+  useEffect(() => {
+    if (hydrated && !didInitModal.current) {
+      didInitModal.current = true;
+      if (!progress.welcomeModalShown) {
+        setWelcomeOpen(true);
+      }
+    }
+  // progress.welcomeModalShown is intentionally read only at first hydration.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
+
   return (
+    <>
+    {/* FR-LEARN-01: Welcome modal — rendered once on first visit */}
+    {welcomeOpen && (
+      <WelcomeModal
+        onMount={markWelcomeModalShown}
+        onStart={() => { setWelcomeOpen(false); router.push("/grow/lesson/L1_1"); }}
+        onExplore={() => setWelcomeOpen(false)}
+      />
+    )}
+
     <main className="min-h-screen bg-ink-violet-base text-text-neo-primary pb-28">
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 flex items-center justify-between px-4 py-3 bg-ink-violet-base/90 backdrop-blur border-b border-border-neo-subtle">
@@ -80,6 +112,7 @@ export function GrowView() {
         </p>
       </div>
     </main>
+    </>
   );
 }
 
