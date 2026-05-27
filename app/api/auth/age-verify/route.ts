@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { calculateAge, getAccessMode, AGE_GATE_COOKIE } from "@/lib/age-gate";
-import { createCookieClient } from "@/lib/supabase/server";
+import { createCookieClient, createServiceClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // POST /api/auth/age-verify
@@ -75,18 +75,35 @@ export async function POST(request: Request) {
 
   const accessMode = getAccessMode(age);
 
+  // Persist DOB + access mode to user_metadata so the cookie can be re-hydrated
+  // server-side on every new session (middleware reads this if the cookie is absent).
+  // Uses the service client so the update doesn't require a round-trip back to the
+  // browser — the user's session was already verified above.
+  try {
+    const admin = createServiceClient();
+    const dob = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+    await admin.auth.admin.updateUserById(user.id, {
+      user_metadata: { dob, access_mode: accessMode },
+    });
+  } catch {
+    // Best-effort: the cookie is still set below. The failure only affects
+    // whether the gate can be re-hydrated on future sessions.
+  }
+
   // Set the httpOnly age-gate cookie
   const responseBody = { accessMode, age };
   const response = NextResponse.json(responseBody);
 
+  // Set as a long-lived cookie so it survives browser restarts.
+  // The server-side middleware will re-set this from user_metadata if it expires
+  // and the user returns while still authenticated.
+  const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60;
   response.cookies.set(AGE_GATE_COOKIE, accessMode, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     path: "/",
-    // Session-scoped: expires when the browser closes.
-    // Once the DOB is persisted to the DB, this should become a permanent cookie
-    // set from the session-refresh path so it survives across devices.
+    maxAge: ONE_YEAR_SECONDS,
   });
 
   return response;

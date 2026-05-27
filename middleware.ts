@@ -80,7 +80,28 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const ageGate = request.cookies.get(AGE_GATE_COOKIE)?.value;
+  let ageGate = request.cookies.get(AGE_GATE_COOKIE)?.value;
+
+  // ── Age gate cookie re-hydration ─────────────────────────────────────────
+  // When a returning user is authenticated but the cookie has expired (e.g.
+  // after a browser restart for a long-lived session), attempt to restore it
+  // from the access_mode stored in user_metadata during the original age-verify
+  // flow. This avoids funnelling returning users back through /onboarding/age.
+  if (!ageGate && user) {
+    const storedMode = user.user_metadata?.access_mode as string | undefined;
+    if (storedMode === "FULL_ACCESS" || storedMode === "LEARN_MODE" || storedMode === "BLOCKED") {
+      ageGate = storedMode;
+      const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60;
+      response.cookies.set(AGE_GATE_COOKIE, storedMode, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: ONE_YEAR_SECONDS,
+      });
+    }
+  }
+
   const isAgeVerified = ageGate === "FULL_ACCESS" || ageGate === "LEARN_MODE";
 
   // ── Protected app routes ─────────────────────────────────────────────────
