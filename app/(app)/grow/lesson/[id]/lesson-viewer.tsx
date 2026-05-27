@@ -13,10 +13,36 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
-import type { Lesson, LessonCard, QuizOption } from "@/lib/learning/types";
+import type { CTAActionType, Lesson, LessonCard, QuizOption } from "@/lib/learning/types";
 import { useLearningProgress } from "@/lib/learning/use-learning-progress";
-import { MODULES_BY_ID } from "@/lib/learning/content";
+import { MODULES, MODULES_BY_ID } from "@/lib/learning/content";
 import { cn } from "@/lib/utils";
+
+// ---------------------------------------------------------------------------
+// Map CTA action types to in-app destinations
+// ---------------------------------------------------------------------------
+const CTA_ROUTES: Partial<Record<CTAActionType, string>> = {
+  BROWSE_STOCK_LIST:     "/discover",
+  CHECK_MARKET_SESSION:  "/discover",
+  OPEN_PRICE_BOARD:      "/discover",
+  READ_NEWS_ARTICLE:     "/discover",
+  VIEW_SECTOR_BREAKDOWN: "/discover",
+  USE_SECTOR_FILTER:     "/discover",
+  ADD_TO_WATCHLIST:      "/discover",
+  SET_PRICE_ALERT:       "/discover",
+  OPEN_AI_INSIGHTS:      "/discover",
+  ATTEMPT_CEILING_ORDER: "/stock/VIC",
+  PLACE_MARKET_ORDER:    "/stock/VNM",
+  ATTEMPT_ODD_LOT_ORDER: "/stock/FPT",
+  PLACE_LIMIT_BUY:       "/stock/VNM",
+  VIEW_T2_LABEL:         "/portfolio",
+  OPEN_PNL_TAB:          "/portfolio",
+  VIEW_FOMO_PATTERNS:    "/portfolio",
+  VIEW_BEHAVIORAL_FLAGS: "/portfolio",
+  VIEW_FEE_TOTAL:        "/portfolio",
+  VIEW_REALIZED_PNL:     "/portfolio",
+  SHARE_TRADING_RULES:   "/profile",
+};
 
 // ---------------------------------------------------------------------------
 // LessonViewer — card-stack with swipe + button navigation
@@ -134,14 +160,33 @@ export function LessonViewer({ lesson }: Props) {
   // ── CTA completion / lesson completion ───────────────────────────────────
 
   const handleCTAAction = () => {
-    // Mark lesson complete (idempotent)
     completeLesson(lesson.id, lesson.moduleId);
     setCompleted(true);
-    // Navigate to Grow tab after a brief moment
-    setTimeout(() => router.push("/grow"), 500);
+    // Stay on page — completion state offers next-lesson navigation
   };
 
   const module = MODULES_BY_ID[lesson.moduleId];
+
+  // Find the next lesson (within module, then across modules)
+  const lessonIndexInModule = module
+    ? module.lessons.findIndex((l) => l.id === lesson.id)
+    : -1;
+  const nextLesson =
+    module && lessonIndexInModule >= 0
+      ? (module.lessons[lessonIndexInModule + 1] ?? null)
+      : null;
+
+  // If last lesson in module, try to find first lesson of the next unlocked module
+  const nextModuleFirstLesson = (() => {
+    if (nextLesson) return null; // already have a next lesson in same module
+    const moduleOrder = MODULES.map((m) => m.id);
+    const moduleIdx = moduleOrder.indexOf(lesson.moduleId);
+    if (moduleIdx < 0 || moduleIdx >= moduleOrder.length - 1) return null;
+    const nextModule = MODULES[moduleIdx + 1];
+    return nextModule?.lessons[0] ?? null;
+  })();
+
+  const nextLessonTarget = nextLesson ?? nextModuleFirstLesson;
 
   return (
     <main
@@ -206,8 +251,12 @@ export function LessonViewer({ lesson }: Props) {
           showHint={showHint}
           onQuizAnswer={handleQuizAnswer}
           onDismissHint={() => setShowHint(false)}
+          onShowHint={() => setShowHint(true)}
           onCTAAction={handleCTAAction}
           completed={completed}
+          nextLesson={nextLessonTarget}
+          ctaRoute={currentCard.ctaAction ? (CTA_ROUTES[currentCard.ctaAction] ?? null) : null}
+          onNavigate={(href) => router.push(href)}
         />
       </div>
 
@@ -259,8 +308,12 @@ function LessonCardView({
   showHint,
   onQuizAnswer,
   onDismissHint,
+  onShowHint,
   onCTAAction,
   completed,
+  nextLesson,
+  ctaRoute,
+  onNavigate,
 }: {
   card: LessonCard;
   selectedOption: string | null;
@@ -268,8 +321,12 @@ function LessonCardView({
   showHint: boolean;
   onQuizAnswer: (id: string) => void;
   onDismissHint: () => void;
+  onShowHint: () => void;
   onCTAAction: () => void;
   completed: boolean;
+  nextLesson: { id: string; titleVi: string } | null;
+  ctaRoute: string | null;
+  onNavigate: (href: string) => void;
 }) {
   const typeCls = CARD_TYPE_COLORS[card.type] ?? "bg-ink-violet-surface text-text-neo-primary";
   const typeLabel = CARD_TYPES_LABEL[card.type] ?? card.type;
@@ -300,9 +357,17 @@ function LessonCardView({
             showHint={showHint}
             onAnswer={onQuizAnswer}
             onDismissHint={onDismissHint}
+            onShowHint={onShowHint}
           />
         ) : card.type === "CTA" ? (
-          <CTACardBody card={card} onAction={onCTAAction} completed={completed} />
+          <CTACardBody
+            card={card}
+            onAction={onCTAAction}
+            completed={completed}
+            nextLesson={nextLesson}
+            ctaRoute={ctaRoute}
+            onNavigate={onNavigate}
+          />
         ) : (
           <TextCardBody body={card.body} />
         )}
@@ -353,6 +418,7 @@ function QuizCardBody({
   showHint,
   onAnswer,
   onDismissHint,
+  onShowHint,
 }: {
   card: LessonCard;
   selectedOption: string | null;
@@ -360,6 +426,7 @@ function QuizCardBody({
   showHint: boolean;
   onAnswer: (id: string) => void;
   onDismissHint: () => void;
+  onShowHint: () => void;
 }) {
   const options: QuizOption[] = card.options ?? [];
 
@@ -441,7 +508,7 @@ function QuizCardBody({
       {quizResult === "wrong" && !showHint && (
         <div className="flex justify-end">
           <button
-            onClick={() => {}}
+            onClick={onShowHint}
             className="flex items-center gap-1 text-[11px] text-text-neo-tertiary hover:text-text-neo-secondary"
           >
             <HelpCircle className="size-3.5" />
@@ -460,33 +527,78 @@ function CTACardBody({
   card,
   onAction,
   completed,
+  nextLesson,
+  ctaRoute,
+  onNavigate,
 }: {
   card: LessonCard;
   onAction: () => void;
   completed: boolean;
+  nextLesson: { id: string; titleVi: string } | null;
+  ctaRoute: string | null;
+  onNavigate: (href: string) => void;
 }) {
   return (
     <div className="py-4 space-y-4">
       <TextCardBody body={card.body} />
 
       {completed ? (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-lime-signal-400/10 border border-lime-signal-400/30">
-          <CheckCircle2 className="size-5 text-lime-signal-400" />
-          <span className="text-[14px] text-lime-signal-400 font-bold">Bài học hoàn thành!</span>
+        <div className="space-y-3">
+          {/* XP celebration */}
+          <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-lime-signal-400/10 border border-lime-signal-400/30">
+            <CheckCircle2 className="size-5 text-lime-signal-400 shrink-0" />
+            <div>
+              <p className="text-[14px] text-lime-signal-400 font-bold leading-snug">
+                Bài học hoàn thành!
+              </p>
+              <p className="text-[11px] text-lime-signal-400/70">+25 XP được cộng vào hồ sơ của bạn</p>
+            </div>
+          </div>
+
+          {/* Next lesson — primary CTA */}
+          {nextLesson && (
+            <button
+              onClick={() => onNavigate(`/grow/lesson/${nextLesson.id}`)}
+              className="w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-lime-signal-400 text-ink-violet-base font-display text-[15px] font-bold hover:opacity-90 active:scale-[0.98] transition-all"
+            >
+              <ChevronRight className="size-4" strokeWidth={2.5} />
+              Bài tiếp theo
+            </button>
+          )}
+
+          {/* Practice link — secondary */}
+          {ctaRoute && (
+            <button
+              onClick={() => onNavigate(ctaRoute)}
+              className="w-full flex items-center justify-center gap-2 h-11 rounded-2xl border border-lime-signal-400/40 text-lime-signal-400 text-[14px] font-bold hover:bg-lime-signal-400/10 transition-colors"
+            >
+              <ExternalLink className="size-4" strokeWidth={2} />
+              {card.ctaLabel ?? "Thực hành"}
+            </button>
+          )}
+
+          {/* Back link */}
+          <button
+            onClick={() => onNavigate("/grow")}
+            className="w-full text-center text-[12px] text-text-neo-tertiary hover:text-text-neo-secondary transition-colors"
+          >
+            Về trang Học tập
+          </button>
         </div>
       ) : (
-        <button
-          onClick={onAction}
-          className="w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-lime-signal-400 text-ink-violet-base font-display text-[15px] font-bold hover:opacity-90 active:scale-[0.98] transition-all"
-        >
-          <ExternalLink className="size-4" strokeWidth={2.5} />
-          {card.ctaLabel ?? "Thực hành ngay"}
-        </button>
+        <>
+          <button
+            onClick={onAction}
+            className="w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-lime-signal-400 text-ink-violet-base font-display text-[15px] font-bold hover:opacity-90 active:scale-[0.98] transition-all"
+          >
+            <ExternalLink className="size-4" strokeWidth={2.5} />
+            {card.ctaLabel ?? "Thực hành ngay"}
+          </button>
+          <p className="text-[11px] text-text-neo-tertiary text-center">
+            Hoàn thành thực hành để nhận +25 XP và mở bài tiếp theo.
+          </p>
+        </>
       )}
-
-      <p className="text-[11px] text-text-neo-tertiary text-center">
-        Hoàn thành thực hành để nhận +25 XP và mở bài tiếp theo.
-      </p>
     </div>
   );
 }
