@@ -9,9 +9,15 @@
 
 /**
  * Format a number as VND currency.
- * @param value  Amount in đồng (will be rounded to the nearest integer).
+ * Accepts null/undefined and returns `fallback` (default "—") for those cases.
+ * @param value     Amount in đồng (will be rounded to the nearest integer).
+ * @param fallback  String to return when value is null/undefined.
  */
-export function formatVND(value: number): string {
+export function formatVND(
+  value: number | null | undefined,
+  fallback = "—",
+): string {
+  if (value == null) return fallback;
   return (
     Math.round(value)
       .toString()

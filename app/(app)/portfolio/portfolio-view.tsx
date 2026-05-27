@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import { BehaviorAnalysisCard } from "@/components/paave/behavior-analysis-card";
+import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -40,21 +41,6 @@ interface TradeRow {
   price: number;
   fees: number;
   executed_at: string;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-function formatVND(value: number): string {
-  return (
-    Math.round(value)
-      .toString()
-      .replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " ₫"
-  );
-}
-
-function pctLabel(pct: number): string {
-  return `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
 }
 
 // ---------------------------------------------------------------------------

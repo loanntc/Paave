@@ -7,6 +7,7 @@ import { ArrowLeft, Bell, BookmarkPlus, TrendingDown, TrendingUp } from "lucide-
 import { createClient } from "@supabase/supabase-js";
 import { StockAICard } from "@/components/paave/stock-ai-card";
 import { PaperTradeSheet } from "@/components/paave/paper-trade-sheet";
+import { formatVND } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -54,16 +55,6 @@ interface HoldingData {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function formatVND(value: number | null): string {
-  if (value === null || value === undefined) return "—";
-  // VND: period separator, no decimals, dong symbol after space (per CLAUDE.md)
-  return (
-    Math.round(value)
-      .toString()
-      .replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " ₫"
-  );
-}
-
 function formatVolume(value: number | null): string {
   if (value === null) return "—";
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
