@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Search, TrendingDown, TrendingUp, X } from "lucide-react";
+import { BookmarkCheck, Search, TrendingDown, TrendingUp, X } from "lucide-react";
 import type { StockResult } from "@/app/api/stocks/search/route";
 import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { useWatchlist } from "@/lib/use-watchlist";
 
 // ---------------------------------------------------------------------------
 // DiscoverView
@@ -16,6 +17,7 @@ export function DiscoverView() {
   const [isLoading, setIsLoading] = useState(true);
   const [section, setSection] = useState("Khối lượng cao nhất");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { hydrated, watchlist, removeFromWatchlist } = useWatchlist();
 
   // Fetch on mount (default = top by volume) and on query change
   useEffect(() => {
@@ -85,7 +87,27 @@ export function DiscoverView() {
       </header>
 
       {/* ── Results ────────────────────────────────────────────────────── */}
-      <div className="px-4 pt-4 max-w-[640px] mx-auto">
+      <div className="px-4 pt-4 max-w-[640px] mx-auto space-y-4">
+
+        {/* Watchlist quick-access — only shown when not searching */}
+        {!query && hydrated && watchlist.length > 0 && (
+          <section aria-label="Danh sách theo dõi">
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.8px] text-text-neo-tertiary mb-2 flex items-center gap-1.5">
+              <BookmarkCheck className="size-3" strokeWidth={2.5} />
+              Đang theo dõi
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {watchlist.map((ticker) => (
+                <WatchlistChip
+                  key={ticker}
+                  ticker={ticker}
+                  onRemove={() => removeFromWatchlist(ticker)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {isLoading ? (
           <SearchSkeleton />
         ) : results.length === 0 ? (
@@ -161,6 +183,29 @@ function StockResultRow({ stock }: { stock: StockResult }) {
         </div>
       )}
     </Link>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// WatchlistChip — a removable ticker pill
+// ---------------------------------------------------------------------------
+function WatchlistChip({ ticker, onRemove }: { ticker: string; onRemove: () => void }) {
+  return (
+    <div className="flex items-center gap-1 pl-3 pr-1.5 py-1.5 rounded-full bg-ink-violet-surface border border-border-neo group">
+      <Link
+        href={`/stock/${ticker}`}
+        className="font-display text-[13px] font-bold text-text-neo-primary hover:text-lime-signal-400 transition-colors"
+      >
+        {ticker}
+      </Link>
+      <button
+        onClick={onRemove}
+        aria-label={`Xóa ${ticker} khỏi danh sách theo dõi`}
+        className="grid size-4 place-items-center rounded-full text-text-neo-tertiary hover:text-text-neo-primary hover:bg-ink-violet-raised transition-colors"
+      >
+        <X className="size-2.5" strokeWidth={2.5} />
+      </button>
+    </div>
   );
 }
 

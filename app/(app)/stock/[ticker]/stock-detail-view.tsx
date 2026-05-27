@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bell, BookmarkPlus, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeft, Bell, BookmarkCheck, BookmarkPlus, TrendingDown, TrendingUp } from "lucide-react";
+import { useWatchlist } from "@/lib/use-watchlist";
 import { createClient } from "@supabase/supabase-js";
 import { StockAICard } from "@/components/paave/stock-ai-card";
 import { PaperTradeSheet } from "@/components/paave/paper-trade-sheet";
@@ -76,6 +77,7 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
   const [holding, setHolding] = useState<HoldingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [tradeSheetOpen, setTradeSheetOpen] = useState(false);
+  const { isWatched, toggleWatchlist } = useWatchlist();
 
   useEffect(() => {
     const db = getBrowserClient();
@@ -225,7 +227,16 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
 
         {/* ── Action buttons (FR-23 section 4) ─────────────────── */}
         <div className="grid grid-cols-3 gap-2" role="group" aria-label="Actions">
-          <ActionButton icon={<BookmarkPlus className="size-4" strokeWidth={2} />} label="Watchlist" />
+          <ActionButton
+            icon={
+              isWatched(ticker)
+                ? <BookmarkCheck className="size-4" strokeWidth={2} />
+                : <BookmarkPlus className="size-4" strokeWidth={2} />
+            }
+            label={isWatched(ticker) ? "Đã lưu" : "Watchlist"}
+            active={isWatched(ticker)}
+            onClick={() => toggleWatchlist(ticker)}
+          />
           <ActionButton icon={<Bell className="size-4" strokeWidth={2} />} label="Alert" />
           <ActionButton
             icon={<TrendingUp className="size-4" strokeWidth={2} />}
@@ -267,11 +278,13 @@ function ActionButton({
   icon,
   label,
   primary = false,
+  active = false,
   onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   primary?: boolean;
+  active?: boolean;
   onClick?: () => void;
 }) {
   return (
@@ -281,7 +294,9 @@ function ActionButton({
         "flex flex-col items-center gap-1.5 rounded-2xl py-3 px-2 text-[11px] font-bold uppercase tracking-[0.5px] transition-all active:scale-[0.97]",
         primary
           ? "bg-lime-signal-400 text-ink-violet-base"
-          : "bg-ink-violet-surface border border-border-neo text-text-neo-secondary hover:text-text-neo-primary",
+          : active
+            ? "bg-lime-signal-400/15 border border-lime-signal-400/40 text-lime-signal-400"
+            : "bg-ink-violet-surface border border-border-neo text-text-neo-secondary hover:text-text-neo-primary",
       )}
     >
       {icon}
