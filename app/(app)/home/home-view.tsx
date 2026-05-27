@@ -14,6 +14,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import type { StockResult } from "@/app/api/stocks/search/route";
 import { AmbientBackground } from "@/components/brand/ambient-background";
 import { PaaveWordmark } from "@/components/brand/paave-wordmark";
 import { useChatSheet } from "@/lib/ai/chat-context";
@@ -49,6 +50,8 @@ export function HomeView() {
   const [displayName, setDisplayName] = useState<string>("bạn");
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [portfolioLoading, setPortfolioLoading] = useState(true);
+  const [trending, setTrending] = useState<StockResult[]>([]);
+  const [trendingLoading, setTrendingLoading] = useState(true);
 
   useEffect(() => {
     const db = getBrowserClient();
@@ -118,6 +121,22 @@ export function HomeView() {
     fetchHomeData();
   }, []);
 
+  // Fetch top gainers independently (public data, no auth required)
+  useEffect(() => {
+    async function fetchTrending() {
+      try {
+        const res = await fetch("/api/stocks/search?sort=gainers&limit=8");
+        const data: { results: StockResult[] } = await res.json();
+        setTrending(data.results);
+      } catch {
+        // Keep empty — TrendingRow will show static fallback
+      } finally {
+        setTrendingLoading(false);
+      }
+    }
+    fetchTrending();
+  }, []);
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-ink-900 pb-28">
       <AmbientBackground />
@@ -132,7 +151,7 @@ export function HomeView() {
         />
         <QuickActions />
         <MarketSnapshot />
-        <TrendingRow />
+        <TrendingRow stocks={trending} isLoading={trendingLoading} />
         <WeeklyChallenge />
       </section>
 
@@ -328,49 +347,6 @@ function QuickActions() {
   );
 }
 
-type Ticker = {
-  symbol: string;
-  name: string;
-  market: "VN" | "KR" | "US";
-  price: string;
-  changePct: number;
-  tag: string;
-};
-
-const trending: Ticker[] = [
-  {
-    symbol: "VIC",
-    name: "Vingroup",
-    market: "VN",
-    price: "₫45.200",
-    changePct: 3.24,
-    tag: "Hometown Hero",
-  },
-  {
-    symbol: "005930",
-    name: "Samsung Electronics",
-    market: "KR",
-    price: "₩73,400",
-    changePct: 1.12,
-    tag: "Chipwave",
-  },
-  {
-    symbol: "NVDA",
-    name: "NVIDIA",
-    market: "US",
-    price: "$962.14",
-    changePct: -0.82,
-    tag: "AI Beast",
-  },
-  {
-    symbol: "VNM",
-    name: "Vinamilk",
-    market: "VN",
-    price: "₫66.900",
-    changePct: 0.45,
-    tag: "Steady Mode",
-  },
-];
 
 function MarketSnapshot() {
   const markets: Array<{
@@ -390,10 +366,10 @@ function MarketSnapshot() {
           Market Pulse
         </h2>
         <Link
-          href="#"
+          href="/discover"
           className="font-display text-[11px] uppercase tracking-pulse text-plasma"
         >
-          All markets →
+          Tất cả →
         </Link>
       </header>
       <ul className="mt-4 grid grid-cols-3 gap-3">
@@ -434,52 +410,89 @@ function ChangePill({ value }: { value: number }) {
   );
 }
 
-function TrendingRow() {
+function TrendingRow({
+  stocks,
+  isLoading,
+}: {
+  stocks: StockResult[];
+  isLoading: boolean;
+}) {
   return (
     <section aria-label="Trending" className="space-y-4">
       <header className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <Flame className="size-4 text-plasma" strokeWidth={2.5} />
           <h2 className="font-display text-[14px] uppercase tracking-drop text-lime-soft">
-            Trending with your crew
+            Top tăng hôm nay
           </h2>
         </div>
         <Link
-          href="#"
+          href="/discover"
           className="font-display text-[11px] uppercase tracking-pulse text-plasma"
         >
-          Discover →
+          Khám phá →
         </Link>
       </header>
-      <ul className="flex gap-3 overflow-x-auto scrollbar-hide -mx-6 px-6 snap-x snap-mandatory">
-        {trending.map((t) => (
-          <li key={t.symbol} className="snap-start min-w-[220px]">
-            <Link
-              href={`/stock/${t.symbol}`}
-              className="block rounded-3xl border border-edge bg-ink-800/60 p-5 backdrop-blur transition-colors hover:border-plasma/40 active:scale-[0.98]"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-display text-[11px] uppercase tracking-pulse text-plasma">
-                  {t.tag}
-                </span>
-                <span className="font-display text-[10px] uppercase tracking-pulse text-fog">
-                  {t.market}
-                </span>
+
+      {isLoading ? (
+        // Loading skeleton — 4 cards
+        <ul className="flex gap-3 overflow-x-auto scrollbar-hide -mx-6 px-6">
+          {[1, 2, 3, 4].map((i) => (
+            <li key={i} className="min-w-[220px] shrink-0">
+              <div className="rounded-3xl border border-edge bg-ink-800/60 p-5 space-y-3 animate-pulse">
+                <div className="flex justify-between">
+                  <div className="h-2.5 w-16 rounded bg-ink-700" />
+                  <div className="h-2.5 w-8 rounded bg-ink-700" />
+                </div>
+                <div className="h-5 w-12 rounded bg-ink-700 mt-4" />
+                <div className="h-3 w-28 rounded bg-ink-700" />
+                <div className="flex justify-between mt-4">
+                  <div className="h-5 w-20 rounded bg-ink-700" />
+                  <div className="h-5 w-14 rounded-full bg-ink-700" />
+                </div>
               </div>
-              <p className="mt-4 font-display text-[18px] text-lime-soft">
-                {t.symbol}
-              </p>
-              <p className="font-body text-[12px] text-fog truncate">{t.name}</p>
-              <div className="mt-4 flex items-end justify-between">
-                <p className="font-display text-[18px] tabular-nums text-lime-soft">
-                  {t.price}
+            </li>
+          ))}
+        </ul>
+      ) : stocks.length === 0 ? (
+        <p className="text-[13px] text-fog px-1">
+          Chưa có dữ liệu thị trường.
+        </p>
+      ) : (
+        <ul className="flex gap-3 overflow-x-auto scrollbar-hide -mx-6 px-6 snap-x snap-mandatory">
+          {stocks.map((s) => (
+            <li key={s.code} className="snap-start min-w-[220px] shrink-0">
+              <Link
+                href={`/stock/${s.code}`}
+                className="block rounded-3xl border border-edge bg-ink-800/60 p-5 backdrop-blur transition-colors hover:border-plasma/40 active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-display text-[10px] uppercase tracking-pulse text-fog">
+                    {s.sector ?? s.exchange ?? "VN"}
+                  </span>
+                  <span className="font-display text-[10px] uppercase tracking-pulse text-fog">
+                    {s.exchange ?? "—"}
+                  </span>
+                </div>
+                <p className="mt-4 font-display text-[18px] text-lime-soft">
+                  {s.code}
                 </p>
-                <ChangePill value={t.changePct} />
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
+                <p className="font-body text-[12px] text-fog truncate">
+                  {s.short_name ?? s.name}
+                </p>
+                <div className="mt-4 flex items-end justify-between">
+                  <p className="font-display text-[18px] tabular-nums text-lime-soft">
+                    {s.last_price != null ? formatVND(s.last_price) : "—"}
+                  </p>
+                  {s.pct_change != null && (
+                    <ChangePill value={s.pct_change} />
+                  )}
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

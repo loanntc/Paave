@@ -28,29 +28,37 @@ export interface StockResult {
 //
 // Query params:
 //   q      — search term (ticker code or company name prefix)
-//             When absent/empty: returns top stocks by volume
+//             When absent/empty: uses 'sort' to determine default view
+//   sort   — "volume" (default) | "gainers"
+//             "volume"  → top stocks by total trading volume
+//             "gainers" → top positive movers by pct_change (VN stocks)
 //   limit  — max results (1–30, default 20)
 // ---------------------------------------------------------------------------
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const q = (searchParams.get("q") ?? "").trim();
+  const sort = searchParams.get("sort") === "gainers" ? "gainers" : "volume";
   const rawLimit = Number(searchParams.get("limit") ?? DEFAULT_LIMIT);
   const limit = Math.min(Math.max(1, Number.isFinite(rawLimit) ? rawLimit : DEFAULT_LIMIT), MAX_LIMIT);
 
   const db = createServiceClient();
 
-  // ── Default view: top stocks by volume ────────────────────────────────────
+  // ── Default view: top stocks (by volume or by gains) ─────────────────────
   if (q.length === 0) {
-    const [quotesRes, symbolsRes] = await Promise.all([
-      db
-        .from("symbol_quotes_latest")
-        .select("symbol_code, last_price, pct_change, total_volume")
-        .order("total_volume", { ascending: false })
-        .limit(limit),
+    let quotesQuery = db
+      .from("symbol_quotes_latest")
+      .select("symbol_code, last_price, pct_change, total_volume");
 
-      db
-        .from("symbols")
-        .select("code, name, short_name, exchange, sector"),
+    if (sort === "gainers") {
+      // Top positive movers — filter out non-positive and sort descending
+      quotesQuery = quotesQuery.gt("pct_change", 0).order("pct_change", { ascending: false });
+    } else {
+      quotesQuery = quotesQuery.order("total_volume", { ascending: false });
+    }
+
+    const [quotesRes, symbolsRes] = await Promise.all([
+      quotesQuery.limit(limit),
+      db.from("symbols").select("code, name, short_name, exchange, sector"),
     ]);
 
     const symbolMap = new Map(
@@ -71,7 +79,7 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({ results, query: "" });
+    return NextResponse.json({ results, query: "", sort });
   }
 
   // ── Search: match code prefix first, then name ────────────────────────────
