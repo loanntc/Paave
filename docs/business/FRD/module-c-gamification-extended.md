@@ -1101,3 +1101,29 @@ Seasonal Events are time-limited themed challenges (1–4 weeks) tied to the Vie
 | BR-10-GLOBAL-3 | At most one seasonal event is `ACTIVE` at any time. This is enforced at the DB level via a partial unique index on `status = 'ACTIVE'`. |
 | BR-10-GLOBAL-4 | Seasonal events are not personalized in V1; all active users receive the same event. |
 | BR-10-GLOBAL-5 | Event content (name, description, banner) is admin-configured and not generated dynamically. |
+
+---
+
+## Related Documents
+
+**Business Layer**
+| Document | Path |
+|----------|------|
+| FRD: F0 Learning Path | `docs/business/frd/module-f0-learning.md` |
+| UX Flows: F0 Learning Path | `docs/business/frd/module-f0-learning-ux-flows.md` |
+
+**Design Layer**
+| Document | Path |
+|----------|------|
+| Design Alignment + Tokens | `docs/design/DESIGN-F0-LEARN-00-alignment.md` |
+| UX Flows (Design Detail) | `docs/design/DESIGN-F0-LEARN-01-ux-flows.md` |
+| Screen Wireframes | `docs/design/DESIGN-F0-LEARN-02-wireframes.md` |
+| UI Specification | `docs/design/DESIGN-F0-LEARN-03-ui-spec.md` |
+| Component Specs | `docs/design/DESIGN-F0-LEARN-04-component-spec.md` |
+| Interaction Rules | `docs/design/DESIGN-F0-LEARN-05-interactions.md` |
+| QA Test Cases | `docs/design/DESIGN-F0-LEARN-06-qa-cases.md` |
+
+**Engineering Layer**
+| Document | Path |
+|----------|------|
+| Dev/QA Handoff Spec | `docs/design/DEV-QA-SPEC-F0-Learning-Path.md` |
