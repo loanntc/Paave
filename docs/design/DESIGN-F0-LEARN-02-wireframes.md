@@ -722,3 +722,29 @@ Notes:
 
 *Owner: UX Design | All 18 screens mapped | Component specs in `DESIGN-F0-LEARN-04-component-spec.md`*
 *UI specifications in `DESIGN-F0-LEARN-03-ui-spec.md`*
+
+---
+
+## Related Documents
+
+**Business Layer**
+| Document | Path |
+|----------|------|
+| FRD: F0 Learning Path | `docs/business/frd/module-f0-learning.md` |
+| UX Flows (Business) | `docs/business/frd/module-f0-learning-ux-flows.md` |
+| Gamification FRD | `docs/business/frd/module-c-gamification-extended.md` |
+
+**Design Layer**
+| Document | Path |
+|----------|------|
+| Design Alignment + Tokens | `docs/design/DESIGN-F0-LEARN-00-alignment.md` |
+| UX Flows (Design Detail) | `docs/design/DESIGN-F0-LEARN-01-ux-flows.md` |
+| UI Specification | `docs/design/DESIGN-F0-LEARN-03-ui-spec.md` |
+| Component Specs | `docs/design/DESIGN-F0-LEARN-04-component-spec.md` |
+| Interaction Rules | `docs/design/DESIGN-F0-LEARN-05-interactions.md` |
+| QA Test Cases | `docs/design/DESIGN-F0-LEARN-06-qa-cases.md` |
+
+**Engineering Layer**
+| Document | Path |
+|----------|------|
+| Dev/QA Handoff Spec | `docs/design/DEV-QA-SPEC-F0-Learning-Path.md` |

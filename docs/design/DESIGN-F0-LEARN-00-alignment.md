@@ -185,3 +185,29 @@ Add to the Figma library under **Learning / Tokens** before designing screens.
 ---
 
 *Owner: Product Design | Reviewed by: PO + BA | FRD linked: `docs/business/frd/module-f0-learning.md`*
+
+---
+
+## Related Documents
+
+**Business Layer**
+| Document | Path |
+|----------|------|
+| FRD: F0 Learning Path | `docs/business/frd/module-f0-learning.md` |
+| UX Flows: F0 Learning Path | `docs/business/frd/module-f0-learning-ux-flows.md` |
+| Gamification FRD | `docs/business/frd/module-c-gamification-extended.md` |
+
+**Design Layer**
+| Document | Path |
+|----------|------|
+| UX Flows (Design Detail) | `docs/design/DESIGN-F0-LEARN-01-ux-flows.md` |
+| Screen Wireframes | `docs/design/DESIGN-F0-LEARN-02-wireframes.md` |
+| UI Specification | `docs/design/DESIGN-F0-LEARN-03-ui-spec.md` |
+| Component Specs | `docs/design/DESIGN-F0-LEARN-04-component-spec.md` |
+| Interaction Rules | `docs/design/DESIGN-F0-LEARN-05-interactions.md` |
+| QA Test Cases | `docs/design/DESIGN-F0-LEARN-06-qa-cases.md` |
+
+**Engineering Layer**
+| Document | Path |
+|----------|------|
+| Dev/QA Handoff Spec | `docs/design/DEV-QA-SPEC-F0-Learning-Path.md` |
