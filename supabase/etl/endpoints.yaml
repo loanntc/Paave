@@ -1,0 +1,511 @@
+# ============================================================================
+# Paave API  →  Supabase  ingestion mapping
+# ============================================================================
+# This file is the single source of truth for what the ETL worker does.
+# Each entry maps ONE Paave upstream endpoint to ONE Supabase table.
+#
+# Fields:
+#   key              unique identifier (used in logs, dead-letter queue)
+#   upstream         relative path on Paave API (base_url configured via env)
+#   method           GET (we only ingest reads)
+#   params           query params. Placeholders:
+#                      {date}, {date_minus_1}, {date_minus_5}, {ts}, {ts_minus_2h}
+#                    For per_symbol endpoints: {symbol}  (loop-resolved)
+#                    For per_index  endpoints: {index}   (loop-resolved)
+#                    For per_module endpoints: {module}  (loop-resolved)
+#   target_table     destination in Supabase
+#   conflict_cols    PK/unique cols for upsert (uses PostgREST on_conflict).
+#                    [] = append-only.
+#   transform        python dotted-path to a transformer fn in transforms.py
+#   schedule         hourly | daily | per_symbol | per_index | per_module | on_demand
+#   auth             none | system_token
+# ============================================================================
+
+endpoints:
+
+  # ==========================================================================
+  # MARKET — LIST / MARKET-WIDE (hourly / daily)
+  # ==========================================================================
+  - key: market.symbols_master
+    upstream: /api/v1/market/symbol
+    target_table: symbols
+    conflict_cols: [code]
+    transform: transforms.symbols
+    schedule: daily
+    auth: system_token
+
+  - key: market.quote_latest
+    upstream: /api/v1/market/symbol/latest
+    target_table: symbol_quotes_latest
+    conflict_cols: [symbol_code]
+    transform: transforms.quote_latest
+    schedule: hourly
+    auth: system_token
+
+  - key: market.day_bars
+    upstream: /api/v1/market/candles
+    params: { resolution: "D", from: "{date_minus_5}", to: "{date}" }
+    target_table: symbol_day_bars
+    conflict_cols: [symbol_code, trade_date]
+    transform: transforms.day_bars
+    schedule: daily
+    auth: system_token
+
+  - key: market.session_status
+    upstream: /api/v1/market/session-status
+    target_table: market_session_status
+    conflict_cols: [exchange]
+    transform: transforms.session_status
+    schedule: hourly
+    auth: system_token
+
+  - key: market.index_list
+    upstream: /api/v1/market/index/list
+    target_table: indices
+    conflict_cols: [code]
+    transform: transforms.indices
+    schedule: daily
+    auth: system_token
+
+  - key: market.current_dividends
+    upstream: /api/v1/market/current-dividend-event
+    target_table: dividend_events
+    conflict_cols: [symbol_code, ex_date, event_type]
+    transform: transforms.dividend_events
+    schedule: daily
+    auth: system_token
+
+  - key: market.daily_returns
+    upstream: /api/v1/market/daily-returns
+    target_table: symbol_daily_returns
+    conflict_cols: [symbol_code, trade_date]
+    transform: transforms.daily_returns
+    schedule: daily
+    auth: system_token
+
+  - key: market.liquidity
+    upstream: /api/v1/market/liquidity
+    target_table: market_liquidity_snapshot
+    conflict_cols: []
+    transform: transforms.liquidity
+    schedule: hourly
+    auth: system_token
+
+  - key: market.price_board
+    upstream: /api/v1/market/price-board
+    target_table: market_price_board_snapshot
+    conflict_cols: []
+    transform: transforms.price_board
+    schedule: hourly
+    auth: system_token
+
+  - key: market.last_trading_date
+    upstream: /api/v1/market/last-trading-date
+    target_table: market_last_trading_date
+    conflict_cols: [exchange]
+    transform: transforms.last_trading_date
+    schedule: daily
+    auth: system_token
+
+  - key: market.tick_size_match
+    upstream: /api/v1/market/symbol/tick-size-match
+    target_table: tick_size_match
+    conflict_cols: []
+    transform: transforms.tick_size_match
+    schedule: daily
+    auth: system_token
+
+  - key: market.vnindex_return
+    upstream: /api/v1/market/vnindex-return
+    target_table: vnindex_returns
+    conflict_cols: [trade_date]
+    transform: transforms.vnindex_returns
+    schedule: daily
+    auth: system_token
+
+  - key: market.static_info
+    upstream: /api/v1/market/symbol/static-info
+    target_table: symbol_static_info
+    conflict_cols: [symbol_code]
+    transform: transforms.static_info
+    schedule: daily
+    auth: system_token
+
+  - key: market.oddlot_latest
+    upstream: /api/v1/market/symbol/oddlot-latest
+    target_table: symbol_oddlot_latest
+    conflict_cols: [symbol_code]
+    transform: transforms.oddlot_latest
+    schedule: hourly
+    auth: system_token
+
+  # ---------- PUT-THROUGH ----------
+  - key: market.putthrough_advertise
+    upstream: /api/v1/market/putthrough/advertise
+    target_table: putthrough_advertise
+    conflict_cols: []
+    transform: transforms.putthrough_advertise
+    schedule: hourly
+    auth: system_token
+
+  - key: market.putthrough_deal
+    upstream: /api/v1/market/putthrough/deal
+    target_table: putthrough_deal
+    conflict_cols: []
+    transform: transforms.putthrough_deal
+    schedule: hourly
+    auth: system_token
+
+  - key: market.putthrough_deal_total
+    upstream: /api/v1/market/putthrough/deal-total
+    target_table: putthrough_deal_total
+    conflict_cols: [trade_date]
+    transform: transforms.putthrough_deal_total
+    schedule: daily
+    auth: system_token
+
+  # ---------- RANKINGS ----------
+  - key: market.rankings_up_down
+    upstream: /api/v1/market/ranking/up-down
+    target_table: rankings_snapshot
+    conflict_cols: []
+    transform: transforms.ranking_up_down
+    schedule: hourly
+    auth: system_token
+
+  - key: market.rankings_foreigner
+    upstream: /api/v1/market/ranking/foreigner
+    target_table: rankings_foreigner
+    conflict_cols: []
+    transform: transforms.rankings_foreigner
+    schedule: hourly
+    auth: system_token
+
+  - key: market.rankings_stock_trade
+    upstream: /api/v1/market/ranking/stock/trade
+    target_table: rankings_stock_trade
+    conflict_cols: []
+    transform: transforms.rankings_stock_trade
+    schedule: hourly
+    auth: system_token
+
+  - key: market.rankings_etf_trade
+    upstream: /api/v1/market/ranking/etf/trade
+    target_table: rankings_stock_trade
+    conflict_cols: []
+    transform: transforms.rankings_stock_trade
+    schedule: hourly
+    auth: system_token
+
+  - key: market.rankings_period
+    upstream: /api/v1/market/stock/ranking/period
+    target_table: rankings_stock_period
+    conflict_cols: []
+    transform: transforms.rankings_stock_period
+    schedule: daily
+    auth: system_token
+
+  - key: market.rankings_top
+    upstream: /api/v1/market/stock/ranking/top
+    target_table: rankings_stock_top
+    conflict_cols: []
+    transform: transforms.rankings_stock_top
+    schedule: daily
+    auth: system_token
+
+  - key: market.rankings_stock_up_down
+    upstream: /api/v1/market/stock/ranking/up-down
+    target_table: rankings_stock_up_down
+    conflict_cols: []
+    transform: transforms.rankings_stock_up_down
+    schedule: hourly
+    auth: system_token
+
+  - key: market.top_ai_rating
+    upstream: /api/v1/market/top-ai-rating
+    target_table: top_ai_rating
+    conflict_cols: []
+    transform: transforms.top_ai_rating
+    schedule: daily
+    auth: system_token
+
+  - key: market.top_foreigner_trading
+    upstream: /api/v1/market/top-foreigner-trading
+    target_table: top_foreigner_trading
+    conflict_cols: []
+    transform: transforms.top_foreigner_trading
+    schedule: daily
+    auth: system_token
+
+  # ==========================================================================
+  # MARKET — PER-SYMBOL (iterates over public.symbols where is_active=true)
+  # ==========================================================================
+  - key: market.symbol_quote_detail
+    upstream: /api/v1/market/symbol-quote/{symbol}
+    target_table: symbol_quote_detail
+    conflict_cols: [symbol_code]
+    transform: transforms.symbol_quote_detail
+    schedule: per_symbol
+    auth: system_token
+
+  - key: market.symbol_quote
+    upstream: /api/v1/market/symbol/{symbol}/quote
+    target_table: symbol_quote_detail
+    conflict_cols: [symbol_code]
+    transform: transforms.symbol_quote_detail
+    schedule: per_symbol
+    auth: system_token
+
+  - key: market.symbol_minute_chart
+    upstream: /api/v1/market/symbol/{symbol}/minute-chart
+    target_table: symbol_minute_chart
+    conflict_cols: [symbol_code, bar_time]
+    transform: transforms.symbol_minute_chart
+    schedule: per_symbol
+    auth: system_token
+
+  - key: market.symbol_minutes
+    upstream: /api/v1/market/symbol/{symbol}/minutes
+    target_table: symbol_minute_chart
+    conflict_cols: [symbol_code, bar_time]
+    transform: transforms.symbol_minute_chart
+    schedule: per_symbol
+    auth: system_token
+
+  - key: market.symbol_period_daily
+    upstream: /api/v1/market/symbol/{symbol}/period/DAILY
+    target_table: symbol_day_bars
+    conflict_cols: [symbol_code, trade_date]
+    transform: transforms.day_bars
+    schedule: per_symbol
+    auth: system_token
+
+  - key: market.symbol_statistic
+    upstream: /api/v1/market/symbol/{symbol}/statistic
+    target_table: symbol_statistic
+    conflict_cols: [symbol_code]
+    transform: transforms.symbol_statistic
+    schedule: per_symbol
+    auth: system_token
+
+  - key: market.symbol_rights
+    upstream: /api/v1/market/symbol/{symbol}/right
+    target_table: symbol_rights
+    conflict_cols: []
+    transform: transforms.symbol_rights
+    schedule: per_symbol
+    auth: system_token
+
+  - key: market.symbol_ticks
+    upstream: /api/v1/market/symbol/{symbol}/ticks
+    target_table: symbol_ticks_latest
+    conflict_cols: [symbol_code]
+    transform: transforms.symbol_ticks
+    schedule: per_symbol
+    auth: system_token
+
+  - key: market.symbol_foreigner_daily
+    upstream: /api/v1/market/symbol/{symbol}/foreigner
+    target_table: symbol_foreigner_daily
+    conflict_cols: [symbol_code, trade_date]
+    transform: transforms.symbol_foreigner_daily
+    schedule: per_symbol
+    auth: system_token
+
+  - key: market.symbol_foreigner_summary
+    upstream: /api/v1/market/symbol/foreigner-summary
+    target_table: symbol_foreigner_summary
+    conflict_cols: [symbol_code]
+    transform: transforms.symbol_foreigner_summary
+    schedule: hourly
+    auth: system_token
+
+  # ==========================================================================
+  # MARKET — PER-INDEX (iterates over public.indices)
+  # ==========================================================================
+  - key: market.index_members
+    upstream: /api/v1/market/index-stock-list/{index}
+    target_table: index_stock_members
+    conflict_cols: [index_code, symbol_code]
+    transform: transforms.index_members
+    schedule: per_index
+    auth: system_token
+
+  # ==========================================================================
+  # MARKET — PER-ETF (iterates over symbols where symbol_type='ETF')
+  # ==========================================================================
+  - key: market.etf_index_daily
+    upstream: /api/v1/market/etf/{symbol}/index/daily
+    target_table: etf_index_daily
+    conflict_cols: [symbol_code, trade_date]
+    transform: transforms.etf_index_daily
+    schedule: per_etf
+    auth: system_token
+
+  - key: market.etf_nav_daily
+    upstream: /api/v1/market/etf/{symbol}/nav/daily
+    target_table: etf_nav_daily
+    conflict_cols: [symbol_code, trade_date]
+    transform: transforms.etf_nav_daily
+    schedule: per_etf
+    auth: system_token
+
+  # ==========================================================================
+  # FUNDAMENTALS (daily)
+  # ==========================================================================
+  - key: fundamentals.profile
+    upstream: /api/v1/fundamentals/profile
+    target_table: company_profiles
+    conflict_cols: [symbol_code]
+    transform: transforms.company_profile
+    schedule: daily
+    auth: system_token
+
+  - key: fundamentals.business_info
+    upstream: /api/v1/fundamentals/business-info
+    target_table: company_business_info
+    conflict_cols: [symbol_code]
+    transform: transforms.company_business_info
+    schedule: daily
+    auth: system_token
+
+  - key: fundamentals.financials
+    upstream: /api/v1/fundamentals/financials
+    target_table: company_financials
+    conflict_cols: [symbol_code, period, period_type]
+    transform: transforms.company_financials
+    schedule: daily
+    auth: system_token
+
+  - key: fundamentals.statements
+    upstream: /api/v1/fundamentals/statements
+    target_table: company_statements
+    conflict_cols: [symbol_code, period, statement]
+    transform: transforms.company_statements
+    schedule: daily
+    auth: system_token
+
+  - key: fundamentals.shareholders
+    upstream: /api/v1/fundamentals/shareholders
+    target_table: company_shareholders
+    conflict_cols: [symbol_code, as_of_date]
+    transform: transforms.company_shareholders
+    schedule: daily
+    auth: system_token
+
+  - key: fundamentals.insiders
+    upstream: /api/v1/fundamentals/insiders
+    target_table: company_insiders
+    conflict_cols: [symbol_code, as_of_date]
+    transform: transforms.company_insiders
+    schedule: daily
+    auth: system_token
+
+  - key: fundamentals.ratio_ranking
+    upstream: /api/v1/fundamentals/financial-ratio/ranking
+    target_table: financial_ratio_ranking
+    conflict_cols: [symbol_code, metric, period]
+    transform: transforms.ratio_ranking
+    schedule: daily
+    auth: system_token
+
+  - key: fundamentals.stock_sector_overview
+    upstream: /api/v1/fundamentals/stock-sector/company-overview
+    target_table: stock_sector_overview
+    conflict_cols: [symbol_code]
+    transform: transforms.stock_sector_overview
+    schedule: daily
+    auth: system_token
+
+  # ==========================================================================
+  # NEWS (hourly)
+  # ==========================================================================
+  - key: news.latest
+    upstream: /api/v1/news
+    params: { from: "{ts_minus_2h}", to: "{ts}" }
+    target_table: news_items
+    conflict_cols: [id]
+    transform: transforms.news_items
+    schedule: hourly
+    auth: system_token
+
+  - key: news.announcements
+    upstream: /api/v1/news/announcement
+    target_table: news_announcements
+    conflict_cols: [id]
+    transform: transforms.news_announcements
+    schedule: hourly
+    auth: system_token
+
+  - key: news.notices
+    upstream: /api/v1/news/notices
+    target_table: news_notices
+    conflict_cols: [id]
+    transform: transforms.news_notices
+    schedule: hourly
+    auth: system_token
+
+  - key: news.stock_news
+    upstream: /api/v1/news/stock-news
+    target_table: news_items
+    conflict_cols: [id]
+    transform: transforms.news_items
+    schedule: hourly
+    auth: system_token
+
+  # ==========================================================================
+  # APP
+  # ==========================================================================
+  - key: app.holidays
+    upstream: /api/v1/app/holidays
+    target_table: app_holidays
+    conflict_cols: [holiday_date, exchange]
+    transform: transforms.holidays
+    schedule: daily
+    auth: none
+
+  - key: app.services
+    upstream: /api/v1/app/services
+    target_table: app_services
+    conflict_cols: [name]
+    transform: transforms.services
+    schedule: hourly
+    auth: none
+
+  - key: app.locale_vi
+    upstream: /api/v1/app/locale
+    params: { lang: "vi" }
+    target_table: app_locale_snapshot
+    conflict_cols: [lang]
+    transform: transforms.app_locale
+    schedule: daily
+    auth: none
+
+  - key: app.locale_ko
+    upstream: /api/v1/app/locale
+    params: { lang: "ko" }
+    target_table: app_locale_snapshot
+    conflict_cols: [lang]
+    transform: transforms.app_locale
+    schedule: daily
+    auth: none
+
+  - key: app.locale_en
+    upstream: /api/v1/app/locale
+    params: { lang: "en" }
+    target_table: app_locale_snapshot
+    conflict_cols: [lang]
+    transform: transforms.app_locale
+    schedule: daily
+    auth: none
+
+  # ==========================================================================
+  # APP FAQ — per-module  (modules: 'ONBOARDING','TRADING','SOCIAL','ACCOUNT')
+  # ==========================================================================
+  - key: app.faq
+    upstream: /api/v1/app/faq/{module}
+    target_table: app_faq
+    conflict_cols: [ms_name, lang, question]
+    transform: transforms.faq
+    schedule: per_module
+    auth: none

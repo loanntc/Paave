@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { KineticButton } from "@/components/ui/kinetic-button";
 import { OnboardingShell } from "@/components/ui/onboarding-shell";
 import { readOnboarding, writeOnboarding } from "@/lib/onboarding-storage";
+import { getBrowserClient } from "@/lib/supabase/client";
 
 const MIN_LEN = 2;
 const MAX_LEN = 20;
@@ -32,9 +33,17 @@ export function NameView() {
   async function submit() {
     if (!isValid || submitting) return;
     setSubmitting(true);
+    // Always persist to localStorage first (offline-safe fallback)
     writeOnboarding({ name: trimmed });
-    await new Promise((r) => setTimeout(r, 400));
-    router.push("/home");
+    // Best-effort: sync to Supabase user_metadata so profile reads it via
+    // session.user.user_metadata.full_name (degrades silently if unauthenticated)
+    try {
+      const db = getBrowserClient();
+      await db.auth.updateUser({ data: { full_name: trimmed } });
+    } catch {
+      // Not fatal — profile will use email prefix as fallback
+    }
+    router.push("/onboarding/age");
   }
 
   return (

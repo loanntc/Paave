@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { getBrowserClient } from "@/lib/supabase/client";
 
 function Bolt({ size = 12 }: { size?: number }) {
   return (
@@ -25,7 +26,14 @@ export function GoalsView() {
 
   async function onSubmit() {
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 400));
+    // Persist selected goal title to user_metadata for future personalisation
+    const goalTitle = GOALS[selected]?.t ?? "";
+    try {
+      const db = getBrowserClient();
+      await db.auth.updateUser({ data: { goal: goalTitle } });
+    } catch {
+      // Non-fatal — personalisation degrades silently
+    }
     router.push("/onboarding/biometric");
   }
 

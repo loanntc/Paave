@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { getBrowserClient } from "@/lib/supabase/client";
 
 function Bolt({ size = 12 }: { size?: number }) {
   return (
@@ -46,7 +47,14 @@ export function InterestsView() {
   async function onSubmit() {
     if (!canSubmit) return;
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 400));
+    // Persist selected sector labels to user_metadata for future personalisation
+    const selectedLabels = SECTORS.filter((_, i) => selected.has(i)).map((s) => s.l);
+    try {
+      const db = getBrowserClient();
+      await db.auth.updateUser({ data: { interests: selectedLabels } });
+    } catch {
+      // Non-fatal — personalization degrades silently
+    }
     router.push("/onboarding/goals");
   }
 

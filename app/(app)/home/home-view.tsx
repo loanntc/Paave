@@ -1,42 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  Bell,
-  Compass,
-  Flame,
-  Home as HomeIcon,
-  LineChart,
-  Trophy,
-  User,
-  Wallet,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowUpRight, Bell, BookOpen, Trophy, Zap } from "lucide-react";
 import { AmbientBackground } from "@/components/brand/ambient-background";
 import { PaaveWordmark } from "@/components/brand/paave-wordmark";
-import { cn } from "@/lib/utils";
+import { useLearningProgress } from "@/lib/learning/use-learning-progress";
+import { usePriceAlerts } from "@/lib/use-price-alerts";
+import { MODULES } from "@/lib/learning/content";
+import { useHomeData } from "./use-home-data";
+import { PortfolioHero, QuickActions } from "./home-portfolio-section";
+import { MarketSnapshot } from "./home-market-section";
+import { TrendingRow, WatchlistSection } from "./home-stock-sections";
 
+// ---------------------------------------------------------------------------
+// HomeView — orchestrator: data from useHomeData, display from sub-modules
+// ---------------------------------------------------------------------------
 export function HomeView() {
+  const {
+    displayName,
+    isAuthenticated,
+    portfolio,
+    portfolioLoading,
+    indices,
+    indicesLoading,
+    trending,
+    trendingLoading,
+    watchlist,
+    watchlistHydrated,
+    watchlistStocks,
+    watchlistLoading,
+  } = useHomeData();
+
+  const { hydrated: alertsHydrated, alerts } = usePriceAlerts();
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-ink-900 pb-28">
       <AmbientBackground />
 
-      <HomeHeader name="Alex" />
+      <HomeHeader
+        name={displayName}
+        alertCount={alertsHydrated ? alerts.length : 0}
+      />
 
       <section className="relative z-10 mx-auto flex w-full max-w-[896px] flex-col gap-5 px-6">
-        <PortfolioHero />
+        <PortfolioHero
+          name={displayName}
+          data={portfolio}
+          isLoading={portfolioLoading}
+          isAuthenticated={isAuthenticated}
+        />
         <QuickActions />
-        <MarketSnapshot />
-        <TrendingRow />
-        <WeeklyChallenge />
+        <MarketSnapshot indices={indices} isLoading={indicesLoading} />
+        {watchlistHydrated && watchlist.length > 0 && (
+          <WatchlistSection stocks={watchlistStocks} isLoading={watchlistLoading} />
+        )}
+        <TrendingRow stocks={trending} isLoading={trendingLoading} />
+        <LearningProgressCard />
       </section>
-
-      <BottomNav />
     </main>
   );
 }
 
-function HomeHeader({ name }: { name: string }) {
+// ---------------------------------------------------------------------------
+// HomeHeader — top bar with logo, alert badge, and avatar initial
+// ---------------------------------------------------------------------------
+function HomeHeader({ name, alertCount }: { name: string; alertCount: number }) {
+  const router = useRouter();
   return (
     <header className="relative z-20 flex w-full items-center justify-between px-6 pt-4 pb-6">
       <div className="flex items-center gap-3">
@@ -44,11 +74,16 @@ function HomeHeader({ name }: { name: string }) {
       </div>
       <div className="flex items-center gap-2">
         <button
-          aria-label="Notifications"
+          aria-label={alertCount > 0 ? `${alertCount} thông báo giá đang bật` : "Thông báo"}
+          onClick={() => router.push("/discover")}
           className="relative grid size-10 place-items-center rounded-full border border-edge bg-ink-800/60 text-lime-soft backdrop-blur transition-colors hover:bg-ink-700"
         >
           <Bell className="size-4" strokeWidth={2} />
-          <span className="absolute right-2 top-2 size-1.5 rounded-full bg-plasma" />
+          {alertCount > 0 && (
+            <span className="absolute right-1.5 top-1.5 grid size-4 place-items-center rounded-full bg-plasma text-[9px] font-bold text-plasma-ink">
+              {alertCount > 9 ? "9+" : alertCount}
+            </span>
+          )}
         </button>
         <div
           aria-label={`Greeting for ${name}`}
@@ -61,325 +96,112 @@ function HomeHeader({ name }: { name: string }) {
   );
 }
 
-function PortfolioHero() {
+// ---------------------------------------------------------------------------
+// LearningProgressCard — contextual entry point to the F0 Learning Path
+// ---------------------------------------------------------------------------
+function LearningProgressCard() {
+  const { hydrated, progress, getModuleStatus } = useLearningProgress();
+
+  const totalLessons = MODULES.reduce((s, m) => s + m.lessons.length, 0);
+  const completedLessons = Object.values(progress.lessons).filter((l) => l.completed).length;
+  const pct = totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100);
+  const allDone = completedLessons === totalLessons && totalLessons > 0;
+
+  // Find the first incomplete lesson across all unlocked or in-progress modules
+  let resumeHref = "/grow";
+  for (const module of MODULES) {
+    const status = getModuleStatus(module.id);
+    if (status === "IN_PROGRESS" || status === "UNLOCKED") {
+      const next = module.lessons.find((l) => !progress.lessons[l.id]?.completed);
+      if (next) {
+        resumeHref = `/grow/lesson/${next.id}`;
+        break;
+      }
+    }
+  }
+
+  const hasStarted = completedLessons > 0 || Object.keys(progress.lessons).length > 0;
+
+  if (!hydrated) {
+    return (
+      <section
+        aria-label="Tiến độ học tập"
+        className="rounded-3xl border border-edge bg-ink-800 p-6 animate-pulse"
+      >
+        <div className="h-3 w-24 rounded bg-ink-700" />
+        <div className="mt-2 h-5 w-48 rounded bg-ink-700" />
+        <div className="mt-4 h-2 w-full rounded-full bg-ink-700" />
+        <div className="mt-4 h-9 w-36 rounded-xl bg-ink-700" />
+      </section>
+    );
+  }
+
   return (
-    <section
-      aria-label="Portfolio"
-      className="relative overflow-hidden rounded-[32px] bg-ink-800 px-7 pb-7 pt-8"
+    <Link
+      href={hasStarted ? resumeHref : "/grow"}
+      aria-label="Đến trang học tập"
+      className="group relative block overflow-hidden rounded-3xl border border-edge bg-gradient-to-br from-ink-800 to-ink-900 p-6 transition-opacity hover:opacity-90 active:scale-[0.99]"
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-lime/10 blur-3xl"
+        className="pointer-events-none absolute -right-10 -top-10 size-36 rounded-full bg-lime/10 blur-3xl"
       />
-      <p className="font-display text-[12px] uppercase tracking-pulse text-fog">
-        Yo, Alex — your pulse
-      </p>
-      <p className="mt-2 font-display text-[44px] font-bold leading-[1.05] tracking-display tabular-nums text-lime-soft">
-        $12,480.<span className="text-lime-soft/70">52</span>
-      </p>
 
-      <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-positive/15 px-3 py-1">
-        <ArrowUpRight
-          className="size-3.5 text-positive"
-          strokeWidth={2.5}
-          aria-hidden
-        />
-        <span className="font-display text-[13px] tabular-nums text-positive">
-          +$312.40 · +2.56% today
-        </span>
-      </div>
-
-      <dl className="mt-6 grid grid-cols-3 gap-3">
-        <MiniStat label="Invested" value="$10,000" />
-        <MiniStat label="P&L" value="+$2,480" tone="positive" />
-        <MiniStat label="Positions" value="7" />
-      </dl>
-    </section>
-  );
-}
-
-function MiniStat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone?: "positive" | "negative";
-}) {
-  const toneCls =
-    tone === "positive"
-      ? "text-positive"
-      : tone === "negative"
-        ? "text-negative"
-        : "text-lime-soft";
-  return (
-    <div className="rounded-2xl bg-ink-600/60 px-4 py-3">
-      <dt className="font-display text-[11px] uppercase tracking-pulse text-fog">
-        {label}
-      </dt>
-      <dd className={cn("mt-1 font-display text-[16px] tabular-nums", toneCls)}>
-        {value}
-      </dd>
-    </div>
-  );
-}
-
-function QuickActions() {
-  const actions = [
-    { label: "Discover", icon: Compass, tone: "lime" as const },
-    { label: "Markets", icon: LineChart, tone: "plasma" as const },
-    { label: "Alerts", icon: Bell, tone: "lime" as const },
-    { label: "Wallet", icon: Wallet, tone: "plasma" as const },
-  ];
-  return (
-    <section aria-label="Quick actions" className="grid grid-cols-4 gap-3">
-      {actions.map(({ label, icon: Icon, tone }) => (
-        <button
-          key={label}
-          className="group flex flex-col items-center gap-2 rounded-2xl border border-edge bg-ink-800/60 px-3 py-4 backdrop-blur transition-all hover:bg-ink-700 active:scale-[0.98]"
-        >
-          <span
-            className={cn(
-              "grid size-10 place-items-center rounded-xl",
-              tone === "lime"
-                ? "bg-lime-drop text-lime-ink"
-                : "bg-plasma-drop text-white",
-            )}
-          >
-            <Icon className="size-4" strokeWidth={2.25} />
-          </span>
-          <span className="font-display text-[11px] uppercase tracking-pulse text-lime-soft">
-            {label}
-          </span>
-        </button>
-      ))}
-    </section>
-  );
-}
-
-type Ticker = {
-  symbol: string;
-  name: string;
-  market: "VN" | "KR" | "US";
-  price: string;
-  changePct: number;
-  tag: string;
-};
-
-const trending: Ticker[] = [
-  {
-    symbol: "VIC",
-    name: "Vingroup",
-    market: "VN",
-    price: "₫45.200",
-    changePct: 3.24,
-    tag: "Hometown Hero",
-  },
-  {
-    symbol: "005930",
-    name: "Samsung Electronics",
-    market: "KR",
-    price: "₩73,400",
-    changePct: 1.12,
-    tag: "Chipwave",
-  },
-  {
-    symbol: "NVDA",
-    name: "NVIDIA",
-    market: "US",
-    price: "$962.14",
-    changePct: -0.82,
-    tag: "AI Beast",
-  },
-  {
-    symbol: "VNM",
-    name: "Vinamilk",
-    market: "VN",
-    price: "₫66.900",
-    changePct: 0.45,
-    tag: "Steady Mode",
-  },
-];
-
-function MarketSnapshot() {
-  const markets: Array<{
-    code: "VN" | "KR" | "US";
-    name: string;
-    value: string;
-    changePct: number;
-  }> = [
-    { code: "VN", name: "VN-INDEX", value: "1.284,56", changePct: 0.62 },
-    { code: "KR", name: "KOSPI", value: "2,712.14", changePct: -0.34 },
-    { code: "US", name: "S&P 500", value: "5,248.49", changePct: 0.18 },
-  ];
-  return (
-    <section aria-label="Market snapshot" className="rounded-3xl bg-ink-800 p-6">
-      <header className="flex items-center justify-between">
-        <h2 className="font-display text-[14px] uppercase tracking-drop text-lime-soft">
-          Market Pulse
-        </h2>
-        <Link
-          href="#"
-          className="font-display text-[11px] uppercase tracking-pulse text-plasma"
-        >
-          All markets →
-        </Link>
-      </header>
-      <ul className="mt-4 grid grid-cols-3 gap-3">
-        {markets.map((m) => (
-          <li
-            key={m.code}
-            className="rounded-2xl bg-ink-600/60 px-4 py-4"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-display text-[11px] uppercase tracking-pulse text-fog">
-                {m.code}
-              </span>
-              <ChangePill value={m.changePct} />
-            </div>
-            <p className="mt-2 font-body text-[12px] text-fog">{m.name}</p>
-            <p className="mt-1 font-display text-[18px] tabular-nums text-lime-soft">
-              {m.value}
-            </p>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function ChangePill({ value }: { value: number }) {
-  const up = value >= 0;
-  return (
-    <span
-      className={cn(
-        "rounded-full px-2 py-0.5 font-display text-[10px] tabular-nums",
-        up ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative",
-      )}
-    >
-      {up ? "+" : ""}
-      {value.toFixed(2)}%
-    </span>
-  );
-}
-
-function TrendingRow() {
-  return (
-    <section aria-label="Trending" className="space-y-4">
-      <header className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <Flame className="size-4 text-plasma" strokeWidth={2.5} />
-          <h2 className="font-display text-[14px] uppercase tracking-drop text-lime-soft">
-            Trending with your crew
-          </h2>
-        </div>
-        <Link
-          href="#"
-          className="font-display text-[11px] uppercase tracking-pulse text-plasma"
-        >
-          Discover →
-        </Link>
-      </header>
-      <ul className="flex gap-3 overflow-x-auto scrollbar-hide -mx-6 px-6 snap-x snap-mandatory">
-        {trending.map((t) => (
-          <li
-            key={t.symbol}
-            className="snap-start min-w-[220px] rounded-3xl border border-edge bg-ink-800/60 p-5 backdrop-blur"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-display text-[11px] uppercase tracking-pulse text-plasma">
-                {t.tag}
-              </span>
-              <span className="font-display text-[10px] uppercase tracking-pulse text-fog">
-                {t.market}
-              </span>
-            </div>
-            <p className="mt-4 font-display text-[18px] text-lime-soft">
-              {t.symbol}
-            </p>
-            <p className="font-body text-[12px] text-fog truncate">{t.name}</p>
-            <div className="mt-4 flex items-end justify-between">
-              <p className="font-display text-[18px] tabular-nums text-lime-soft">
-                {t.price}
-              </p>
-              <ChangePill value={t.changePct} />
-            </div>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function WeeklyChallenge() {
-  return (
-    <section
-      aria-label="Weekly challenge"
-      className="relative overflow-hidden rounded-3xl border border-edge bg-gradient-to-br from-ink-800 to-ink-900 p-6"
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-12 -top-12 size-40 rounded-full bg-plasma/20 blur-3xl"
-      />
       <div className="relative flex items-start gap-4">
-        <div className="grid size-12 place-items-center rounded-2xl bg-plasma-drop text-white">
-          <Trophy className="size-5" strokeWidth={2} />
+        <div className="grid size-12 place-items-center rounded-2xl bg-lime-drop text-lime-ink shrink-0">
+          {allDone ? (
+            <Trophy className="size-5" strokeWidth={2} />
+          ) : (
+            <BookOpen className="size-5" strokeWidth={2} />
+          )}
         </div>
-        <div className="flex-1">
+
+        <div className="flex-1 min-w-0">
           <p className="font-display text-[11px] uppercase tracking-pulse text-plasma">
-            Weekly Challenge · 3 days left
+            {allDone
+              ? "Hoàn thành · F0 Master"
+              : hasStarted
+                ? `Tiến độ · ${completedLessons}/${totalLessons} bài học`
+                : "Lộ trình F0 · Bắt đầu ngay"}
           </p>
-          <h3 className="mt-1 font-display text-[18px] uppercase tracking-[-0.45px] text-lime-soft">
-            Build a 3-stock VN portfolio
+
+          <h3 className="mt-1 font-display text-[18px] uppercase tracking-[-0.45px] text-lime-soft leading-tight">
+            {allDone
+              ? "Bạn đã chinh phục toàn bộ!"
+              : hasStarted
+                ? "Tiếp tục học tập"
+                : "Hiểu chứng khoán từ đầu"}
           </h3>
+
           <p className="mt-2 font-body text-[13px] leading-[1.55] text-fog">
-            Allocate ₫10.000.000 across three Vietnam tickers. Share it with
-            your crew — the top return takes the drop.
+            {allDone
+              ? `${progress.totalLearningXP} XP kiếm được · Giao dịch giả lập đang chờ bạn.`
+              : hasStarted
+                ? `${progress.totalLearningXP} XP · ${100 - pct}% còn lại để hoàn thành lộ trình F0.`
+                : "4 module · 20 bài học · Không cần kinh nghiệm. Học trong ~60 phút."}
           </p>
-          <button className="mt-4 inline-flex items-center gap-2 rounded-lg bg-lime-drop px-5 py-2 font-display text-[12px] uppercase tracking-drop text-lime-ink shadow-glow-lime">
-            Accept Challenge
+
+          {hasStarted && !allDone && (
+            <div className="mt-4 space-y-1.5">
+              <div className="h-1.5 rounded-full bg-ink-600 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-lime transition-all duration-500"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-fog">
+                <Zap className="size-3 text-lime shrink-0" />
+                <span>{progress.totalLearningXP} XP kiếm được</span>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-lime-drop px-5 py-2 font-display text-[12px] uppercase tracking-drop text-lime-ink shadow-glow-lime">
+            {allDone ? "Ôn tập" : hasStarted ? "Tiếp tục" : "Bắt đầu học"}
             <ArrowUpRight className="size-3.5" strokeWidth={2.5} />
-          </button>
+          </div>
         </div>
       </div>
-    </section>
-  );
-}
-
-type NavItem = { label: string; icon: typeof HomeIcon; active?: boolean };
-const navItems: NavItem[] = [
-  { label: "Home", icon: HomeIcon, active: true },
-  { label: "Discover", icon: Compass },
-  { label: "Markets", icon: LineChart },
-  { label: "Wallet", icon: Wallet },
-  { label: "Profile", icon: User },
-];
-
-function BottomNav() {
-  return (
-    <nav
-      aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-[896px] items-center justify-around border-t border-edge bg-ink-900/90 px-4 pt-2 pb-6 backdrop-blur-xl"
-    >
-      {navItems.map(({ label, icon: Icon, active }) => (
-        <button
-          key={label}
-          aria-current={active ? "page" : undefined}
-          className={cn(
-            "flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-colors",
-            active ? "text-lime-soft" : "text-fog hover:text-lime-soft",
-          )}
-        >
-          <Icon
-            className={cn("size-5", active && "stroke-lime")}
-            strokeWidth={active ? 2.5 : 2}
-          />
-          <span className="font-display text-[10px] uppercase tracking-pulse">
-            {label}
-          </span>
-        </button>
-      ))}
-    </nav>
+    </Link>
   );
 }

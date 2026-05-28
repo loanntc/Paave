@@ -1,11 +1,12 @@
 # BRD — Business Requirements Document
 ## Paave — Vietnam Gen Z Paper-Trading & Social Investing App
 
-**Document version:** 2.3
-**Date:** 2026-04-21
+**Document version:** 2.4
+**Date:** 2026-05-20
 **Author:** Business Analysis Team
 **Status:** Approved for Development
-**Supersedes:** BRD v2.2 (2026-04-20)
+**Supersedes:** BRD v2.3 (2026-04-21)
+**API Version Alignment:** Paave API v1.5.0 (api.json, 2026-05-20)
 
 ### v2.1 Product Direction Update *(retained from v2.1 — still active)*
 
@@ -21,11 +22,21 @@ Three changes landed in v2.2, all additive on top of v2.1:
 5. **Onboarding collects industrial preference + investment goal.** Two new onboarding steps capture (a) a multi-select of sector/industry preferences (VN-context-first: Banking, Real Estate, Tech, Consumer, Energy, Healthcare, Industrials, Materials, Utilities, Retail) and (b) a single primary investment goal (Learn & explore / Grow savings / Beat inflation / High returns / Long-term wealth / Just for fun). These feed Discover personalization, weekly challenge seeding, and onboarding-completion KPIs.
 6. **Multi-method signup: email/password OR social (Google, Apple, Zalo).** Email + password remains standard. Social signup uses OAuth provider verification; after the provider returns a verified identity, Paave auto-creates an account using the provider's display name. Because OAuth providers do not reliably return date of birth, a **post-social-handshake DOB prompt is mandatory** before age gating (BR-AGE-01..06) can be enforced. Zalo is a required provider for VN Gen Z reach; Apple is required on iOS per App Store policy; Google is required for Android reach.
 
-### v2.3 Product Direction Update *(new in this revision)*
+### v2.3 Product Direction Update *(retained from v2.3 — still active)*
 
 One change lands in v2.3, additive on top of v2.2:
 
 7. **Paper trading order rules fully specified.** V1 paper trading now has complete VN exchange mechanics: board lot enforcement (100-share multiples), daily price bands (HOSE ±7%, HNX ±10%, UPCoM ±15%), tick sizes, session windows (ATO 09:00–09:15, Continuous 09:15–11:30 / 13:00–14:30, ATC 14:30–14:45), idempotency on order submission, and 30-day LIMIT order expiry. KR/Global reference-market orders follow a lighter-weight path with "Estimated fill" labeling and no session or price-band validation. New business rules BR-PT-07 through BR-PT-21 codify these mechanics; four new risk register entries (RISK-25 through RISK-28) cover the operational risks introduced by the richer simulation.
+
+### v2.4 API v1.5.0 Alignment *(new in this revision)*
+
+Five changes land in v2.4 to align with the authoritative Paave API v1.5.0 spec:
+
+8. **Authorization header format corrected.** All API requests must use `Authorization: jwt <token>` — NOT `Authorization: Bearer <token>`. The token response body still returns `tokenType: "Bearer"` but the request header must use the `jwt` scheme. Using `Bearer` returns HTTP 401.
+9. **Price alert cap changed.** BR-03 updated: users may have up to **50 active alert rules** across all stocks (previously 1 per stock, overwrite semantics). Each stock may still have at most one alert at a time; changing a stock's alert requires deleting the existing rule and creating a new one.
+10. **Post character limit aligned.** Social post character limit confirmed as **500 characters** (previously BRD §5.1.9 incorrectly stated 280). FRD v2.4 and SRD §4.10 VARCHAR(500) were already correct; no schema change required.
+11. **News API restructured.** The news endpoints `/api/v1/news`, `/api/v1/news/{id}`, `/news/filter`, `/news/latest-by-symbols`, `/news/stock-news`, and `/news/favorites` (GET/POST/DELETE) are removed. The canonical endpoints are now `/api/v1/news/articles` (cursor-paginated with `symbol`/`category`/`language` filters) and `/api/v1/news/articles/{articleId}`. Regulatory notices (`/news/notices`) and exchange announcements (`/news/announcement`) are unchanged.
+12. **2FA and organization login added.** The API supports two-factor authentication (`POST /api/v1/auth/login/2fa` + `/2fa/verify-otp`) and organization-scoped login (`POST /api/v1/auth/login/organization`). These are backend capabilities; FRD-01 will be updated if these flows are exposed in the mobile UI.
 
 ---
 
@@ -370,7 +381,7 @@ Social in Paave is explicitly a **social-trading** layer, not a peer-learning fo
 | Trade receipts (optional attach) | Users may attach a paper-trade receipt to a post — renders as an anonymized card showing ticker, direction, entry price, and PnL % (no absolute amounts). Attaches at time of post; cannot be backdated. |
 | 60-second submission delay | All posts enter a 60-second review buffer before appearing publicly. System auto-flags content matching moderation keyword list. |
 | Trader Score on posts | Poster's current Trader Tier badge is always displayed alongside their post. |
-| Post character limit | 280 characters per post. No inline images in V1. |
+| Post character limit | 500 characters per post. No inline images in V1. |
 
 **Out of scope for V1 social-trading layer (see §5.2):** real-money copy trading, verified-KOL status, paid signal subscriptions, DMs. These are deliberately deferred — V1 proves the track-record-visible feed first.
 

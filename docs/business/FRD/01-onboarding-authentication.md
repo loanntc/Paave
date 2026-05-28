@@ -703,7 +703,35 @@ The Login screen allows returning users to authenticate via any of the four supp
 | Token | TTL | Storage |
 |-------|-----|---------|
 | JWT access token | 1 hour | In-memory / secure session |
-| Refresh token | 30 days | Secure keychain / encrypted storage |
+| Refresh token | 30 days (non-rotating) | Secure keychain / encrypted storage |
+
+**Authorization Header (Critical):**
+All authenticated API requests must use the `jwt` scheme — NOT `Bearer`:
+```
+Authorization: jwt <accessToken>
+```
+Using `Bearer` returns HTTP 401 even with a valid token.
+
+**API Endpoints (v1.5.0):**
+
+| Flow | Endpoint | Notes |
+|------|----------|-------|
+| Unified login (grant_type routing) | `POST /api/v1/auth/login` | grant_type: `password` / `client_credentials` / `demo` |
+| Email/password login | `POST /api/v1/auth/login/password` | Returns `{accessToken, refreshToken, tokenType, expiresIn}` |
+| Social login | `POST /api/v1/auth/login` with `grant_type: social_login` | socialType: GOOGLE / APPLE (Zalo: ⚠️ see note below) |
+| Token refresh | `POST /api/v1/auth/token/refresh` | Non-rotating; returns new accessToken only |
+| Token revoke | `POST /api/v1/auth/token/revoke` | Invalidates refresh token |
+
+> **⚠️ Zalo login gap:** The API v1.5.0 social login endpoint does not list Zalo as a supported `socialType` (GOOGLE / FACEBOOK / APPLE only). Zalo is BRD-mandated for VN Gen Z reach. Engineering must confirm whether Zalo uses a separate login path or whether API spec needs to be updated to include Zalo.
+
+**API Capabilities Available but Not Yet in Mobile UI (v1.5.0):**
+
+| Capability | Endpoints | Status |
+|-----------|-----------|--------|
+| Two-Factor Authentication (2FA) | `POST /api/v1/auth/login/2fa` → `POST /api/v1/auth/login/2fa/verify-otp` | Backend ready; FRD UI flow TBD |
+| Organization-scoped login | `POST /api/v1/auth/login/organization` | Backend ready; FRD UI flow TBD |
+| Demo / guest login | `POST /api/v1/auth/login` with `grant_type: demo` | Backend ready; FRD UI flow TBD |
+| Linked-account switching | `POST /api/v1/auth/login/link-accounts` | Brokerage bridge (V1.x) |
 
 **Precondition:** User has a Paave account.
 

@@ -1,35 +1,93 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-
-function Bolt({ size = 12 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
-      <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />
-    </svg>
-  );
-}
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useMemo } from "react";
+import { calculateAge, getAccessMode, type AccessMode } from "@/lib/age-gate";
+import { AgeCheckboxes, AgeBanners, Bolt } from "./age-components";
 
 export function AgeView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // When the middleware redirects a BLOCKED user back here it adds ?blocked=true.
+  // Show the blocked state immediately so the user can't re-enter a different DOB.
+  const blockedByMiddleware = searchParams.get("blocked") === "true";
+
+  // When the middleware redirects a returning user (e.g. sign-in → /home → no age cookie),
+  // it adds ?next=/home so we can send them back to their destination after verification
+  // rather than funnelling them through the full first-time onboarding flow.
+  const nextPath = searchParams.get("next") ?? null;
+  const postVerifyPath = nextPath ?? "/onboarding/interests";
+
   const [dd, setDd] = useState("12");
   const [mm, setMm] = useState("06");
   const [yyyy, setYyyy] = useState("2009");
   const [ageConfirmed, setAgeConfirmed] = useState(true);
   const [termsAccepted, setTermsAccepted] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const year = parseInt(yyyy, 10);
-  const isMinor = !isNaN(year) && year > 2007;
-  const canSubmit = ageConfirmed && termsAccepted && dd && mm && yyyy.length === 4 && !submitting;
+  // Compute age and access mode reactively — pure client-side preview.
+  // The authoritative check runs server-side in /api/auth/age-verify.
+  const age: number | null = useMemo(
+    () => calculateAge(dd, mm, yyyy),
+    [dd, mm, yyyy],
+  );
+  const accessMode: AccessMode | null = useMemo(
+    () => (age !== null ? getAccessMode(age) : null),
+    [age],
+  );
+
+  const isBlocked = blockedByMiddleware || accessMode === "BLOCKED";
+  const isLearnMode = !isBlocked && accessMode === "LEARN_MODE";
+  const dateValid = age !== null;
+
+  const canSubmit =
+    !isBlocked &&
+    ageConfirmed &&
+    termsAccepted &&
+    dateValid &&
+    !submitting;
 
   async function onSubmit() {
     if (!canSubmit) return;
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 400));
-    router.push("/onboarding/interests");
+    setSubmitError(null);
+
+    try {
+      const response = await fetch("/api/auth/age-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dd, mm, yyyy }),
+      });
+
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({}));
+        const message = (json as { error?: string }).error ?? "Đã xảy ra lỗi. Vui lòng thử lại.";
+        setSubmitError(message);
+        setSubmitting(false);
+        return;
+      }
+
+      const { accessMode: confirmedMode } = (await response.json()) as {
+        accessMode: AccessMode;
+        age: number;
+      };
+
+      if (confirmedMode === "BLOCKED") {
+        // Server confirmed the block — show the blocked state and stop.
+        setSubmitError(null);
+        setSubmitting(false);
+        return;
+      }
+
+      // Age verified — proceed to the intended destination.
+      router.push(postVerifyPath);
+    } catch {
+      setSubmitError("Không thể kết nối. Vui lòng kiểm tra kết nối mạng.");
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -119,86 +177,30 @@ export function AgeView() {
                 className="w-full text-center bg-transparent outline-none text-xl font-black"
                 style={{ color: "#E8E6F5", fontFamily: "var(--font-be-vietnam-pro)" }}
                 placeholder={f.placeholder}
+                disabled={blockedByMiddleware}
               />
             </div>
           </div>
         ))}
       </div>
 
-      {/* Check rows */}
-      <div className="mx-5 mb-2">
-        <button
-          onClick={() => setAgeConfirmed((v) => !v)}
-          className="w-full flex items-start gap-3 rounded-[10px] px-3 py-3 text-left"
-          style={{
-            background: ageConfirmed ? "rgba(181,232,47,0.05)" : "rgba(255,255,255,0.02)",
-            border: `1px solid ${ageConfirmed ? "rgba(181,232,47,0.3)" : "rgba(255,255,255,0.06)"}`,
-          }}
-        >
-          <div
-            className="mt-0.5 grid flex-shrink-0 place-items-center rounded-[5px]"
-            style={{
-              width: 18, height: 18,
-              background: ageConfirmed ? "#B5E82F" : "rgba(255,255,255,0.06)",
-              border: ageConfirmed ? "none" : "1px solid rgba(255,255,255,0.15)",
-              color: "#0B0A1A",
-            }}
-          >
-            {ageConfirmed && (
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-            )}
-          </div>
-          <div>
-            <div className="text-[12px] font-bold mb-0.5" style={{ color: "#E8E6F5", fontFamily: "var(--font-be-vietnam-pro)" }}>Xác nhận độ tuổi</div>
-            <div className="text-[11px] leading-relaxed" style={{ color: "#A6A2C7" }}>Tôi xác nhận ngày sinh ở trên là chính xác.</div>
-          </div>
-        </button>
-      </div>
+      {/* Check rows — hidden when blocked by middleware (no point ticking checkboxes) */}
+      {!blockedByMiddleware && (
+        <AgeCheckboxes
+          ageConfirmed={ageConfirmed}
+          onAgeConfirmedToggle={() => setAgeConfirmed((v) => !v)}
+          termsAccepted={termsAccepted}
+          onTermsAcceptedToggle={() => setTermsAccepted((v) => !v)}
+        />
+      )}
 
-      <div className="mx-5 mb-3">
-        <button
-          onClick={() => setTermsAccepted((v) => !v)}
-          className="w-full flex items-start gap-3 rounded-[10px] px-3 py-3 text-left"
-          style={{
-            background: termsAccepted ? "rgba(181,232,47,0.05)" : "rgba(255,255,255,0.02)",
-            border: `1px solid ${termsAccepted ? "rgba(181,232,47,0.3)" : "rgba(255,255,255,0.06)"}`,
-          }}
-        >
-          <div
-            className="mt-0.5 grid flex-shrink-0 place-items-center rounded-[5px]"
-            style={{
-              width: 18, height: 18,
-              background: termsAccepted ? "#B5E82F" : "rgba(255,255,255,0.06)",
-              border: termsAccepted ? "none" : "1px solid rgba(255,255,255,0.15)",
-              color: "#0B0A1A",
-            }}
-          >
-            {termsAccepted && (
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-            )}
-          </div>
-          <div>
-            <div className="text-[12px] font-bold mb-0.5" style={{ color: "#E8E6F5", fontFamily: "var(--font-be-vietnam-pro)" }}>Điều khoản sử dụng</div>
-            <div className="text-[11px] leading-relaxed" style={{ color: "#A6A2C7" }}>
-              Đồng ý với <span style={{ color: "#B5E82F" }}>điều khoản</span> và <span style={{ color: "#B5E82F" }}>chính sách bảo mật</span>.
-            </div>
-          </div>
-        </button>
-      </div>
+      {/* Age-gate banners — blocked (< 16) or learn-mode (16–17) */}
+      <AgeBanners isBlocked={isBlocked} isLearnMode={isLearnMode} />
 
-      {/* Learn mode banner */}
-      {isMinor && (
-        <div
-          className="mx-5 mb-3 rounded-[10px] px-3 py-2.5"
-          style={{
-            background: "rgba(255,138,91,0.06)",
-            border: "1px solid rgba(255,138,91,0.25)",
-          }}
-        >
-          <div className="text-[11px] font-bold mb-1" style={{ color: "#FF8A5B", fontFamily: "var(--font-be-vietnam-pro)" }}>Chế độ Học tập</div>
-          <p className="text-[11px] leading-relaxed" style={{ color: "#FFBFA0" }}>
-            Bạn sẽ vào chế độ học với giao dịch mô phỏng đầy đủ. Xếp hạng và cộng đồng mở khi đủ 18 tuổi.
-          </p>
+      {/* API error message */}
+      {submitError && (
+        <div className="mx-5 mb-3 rounded-[10px] px-3 py-2 text-[11px]" style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", color: "#FCA5A5" }}>
+          {submitError}
         </div>
       )}
 
@@ -222,7 +224,11 @@ export function AgeView() {
           }}
         >
           {canSubmit && <Bolt size={12} />}
-          {submitting ? "Đang xử lý…" : "Hoàn tất"}
+          {submitting
+            ? "Đang xử lý…"
+            : isBlocked
+              ? "Chưa đủ tuổi"
+              : "Hoàn tất"}
         </button>
       </div>
 

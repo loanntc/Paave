@@ -11,6 +11,7 @@ import {
   writeOnboarding,
   type Nationality,
 } from "@/lib/onboarding-storage";
+import { getBrowserClient } from "@/lib/supabase/client";
 
 interface Option {
   code: Nationality;
@@ -53,9 +54,16 @@ export function NationalityView() {
     if (saved) setSelected(saved);
   }, []);
 
-  function next() {
+  async function next() {
     if (!selected) return;
     writeOnboarding({ nationality: selected });
+    // Persist to Supabase user_metadata — best-effort, silent on failure
+    try {
+      const db = getBrowserClient();
+      await db.auth.updateUser({ data: { nationality: selected } });
+    } catch {
+      // Degrade silently — localStorage copy is the source of truth for now
+    }
     router.push("/onboarding/name");
   }
 

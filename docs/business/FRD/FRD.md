@@ -389,7 +389,7 @@ All business rules from v2.2 + amendments from v2.3 + new rules from v2.4. Numbe
 |---------|-------------|
 | BR-01 | All users default to Vietnam (VN) as their market preference. Market preference is not user-configurable in V1/V2. |
 | BR-02 | A user can add a maximum of 100 stocks to their watchlist. Attempting to add a 101st stock shows an error: "Watchlist full. Remove a stock to add another." |
-| BR-03 | A user can set a maximum of 1 price alert per stock. Setting a new alert for a stock with an existing alert overwrites the previous alert. |
+| BR-03 | A user can have a maximum of 50 active price alert rules across all stocks. Attempting to create a 51st rule returns an error. To change the target for an existing stock alert, delete the old rule and create a new one. |
 | BR-04 | Price alert notifications are one-time triggers (SINGLE_FIRE default). Once triggered and notification sent, the alert is automatically deactivated. RECURRING mode available via FR-28 settings. |
 | BR-05 | A stock must have editorial content (a "why it's hot" hook and theme badge) to appear in the Discover feed. Stocks without editorial content are excluded. |
 | BR-06 | The "X users watching" social proof counter reflects the real-time count of users who have that stock in their watchlist. Updated server-side every 5 minutes. |

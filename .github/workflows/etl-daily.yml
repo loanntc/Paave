@@ -1,0 +1,31 @@
+name: Paave ETL — Daily (post-VN close)
+
+# 18:30 ICT = 11:30 UTC  ·  runs the daily endpoint group.
+on:
+  schedule:
+    - cron: '30 11 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: paave-etl-daily
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: supabase/etl/requirements.txt
+      - run: pip install -r supabase/etl/requirements.txt
+      - env:
+          NEXT_PUBLIC_SUPABASE_URL:  ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PAAVE_API_BASE_URL:        ${{ secrets.PAAVE_API_BASE_URL }}
+          PAAVE_SYSTEM_TOKEN:        ${{ secrets.PAAVE_SYSTEM_TOKEN }}
+        run: python -m supabase.etl.sync --group daily
