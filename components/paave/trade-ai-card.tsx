@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { AICard } from "@/components/paave/ai-card";
 import { useAIChat } from "@/lib/ai/use-ai-chat";
+import { formatVND } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -20,17 +21,6 @@ export interface FilledTrade {
 interface TradeAICardProps {
   trade: FilledTrade;
   className?: string;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-function formatVND(value: number): string {
-  return (
-    Math.round(value)
-      .toString()
-      .replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " ₫"
-  );
 }
 
 // ---------------------------------------------------------------------------

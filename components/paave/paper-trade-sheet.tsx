@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { X, CheckCircle2, AlertCircle, Minus, Plus } from "lucide-react";
+import { formatVND } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { TradeAICard, type FilledTrade } from "@/components/paave/trade-ai-card";
 
@@ -29,14 +30,6 @@ interface PaperTradeSheetProps {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function formatVND(value: number): string {
-  return (
-    Math.round(value)
-      .toString()
-      .replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " ₫"
-  );
-}
-
 function calcFees(side: Side, grossValue: number): { fees: number; tax: number } {
   const fees = Math.round(grossValue * BROKER_FEE_RATE);
   const tax = side === "SELL" ? Math.round(grossValue * VSD_TAX_RATE) : 0;
