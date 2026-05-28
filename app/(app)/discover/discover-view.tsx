@@ -266,6 +266,7 @@ export function DiscoverView() {
             sectors={sectors}
             selected={selectedSector}
             onSelect={(s) => setSelectedSector(s === selectedSector ? null : s)}
+            onClear={() => setSelectedSector(null)}
           />
         )}
 
@@ -467,14 +468,28 @@ function SectorFilterRow({
   sectors,
   selected,
   onSelect,
+  onClear,
 }: {
   sectors: string[];
   selected: string | null;
   onSelect: (sector: string) => void;
+  onClear: () => void;
 }) {
   return (
     <section aria-label="Lọc theo ngành">
       <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
+        {/* "Tất cả" chip always first — makes clearing the sector filter obvious */}
+        <button
+          onClick={onClear}
+          className={cn(
+            "shrink-0 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors border whitespace-nowrap",
+            selected === null
+              ? "bg-lime-signal-400/10 border-lime-signal-400/40 text-lime-signal-400"
+              : "bg-ink-violet-surface border-border-neo text-text-neo-tertiary hover:text-text-neo-secondary",
+          )}
+        >
+          Tất cả
+        </button>
         {sectors.map((s) => (
           <button
             key={s}

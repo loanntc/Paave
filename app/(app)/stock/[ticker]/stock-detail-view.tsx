@@ -552,14 +552,20 @@ function PositionCard({
   );
 }
 
+// Color tone for a stat entry — helps F0 users interpret limit prices at a glance
+type StatTone = "positive" | "negative" | "neutral" | undefined;
+
 function KeyStats({ quote }: { quote: QuoteData }) {
-  const stats = [
+  const stats: { label: string; value: string; wide?: boolean; tone?: StatTone }[] = [
     { label: "Giá mở cửa", value: formatVND(quote.open_price) },
-    { label: "Cao nhất", value: formatVND(quote.high_price) },
-    { label: "Thấp nhất", value: formatVND(quote.low_price) },
-    { label: "Tham chiếu", value: formatVND(quote.ref_price) },
-    { label: "Trần", value: formatVND(quote.ceiling_price) },
-    { label: "Sàn", value: formatVND(quote.floor_price) },
+    // Intraday high/low — colored relative to session direction
+    { label: "Cao nhất", value: formatVND(quote.high_price), tone: "positive" },
+    { label: "Thấp nhất", value: formatVND(quote.low_price), tone: "negative" },
+    // Reference price — the prior-day close used to compute price limits
+    { label: "Tham chiếu", value: formatVND(quote.ref_price), tone: "neutral" },
+    // Exchange-imposed price limits (±7% HOSE, ±10% HNX, ±15% UPCoM)
+    { label: "Trần", value: formatVND(quote.ceiling_price), tone: "positive" },
+    { label: "Sàn", value: formatVND(quote.floor_price), tone: "negative" },
     { label: "KL giao dịch", value: formatVolume(quote.total_volume), wide: true },
   ];
 
@@ -569,7 +575,7 @@ function KeyStats({ quote }: { quote: QuoteData }) {
         Thống kê
       </h2>
       <div className="grid grid-cols-3 divide-x divide-y divide-border-neo-subtle">
-        {stats.map(({ label, value, wide }) => (
+        {stats.map(({ label, value, wide, tone }) => (
           <div
             key={label}
             className={cn(
@@ -580,7 +586,18 @@ function KeyStats({ quote }: { quote: QuoteData }) {
             <div className="text-[10px] uppercase tracking-[0.5px] text-text-neo-tertiary mb-0.5">
               {label}
             </div>
-            <div className="font-display text-[14px] tabular-nums text-text-neo-primary">
+            <div
+              className={cn(
+                "font-display text-[14px] tabular-nums",
+                tone === "positive"
+                  ? "text-positive"
+                  : tone === "negative"
+                    ? "text-negative"
+                    : tone === "neutral"
+                      ? "text-text-neo-secondary"
+                      : "text-text-neo-primary",
+              )}
+            >
               {value}
             </div>
           </div>
