@@ -15,6 +15,8 @@ export interface FilledTrade {
   quantity: number;
   price: number;
   fees: number;
+  /** VSD tax charged on SELL side (0.1% per Circular 37/2016/TT-BTC). Zero for BUY. */
+  tax: number;
   grossValue: number;
 }
 

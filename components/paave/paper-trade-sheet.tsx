@@ -116,6 +116,7 @@ export function PaperTradeSheet({
         quantity: data.trade.quantity,
         price: data.trade.price,
         fees: data.trade.fees,
+        tax: data.trade.tax ?? 0,
         grossValue: data.trade.grossValue,
       });
       setPhase("confirmed");
@@ -388,12 +389,15 @@ function ConfirmedPhase({ trade }: { trade: FilledTrade }) {
       <div className="rounded-2xl bg-ink-violet-surface border border-border-neo px-4 py-3 space-y-2">
         <SummaryRow label="Giá trị giao dịch" value={formatVND(trade.grossValue)} />
         <SummaryRow label="Phí môi giới" value={formatVND(trade.fees)} muted />
+        {trade.side === "SELL" && trade.tax > 0 && (
+          <SummaryRow label="Thuế VSD (0.1%)" value={formatVND(trade.tax)} muted />
+        )}
         <SummaryRow
           label={trade.side === "BUY" ? "Tổng chi" : "Thực nhận"}
           value={formatVND(
             trade.side === "BUY"
               ? trade.grossValue + trade.fees
-              : trade.grossValue - trade.fees,
+              : trade.grossValue - trade.fees - trade.tax,
           )}
           bold
         />
