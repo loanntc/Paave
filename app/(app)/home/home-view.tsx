@@ -16,7 +16,7 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
+import { getBrowserClient } from "@/lib/supabase/client";
 import type { MarketIndex } from "@/app/api/market/indices/route";
 import type { StockResult } from "@/app/api/stocks/search/route";
 import { AmbientBackground } from "@/components/brand/ambient-background";
@@ -29,16 +29,6 @@ import { MODULES } from "@/lib/learning/content";
 import { getVNMarketStatus } from "@/lib/market-status";
 import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-// ---------------------------------------------------------------------------
-// Supabase browser client
-// ---------------------------------------------------------------------------
-function getBrowserClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Portfolio summary type (live data for the hero card)

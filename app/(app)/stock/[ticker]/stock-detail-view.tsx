@@ -6,22 +6,12 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Bell, BookmarkCheck, BookmarkPlus, TrendingDown, TrendingUp } from "lucide-react";
 import { useWatchlist } from "@/lib/use-watchlist";
 import { usePriceAlerts } from "@/lib/use-price-alerts";
-import { createClient } from "@supabase/supabase-js";
+import { getBrowserClient } from "@/lib/supabase/client";
 import { StockAICard } from "@/components/paave/stock-ai-card";
 import { PaperTradeSheet } from "@/components/paave/paper-trade-sheet";
 import { PriceAlertSheet } from "@/components/paave/price-alert-sheet";
 import { formatVND } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-// ---------------------------------------------------------------------------
-// Supabase browser client — anon key, session from cookie
-// ---------------------------------------------------------------------------
-function getBrowserClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Types

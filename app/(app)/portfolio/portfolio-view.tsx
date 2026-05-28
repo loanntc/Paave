@@ -3,23 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowDownLeft, ArrowUpRight, TrendingUp, TrendingDown } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
+import { getBrowserClient } from "@/lib/supabase/client";
 import {
   BehaviorAnalysisCard,
   BehaviorMetricPanel,
 } from "@/components/paave/behavior-analysis-card";
 import { formatVND, pctLabel, formatICTDatetime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-// ---------------------------------------------------------------------------
-// Supabase browser client
-// ---------------------------------------------------------------------------
-function getBrowserClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Types

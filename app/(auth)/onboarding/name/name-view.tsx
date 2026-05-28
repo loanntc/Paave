@@ -3,18 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Sparkles, Zap } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
 import { cn } from "@/lib/utils";
 import { KineticButton } from "@/components/ui/kinetic-button";
 import { OnboardingShell } from "@/components/ui/onboarding-shell";
 import { readOnboarding, writeOnboarding } from "@/lib/onboarding-storage";
-
-function getBrowserClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
-}
+import { getBrowserClient } from "@/lib/supabase/client";
 
 const MIN_LEN = 2;
 const MAX_LEN = 20;

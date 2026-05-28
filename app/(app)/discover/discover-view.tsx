@@ -3,20 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, BookmarkCheck, BookmarkPlus, Flame, Search, TrendingDown, TrendingUp, X } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
+import { getBrowserClient } from "@/lib/supabase/client";
 import type { StockResult } from "@/app/api/stocks/search/route";
 import type { PriceAlert } from "@/lib/use-price-alerts";
 import { usePriceAlerts } from "@/lib/use-price-alerts";
 import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useWatchlist } from "@/lib/use-watchlist";
-
-function getBrowserClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
-}
 
 interface WatchlistQuote {
   price: number;

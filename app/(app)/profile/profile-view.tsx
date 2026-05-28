@@ -3,7 +3,7 @@
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { getBrowserClient } from "@/lib/supabase/client";
 import { BookOpen, Check, Pencil, Trophy, X, Zap } from "lucide-react";
 import { TierBadge, type TierLevel } from "@/components/paave/tier-badge";
 import { XPBar } from "@/components/paave/xp-bar";
@@ -11,16 +11,6 @@ import { useLearningProgress } from "@/lib/learning/use-learning-progress";
 import { MODULES } from "@/lib/learning/content";
 import { formatVND, pctLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-// ---------------------------------------------------------------------------
-// Supabase browser client
-// ---------------------------------------------------------------------------
-function getBrowserClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Tier progression config
