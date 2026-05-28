@@ -32,3 +32,28 @@ export function formatVND(
 export function pctLabel(pct: number): string {
   return `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
 }
+
+// ICT datetime formatter — reused across views so timezone is applied consistently.
+// Vietnam Standard Time is UTC+7, no DST.
+const ICT_PARTS_FMT = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Asia/Ho_Chi_Minh",
+  day: "2-digit",
+  month: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+/**
+ * Format an ISO 8601 timestamp as "DD/MM · HH:mm" in Vietnam's ICT timezone.
+ * All trade and event timestamps in Paave are stored as UTC; this converts
+ * them for display without relying on the device's local clock offset.
+ *
+ * @example formatICTDatetime("2026-05-28T08:32:00Z") → "28/05 · 15:32"
+ */
+export function formatICTDatetime(isoString: string): string {
+  const parts = ICT_PARTS_FMT.formatToParts(new Date(isoString));
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "??";
+  return `${get("day")}/${get("month")} · ${get("hour")}:${get("minute")}`;
+}

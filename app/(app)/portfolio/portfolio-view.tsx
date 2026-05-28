@@ -8,7 +8,7 @@ import {
   BehaviorAnalysisCard,
   BehaviorMetricPanel,
 } from "@/components/paave/behavior-analysis-card";
-import { formatVND, pctLabel } from "@/lib/format";
+import { formatVND, pctLabel, formatICTDatetime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -538,9 +538,9 @@ function TradeHistoryRow({ trade }: { trade: TradeRow }) {
   const isBuy = trade.side === "BUY";
   const gross = trade.price * trade.quantity;
 
-  // e.g. "27/05 · 14:32"
-  const date = new Date(trade.executed_at);
-  const dateLabel = `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")} · ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  // e.g. "27/05 · 14:32" — formatted in ICT (Asia/Ho_Chi_Minh) so the time
+  // is correct regardless of the device's local timezone.
+  const dateLabel = formatICTDatetime(trade.executed_at);
 
   return (
     <Link

@@ -316,7 +316,9 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
         )}
 
         {/* ── Price chart (30-day close prices) ─────────────────── */}
-        {closePrices.length >= 2 && (
+        {isLoading ? (
+          <ChartSkeleton />
+        ) : closePrices.length >= 2 ? (
           <section
             aria-label="Biểu đồ 30 ngày"
             className="rounded-2xl bg-ink-violet-surface border border-border-neo overflow-hidden"
@@ -326,7 +328,7 @@ export function StockDetailView({ ticker }: StockDetailViewProps) {
             </p>
             <PriceChart prices={closePrices} />
           </section>
-        )}
+        ) : null}
 
         {/* ── Open position (shown only when user holds this stock) ── */}
         {holding && (
@@ -726,6 +728,22 @@ function PriceHeroSkeleton() {
     <div className="space-y-2 animate-pulse">
       <div className="h-10 w-48 rounded-lg bg-ink-violet-surface" />
       <div className="h-5 w-32 rounded-lg bg-ink-violet-surface" />
+    </div>
+  );
+}
+
+function ChartSkeleton() {
+  return (
+    <div
+      aria-hidden="true"
+      className="rounded-2xl bg-ink-violet-surface border border-border-neo overflow-hidden animate-pulse"
+    >
+      {/* Label row */}
+      <div className="px-4 pt-3 pb-2">
+        <div className="h-2.5 w-28 rounded bg-ink-violet-raised" />
+      </div>
+      {/* Chart area placeholder — matches the 80px SVG height */}
+      <div className="h-20 mx-4 mb-3 rounded-lg bg-ink-violet-raised" />
     </div>
   );
 }
