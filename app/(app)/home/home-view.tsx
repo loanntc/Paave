@@ -47,6 +47,7 @@ interface PortfolioSummary {
 // ---------------------------------------------------------------------------
 export function HomeView() {
   const [displayName, setDisplayName] = useState<string>("bạn");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [portfolioLoading, setPortfolioLoading] = useState(true);
   const [indices, setIndices] = useState<MarketIndex[]>([]);
@@ -73,6 +74,7 @@ export function HomeView() {
         return;
       }
 
+      setIsAuthenticated(true);
       const uid = session.user.id;
 
       // Derive a friendly display name from user metadata or email
@@ -250,6 +252,7 @@ export function HomeView() {
           name={displayName}
           data={portfolio}
           isLoading={portfolioLoading}
+          isAuthenticated={isAuthenticated}
         />
         <QuickActions />
         <MarketSnapshot indices={indices} isLoading={indicesLoading} />
@@ -299,10 +302,12 @@ function PortfolioHero({
   name,
   data,
   isLoading,
+  isAuthenticated,
 }: {
   name: string;
   data: PortfolioSummary | null;
   isLoading: boolean;
+  isAuthenticated: boolean;
 }) {
   const isUp = data ? data.totalPL >= 0 : true;
 
@@ -387,7 +392,9 @@ function PortfolioHero({
         </>
       ) : (
         <p className="mt-4 font-display text-[15px] text-fog">
-          Đăng nhập để xem danh mục.
+          {isAuthenticated
+            ? "Đặt lệnh đầu tiên để bắt đầu danh mục của bạn."
+            : "Đăng nhập để xem danh mục."}
         </p>
       )}
     </Link>
