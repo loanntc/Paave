@@ -359,3 +359,29 @@ Recovery path:  User prompted to use the funds before expiry
 *Owner: Product Design + Frontend Dev*
 *FRD reference: `docs/business/frd/module-f0-learning.md`*
 *QA test cases: `DESIGN-F0-LEARN-06-qa-cases.md`*
+
+---
+
+## Related Documents
+
+**Business Layer**
+| Document | Path |
+|----------|------|
+| FRD: F0 Learning Path | `docs/business/frd/module-f0-learning.md` |
+| UX Flows (Business) | `docs/business/frd/module-f0-learning-ux-flows.md` |
+| Gamification FRD | `docs/business/frd/module-c-gamification-extended.md` |
+
+**Design Layer**
+| Document | Path |
+|----------|------|
+| Design Alignment + Tokens | `docs/design/DESIGN-F0-LEARN-00-alignment.md` |
+| UX Flows (Design Detail) | `docs/design/DESIGN-F0-LEARN-01-ux-flows.md` |
+| Screen Wireframes | `docs/design/DESIGN-F0-LEARN-02-wireframes.md` |
+| UI Specification | `docs/design/DESIGN-F0-LEARN-03-ui-spec.md` |
+| Component Specs | `docs/design/DESIGN-F0-LEARN-04-component-spec.md` |
+| QA Test Cases | `docs/design/DESIGN-F0-LEARN-06-qa-cases.md` |
+
+**Engineering Layer**
+| Document | Path |
+|----------|------|
+| Dev/QA Handoff Spec | `docs/design/DEV-QA-SPEC-F0-Learning-Path.md` |
