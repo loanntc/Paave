@@ -267,7 +267,9 @@ export function PortfolioView() {
           </section>
         ) : (
           <p className="text-[13px] text-text-neo-tertiary">
-            Đăng nhập để xem danh mục của bạn.
+            {userId
+              ? "Tài khoản giả lập chưa được khởi tạo. Vui lòng liên hệ hỗ trợ."
+              : "Đăng nhập để xem danh mục của bạn."}
           </p>
         )}
 
