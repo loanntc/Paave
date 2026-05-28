@@ -69,7 +69,16 @@ export function useAIChat(context?: AIChatContext) {
         });
 
         if (!response.ok) {
-          throw new Error(`Request failed: HTTP ${response.status}`);
+          // Try to surface the server's user-facing error message (e.g. 429 rate-limit,
+          // 400 message-too-long) rather than a generic HTTP status string.
+          let errorMessage = `Request failed: HTTP ${response.status}`;
+          try {
+            const errBody = await response.json() as Record<string, unknown>;
+            if (typeof errBody.error === "string") errorMessage = errBody.error;
+          } catch {
+            // ignore JSON parse failures — keep the generic message
+          }
+          throw new Error(errorMessage);
         }
 
         const body = response.body;
@@ -132,10 +141,16 @@ export function useAIChat(context?: AIChatContext) {
           err instanceof Error ? err.message : "Analysis temporarily unavailable.";
         setError(errorMsg);
 
+        // Show the actual server error (e.g. rate-limit, message-too-long) in the assistant
+        // bubble. AbortErrors are already filtered by the early return above.
+        const displayMsg =
+          err instanceof Error
+            ? err.message
+            : "Phân tích tạm thời không khả dụng. Vui lòng thử lại.";
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantMsgId
-              ? { ...m, content: "Phân tích tạm thời không khả dụng. Vui lòng thử lại.", isStreaming: false }
+              ? { ...m, content: displayMsg, isStreaming: false }
               : m,
           ),
         );

@@ -3,15 +3,8 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useMemo } from "react";
-import { calculateAge, getAccessMode, MINIMUM_AGE, type AccessMode } from "@/lib/age-gate";
-
-function Bolt({ size = 12 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
-      <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />
-    </svg>
-  );
-}
+import { calculateAge, getAccessMode, type AccessMode } from "@/lib/age-gate";
+import { AgeCheckboxes, AgeBanners, Bolt } from "./age-components";
 
 export function AgeView() {
   const router = useRouter();
@@ -193,103 +186,16 @@ export function AgeView() {
 
       {/* Check rows — hidden when blocked by middleware (no point ticking checkboxes) */}
       {!blockedByMiddleware && (
-        <>
-          <div className="mx-5 mb-2">
-            <button
-              onClick={() => setAgeConfirmed((v) => !v)}
-              className="w-full flex items-start gap-3 rounded-[10px] px-3 py-3 text-left"
-              style={{
-                background: ageConfirmed ? "rgba(181,232,47,0.05)" : "rgba(255,255,255,0.02)",
-                border: `1px solid ${ageConfirmed ? "rgba(181,232,47,0.3)" : "rgba(255,255,255,0.06)"}`,
-              }}
-            >
-              <div
-                className="mt-0.5 grid flex-shrink-0 place-items-center rounded-[5px]"
-                style={{
-                  width: 18, height: 18,
-                  background: ageConfirmed ? "#B5E82F" : "rgba(255,255,255,0.06)",
-                  border: ageConfirmed ? "none" : "1px solid rgba(255,255,255,0.15)",
-                  color: "#0B0A1A",
-                }}
-              >
-                {ageConfirmed && (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-                )}
-              </div>
-              <div>
-                <div className="text-[12px] font-bold mb-0.5" style={{ color: "#E8E6F5", fontFamily: "var(--font-be-vietnam-pro)" }}>Xác nhận độ tuổi</div>
-                <div className="text-[11px] leading-relaxed" style={{ color: "#A6A2C7" }}>Tôi xác nhận ngày sinh ở trên là chính xác.</div>
-              </div>
-            </button>
-          </div>
-
-          <div className="mx-5 mb-3">
-            <button
-              onClick={() => setTermsAccepted((v) => !v)}
-              className="w-full flex items-start gap-3 rounded-[10px] px-3 py-3 text-left"
-              style={{
-                background: termsAccepted ? "rgba(181,232,47,0.05)" : "rgba(255,255,255,0.02)",
-                border: `1px solid ${termsAccepted ? "rgba(181,232,47,0.3)" : "rgba(255,255,255,0.06)"}`,
-              }}
-            >
-              <div
-                className="mt-0.5 grid flex-shrink-0 place-items-center rounded-[5px]"
-                style={{
-                  width: 18, height: 18,
-                  background: termsAccepted ? "#B5E82F" : "rgba(255,255,255,0.06)",
-                  border: termsAccepted ? "none" : "1px solid rgba(255,255,255,0.15)",
-                  color: "#0B0A1A",
-                }}
-              >
-                {termsAccepted && (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-                )}
-              </div>
-              <div>
-                <div className="text-[12px] font-bold mb-0.5" style={{ color: "#E8E6F5", fontFamily: "var(--font-be-vietnam-pro)" }}>Điều khoản sử dụng</div>
-                <div className="text-[11px] leading-relaxed" style={{ color: "#A6A2C7" }}>
-                  Đồng ý với <span style={{ color: "#B5E82F" }}>điều khoản</span> và <span style={{ color: "#B5E82F" }}>chính sách bảo mật</span>.
-                </div>
-              </div>
-            </button>
-          </div>
-        </>
+        <AgeCheckboxes
+          ageConfirmed={ageConfirmed}
+          onAgeConfirmedToggle={() => setAgeConfirmed((v) => !v)}
+          termsAccepted={termsAccepted}
+          onTermsAcceptedToggle={() => setTermsAccepted((v) => !v)}
+        />
       )}
 
-      {/* Blocked banner — shown when age is under 16 */}
-      {isBlocked && (
-        <div
-          className="mx-5 mb-3 rounded-[10px] px-3 py-2.5"
-          style={{
-            background: "rgba(239,68,68,0.06)",
-            border: "1px solid rgba(239,68,68,0.25)",
-          }}
-        >
-          <div className="text-[11px] font-bold mb-1" style={{ color: "#EF4444", fontFamily: "var(--font-be-vietnam-pro)" }}>
-            Chưa đủ tuổi sử dụng Paave
-          </div>
-          <p className="text-[11px] leading-relaxed" style={{ color: "#FCA5A5" }}>
-            Paave chỉ dành cho người từ {MINIMUM_AGE} tuổi trở lên theo quy định
-            của Uỷ ban Chứng khoán Nhà nước. Bạn có thể đăng ký khi đủ tuổi.
-          </p>
-        </div>
-      )}
-
-      {/* Learn mode banner — shown when age is 16–17 */}
-      {isLearnMode && (
-        <div
-          className="mx-5 mb-3 rounded-[10px] px-3 py-2.5"
-          style={{
-            background: "rgba(255,138,91,0.06)",
-            border: "1px solid rgba(255,138,91,0.25)",
-          }}
-        >
-          <div className="text-[11px] font-bold mb-1" style={{ color: "#FF8A5B", fontFamily: "var(--font-be-vietnam-pro)" }}>Chế độ Học tập</div>
-          <p className="text-[11px] leading-relaxed" style={{ color: "#FFBFA0" }}>
-            Bạn sẽ vào chế độ học với giao dịch mô phỏng đầy đủ. Xếp hạng và cộng đồng mở khi đủ 18 tuổi.
-          </p>
-        </div>
-      )}
+      {/* Age-gate banners — blocked (< 16) or learn-mode (16–17) */}
+      <AgeBanners isBlocked={isBlocked} isLearnMode={isLearnMode} />
 
       {/* API error message */}
       {submitError && (

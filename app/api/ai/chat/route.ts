@@ -2,8 +2,12 @@ import { NextRequest } from "next/server";
 import { runAgent } from "@/lib/ai/agent";
 import type { AgentContext, SupportedLanguage } from "@/lib/ai/system-prompt";
 import { createCookieClient } from "@/lib/supabase/server";
+import { checkRateLimit, AI_RATE_LIMIT } from "@/lib/ai/rate-limiter";
 
 const SUPPORTED_LANGUAGES: SupportedLanguage[] = ["vi", "ko", "en"];
+
+// Cap message length to prevent excessively expensive prompts
+const MAX_MESSAGE_LENGTH = 2000;
 
 function isSupportedLanguage(value: unknown): value is SupportedLanguage {
   return SUPPORTED_LANGUAGES.includes(value as SupportedLanguage);
@@ -35,6 +39,29 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Rate-limit check — must run after auth so we have a verified userId
+  const rl = checkRateLimit(user.id);
+  if (!rl.allowed) {
+    const retryAfterSec = rl.resetAt
+      ? Math.ceil((rl.resetAt - Date.now()) / 1000)
+      : 3600;
+    return new Response(
+      JSON.stringify({
+        error: "Quá nhiều yêu cầu. Vui lòng thử lại sau.",
+        resetAt: rl.resetAt,
+      }),
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "X-RateLimit-Limit": String(AI_RATE_LIMIT),
+          "X-RateLimit-Remaining": "0",
+          "Retry-After": String(retryAfterSec),
+        },
+      },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -49,6 +76,14 @@ export async function POST(req: NextRequest) {
   if (!message) {
     return new Response(
       JSON.stringify({ error: "message is required" }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    );
+  }
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    return new Response(
+      JSON.stringify({
+        error: `Tin nhắn quá dài. Tối đa ${MAX_MESSAGE_LENGTH.toLocaleString()} ký tự.`,
+      }),
       { status: 400, headers: { "Content-Type": "application/json" } },
     );
   }
