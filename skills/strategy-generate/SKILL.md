@@ -1,5 +1,5 @@
 ---
-name: strategy-generate
+name: strategy-builder
 description: Create, modify, and optimize quantitative trading strategies, then backtest and evaluate them.
 category: strategy
 ---

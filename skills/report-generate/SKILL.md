@@ -1,5 +1,5 @@
 ---
-name: report-generate
+name: research-report-writer
 description: Professional financial research report generation — standard structure (summary / views / main body / risks / recommendation), Markdown formatting standards, rating system, and terminology guide.
 category: tool
 ---

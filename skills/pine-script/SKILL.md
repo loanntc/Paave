@@ -1,5 +1,5 @@
 ---
-name: pine-script
+name: tradingview-export
 description: Export backtest strategies to indicator/strategy code for major trading platforms — TradingView, 通达信, 同花顺, 东方财富, MT5.
 category: tool
 ---

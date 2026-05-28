@@ -1,5 +1,5 @@
 ---
-name: event-driven
+name: news-event-strategy
 description: Event-driven strategy based on sentiment-scored signals from news, announcements, and macro events. The LLM acts as the NLP engine, and event data follows a CSV schema.
 category: strategy
 ---

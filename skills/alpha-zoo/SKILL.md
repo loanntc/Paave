@@ -1,5 +1,5 @@
 ---
-name: alpha-zoo
+name: alpha-factor-library
 description: Browse and bench the bundled alpha zoos — prebuilt cross-sectional factor libraries (Kakushadze 101, GTJA 191, Qlib 158, Fama-French / Carhart). Use when the user asks "which alphas exist", wants metadata on a named alpha, or wants to run IC/IR on a whole zoo over a universe.
 category: research
 ---

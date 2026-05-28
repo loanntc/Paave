@@ -1,5 +1,5 @@
 ---
-name: web-reader
+name: web-page-reader
 description: Read web pages, articles, and document links by converting URLs into Markdown text. Use the `read_url` tool directly, without bash. Sends the full URL to the third-party Jina Reader (r.jina.ai).
 category: tool
 ---

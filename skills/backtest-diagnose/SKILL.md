@@ -1,5 +1,5 @@
 ---
-name: backtest-diagnose
+name: backtest-debugger
 description: Diagnose failed or underperforming backtests, locate the root cause, and fix the issue
 category: tool
 ---

@@ -1,5 +1,5 @@
 ---
-name: trade-journal
+name: trade-journal-analyzer
 description: Analyze a user's trade journal (CSV/Excel broker export). Parses 同花顺/东方财富/富途/generic formats, produces a trading profile and 4 behavior diagnostics (disposition effect, overtrading, chasing, anchoring). Use the `analyze_trade_journal` tool.
 category: tool
 ---

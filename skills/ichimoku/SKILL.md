@@ -1,5 +1,5 @@
 ---
-name: ichimoku
+name: ichimoku-cloud
 description: Ichimoku Kinko Hyo five-line system signal engine. A standalone Japanese technical-analysis school that generates trading signals from Tenkan/Kijun crossovers, cloud position, and Chikou confirmation. Pure pandas implementation.
 category: strategy
 ---

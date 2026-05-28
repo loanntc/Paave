@@ -1,5 +1,5 @@
 ---
-name: minute-analysis
+name: intraday-analysis
 description: Minute-level data analysis and backtesting. Retrieves minute candlesticks through OKX/Tushare/yfinance and can be used both for analysis and as input to the backtest engine.
 category: strategy
 ---

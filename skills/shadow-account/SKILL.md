@@ -1,5 +1,5 @@
 ---
-name: shadow-account
+name: trading-dna-analyzer
 description: "Shadow Account — 从用户交割单提炼盈利模式（3-5 条人话规则）→ 跨 A股/港股/美股/crypto 多市场回测 → 差值归因 → 8-section PDF 报告。叙事：你的影子，没有情绪噪音。"
 category: analysis
 ---

@@ -1,5 +1,5 @@
 ---
-name: cross-market-strategy
+name: multi-market-strategy
 description: Write signal_engine.py for portfolios spanning multiple markets (A-shares + crypto, equity + forex, etc.)
 category: strategy
 ---

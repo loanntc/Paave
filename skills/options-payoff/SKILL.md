@@ -1,5 +1,5 @@
 ---
-name: options-payoff
+name: options-payoff-diagram
 description: "Option P&L analysis methodology: payoff diagrams, breakeven calculation, multi-leg strategy visualization, and Greeks-based scenario analysis."
 category: asset-class
 ---

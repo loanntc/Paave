@@ -1,5 +1,5 @@
 ---
-name: fundamental-filter
+name: stock-screener
 description: Fundamental factor screening — filter stocks by PE/PB/ROE, financial statement fields, and other metrics for value or growth selection. Supports A-shares (via tushare extra_fields or fundamental_fields) and HK/US stocks (via yfinance Ticker info).
 category: flow
 ---

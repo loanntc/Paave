@@ -1,5 +1,5 @@
 ---
-name: smc
+name: smart-money-concepts
 description: Smart Money Concepts (ICT) signal engine. Uses the smartmoneyconcepts library to implement institutional-trading-school analysis of BOS, ChoCH, FVG, and order blocks (OB).
 category: strategy
 ---

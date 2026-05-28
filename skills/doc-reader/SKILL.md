@@ -1,5 +1,5 @@
 ---
-name: doc-reader
+name: document-reader
 description: Read any common document/data file — PDF, Word (.docx), Excel (.xlsx/.xls), PowerPoint (.pptx), images (OCR), CSV/TSV, plain text, JSON/YAML/TOML, HTML/XML, and most source-code files. Use the `read_document` tool.
 category: tool
 ---

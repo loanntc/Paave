@@ -1,5 +1,5 @@
 ---
-name: hedging-strategy
+name: portfolio-hedging
 description: Hedging strategy design (beta hedge / option protection / tail risk / cross-asset hedging), including hedge-ratio calculation and cost evaluation.
 category: asset-class
 ---
