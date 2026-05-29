@@ -1,5 +1,11 @@
 # F0 Learning Path — Design Alignment Summary
-**Version:** 1.0 | **Date:** 2026-05-28 | **Feature:** F0 Learning Path (Module F-LEARN)
+**Version:** 2.0 | **Date:** 2026-05-29 | **Feature:** F0 Learning Path (Module F-LEARN)
+**Architecture:** Frontend-only · AsyncStorage · No rewards
+
+> ⚠ **V2 BREAKING CHANGES:** XP system, badge system, and bonus cash are REMOVED. No backend API.
+> All learning progress is stored in AsyncStorage (resets on reinstall).
+> Post-learning: age ≥18 → Trade tab; age <18 → Home tab + age gate.
+> See `docs/business/f0-learning/` for all revised requirements.
 
 ---
 
@@ -11,8 +17,10 @@
 | Component Registry | `docs/design/components.md` | Always — reuse existing before creating new |
 | Screen Specs | `docs/design/screen-specs.md` | V1 layout patterns and precedents |
 | UX Flows | `docs/design/ux-flows.md` | Navigation architecture, Tab 2 sub-nav |
-| FRD | `docs/business/frd/module-f0-learning.md` | Full feature requirements |
-| Gamification FRD | `docs/business/frd/module-c-gamification-extended.md` | Badge/XP award rules |
+| F0 Learning V2 (authoritative) | `docs/business/f0-learning/00-index.md` | All revised requirements |
+| Requirements V2 | `docs/business/f0-learning/01-requirements.md` | FR, BR, edge cases |
+| Learning Content | `docs/business/f0-learning/02-content.md` | All lesson + quiz content |
+| Data Model | `docs/business/f0-learning/03-data-model.md` | AsyncStorage schema |
 | Dev/QA Spec | `docs/design/DEV-QA-SPEC-F0-Learning-Path.md` | Engineering handoff reference |
 
 **Figma:** [Paave — V2.0 Design](https://www.figma.com/design/DIn25HJLZL42U6TAnqoh6n)
@@ -27,37 +35,39 @@ Project:          Paave — Vietnamese Mobile Investing App (iOS + Android, Reac
 Feature:          F0 Learning Path
 Module ID:        F-LEARN
 Business Goal:    Guide F0 users (age 16–27) through 4 progressive learning modules
-                  to build foundational VN stock market knowledge, place their first
-                  paper trade, and develop disciplined trading habits.
+                  to build foundational VN stock market knowledge before they begin
+                  real trading. V1 is fully frontend-only with local progress storage.
 Primary User:     F0 Trader — age 16–27, Gen Z, Vietnamese, zero prior investing experience
-Secondary Actor:  System (server-side event processor for XP, badges, level-up)
+Secondary Actor:  Local device (AsyncStorage; no server-side processing in V1)
 
 Success Metrics:
-  - 70% of new users complete M1 within 7 days of registration
+  - 70% of new users complete M1 within 7 days of first launch
   - 40% complete the full 4-module path within 30 days
-  - ≥ 3 paper trades placed from M2 CTAs per user cohort
+  - ≥ 50% of learning-complete users navigate to Trade tab (age 18+)
 
 Core Flow (Happy Path):
   1. User completes registration → account status = ACTIVE
-  2. First app launch → Welcome Modal fires (one-time only)
-     a. "Bắt đầu Module 1" → navigates directly to L1.1 Card 1
-     b. "Khám phá trước" → Home tab; Grow tab shows learning prompt card
-     c. "Tôi đã biết chứng khoán cơ bản" → Placement Quiz (FR-LEARN-19)
-  3. Grow tab (Tab 2 > Sub-nav "Học tập"): 4 module cards, sequential unlock
+  2. First app launch → Welcome Modal fires (one-time, flag in AsyncStorage)
+     a. "Bắt đầu Module 1" → navigate directly to L1.1 Card 1
+     b. "Khám phá trước" → Home tab; Grow tab shows LearningPromptCard
+     c. "Tôi đã biết chứng khoán cơ bản" → Placement Quiz (FR-LEARN-08)
+  3. Grow tab: 4 ModuleCards, sequential unlock (AsyncStorage-driven)
   4. Tap module → 5 lessons; tap lesson → 5 card-stack (swipe left to advance)
      Card order (fixed): Concept → Example → Myth-Buster → Quiz → CTA
-  5. Lesson complete → XP +25 toast; card_index saved
+  5. Lesson complete (Card 5 viewed + Card 4 quiz passed) → next lesson unlocks
   6. All 5 lessons complete → Module Knowledge Check (5 Qs, ≥3/5 to pass)
-  7. MKC passed → Module complete → reward screen (badge + XP bonus)
-  8. M2 complete → 50,000,000 VND bonus cash modal
-  9. All 4 modules complete → Market Scholar badge (Rare) + Tier 2 community unlock
+  7. MKC passed → Module COMPLETE → simple "Module N Hoàn Thành!" screen
+  8. All 4 modules complete → Learning Complete screen → age check
+     Age ≥ 18: navigate to Trade tab
+     Age < 18: navigate to Home tab + AgeGateBottomSheet
 
 Key Business Rules (designer-critical):
   - Only ONE KineticButton `lime` variant visible per viewport at any time
-  - Module unlock is CURRENT-STATE: evaluated live when Grow tab is opened
-  - XP grant is idempotent: completed lessons show "Review" mode — no XP re-award
-  - Placement Quiz: back navigation BLOCKED on Q1 (cannot return to Welcome Modal)
-  - MKC retry cooldown: 60 seconds after a failed attempt (show countdown timer)
+  - Module unlock is CURRENT-STATE: derived from AsyncStorage on Grow tab mount
+  - Lesson progress saved per card swipe (500ms debounce); no XP — NO rewards
+  - Placement Quiz: back BLOCKED on Q1; one-shot (AsyncStorage flag)
+  - MKC retry cooldown: 60s client-side timer (AsyncStorage timestamp)
+  - Post-learning age gate: ≥18 → Trade tab; <18 → Home + bottom sheet; missing DOB → same as <18
   - Bonus cash (M2): separate wallet ledger, 7-day TTL, force-liquidation at T+7
   - Learning Level: event-based (6 levels); no visible XP bar or threshold counter
 
