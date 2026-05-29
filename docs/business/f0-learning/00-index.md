@@ -24,7 +24,7 @@ This folder contains the authoritative reference for:
 | 1 | `01-requirements.md` | Business + functional requirements, business rules, edge cases | PO · BA · Dev |
 | 2 | `02-content.md` | Full lesson content, quiz questions, pass conditions for all 4 modules | Content · Dev · QA |
 | 3 | `03-data-model.md` | AsyncStorage schema, state machine, TypeScript types | Dev |
-| 4 | `04-completion-trading.md` | Post-learning age check → Trade tab or Home tab | PO · BA · Dev |
+| 4 | `04-user-flow.md` | Master user flow overview — all phases connected end-to-end | PO · BA · Design · Dev · QA |
 | 5 | `flow-a-welcome-modal.md` | First launch modal: 3 CTAs, flag written at render | Dev · QA |
 | 6 | `flow-b-grow-tab.md` | Learning Path Home: ModuleCard states, LearningPromptCard | Dev · QA |
 | 7 | `flow-c-lesson-experience.md` | Card-stack viewer: swipe nav, quiz, hint card, completion | Dev · QA |
