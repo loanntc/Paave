@@ -34,6 +34,7 @@ All keys are prefixed with `f0_` to namespace learning path data. Values are sto
 | `f0_placement_quiz_passed` | `boolean` | `false` | Whether the Placement Quiz was submitted with a passing score (≥4/5). Only meaningful when `f0_placement_quiz_completed = true`. | FR-LEARN-08 (on submit) | Analytics, post-quiz routing |
 | `f0_learning_path_complete` | `boolean` | `false` | Whether all 4 modules have reached COMPLETE state. | FR-LEARN-09 (M4 COMPLETE) | FR-LEARN-02 (LearningPromptCard logic) |
 | `f0_age_gate_shown` | `boolean` | `false` | Whether the age gate bottom sheet has been shown to the user after learning path completion. | FR-LEARN-10 (on <18 path) | For analytics / preventing re-show |
+| `f0_explore_path_taken` | `boolean` | `false` | Whether the user tapped "Khám phá trước" on the Welcome Modal (chose to explore before starting M1). Determines whether LearningPromptCard is shown on the Grow tab. Must be persisted so LearningPromptCard reappears correctly after app relaunch. | FR-LEARN-01 (Welcome Modal CTA 2) | FR-LEARN-02 (LearningPromptCard display guard) |
 
 ### 1.2 Module State Keys
 
@@ -89,6 +90,7 @@ f0_placement_quiz_completed
 f0_placement_quiz_passed
 f0_learning_path_complete
 f0_age_gate_shown
+f0_explore_path_taken
 
 f0_module_1_state
 f0_module_2_state
@@ -122,7 +124,7 @@ f0_mkc_3_state    f0_mkc_3_cooldown_start
 f0_mkc_4_state    f0_mkc_4_cooldown_start
 ```
 
-**Total key count:** 49 keys
+**Total key count:** 50 keys
 
 ---
 
@@ -208,6 +210,12 @@ export interface LearningPathState {
   /** Whether the age gate bottom sheet has been shown after completion. */
   ageGateShown: boolean;
   /**
+   * Whether the user chose "Khám phá trước" on the Welcome Modal.
+   * When true, LearningPromptCard is shown on the Grow tab.
+   * Persisted so the card reappears correctly after app relaunch.
+   */
+  explorePathTaken: boolean;
+  /**
    * Array of 4 module states, indexed 0–3.
    * modules[0] = Module 1, modules[3] = Module 4.
    */
@@ -256,6 +264,7 @@ export function createDefaultLearningPathState(): LearningPathState {
     placementQuizPassed: false,
     learningPathComplete: false,
     ageGateShown: false,
+    explorePathTaken: false,
     modules: [
       createDefaultModuleState(1),
       createDefaultModuleState(2),
@@ -311,18 +320,25 @@ export function createDefaultLearningPathState(): LearningPathState {
 When the Placement Quiz passes, M1 skips all intermediate states and goes directly to COMPLETE in a single atomic batch write. The following keys are written together in one `AsyncStorage.multiSet` call:
 
 ```
-f0_placement_quiz_completed = true
-f0_placement_quiz_passed    = true
-f0_module_1_state           = 'COMPLETE'
-f0_lesson_1_1_state         = 'COMPLETE'
-f0_lesson_1_2_state         = 'COMPLETE'
-f0_lesson_1_3_state         = 'COMPLETE'
-f0_lesson_1_4_state         = 'COMPLETE'
-f0_lesson_1_5_state         = 'COMPLETE'
-f0_mkc_1_state              = 'PASSED'
-f0_module_2_state           = 'UNLOCKED'
-f0_lesson_2_1_state         = 'UNLOCKED'
+f0_placement_quiz_completed  = true
+f0_placement_quiz_passed     = true
+f0_module_1_state            = 'COMPLETE'
+f0_lesson_1_1_state          = 'COMPLETE'
+f0_lesson_1_1_card_index     = 4
+f0_lesson_1_2_state          = 'COMPLETE'
+f0_lesson_1_2_card_index     = 4
+f0_lesson_1_3_state          = 'COMPLETE'
+f0_lesson_1_3_card_index     = 4
+f0_lesson_1_4_state          = 'COMPLETE'
+f0_lesson_1_4_card_index     = 4
+f0_lesson_1_5_state          = 'COMPLETE'
+f0_lesson_1_5_card_index     = 4
+f0_mkc_1_state               = 'PASSED'
+f0_module_2_state            = 'UNLOCKED'
+f0_lesson_2_1_state          = 'UNLOCKED'
 ```
+
+> **Why card_index writes are required:** All COMPLETE lessons must have `card_index = 4` (Card 5 viewed). If these are omitted, the 5 M1 lessons will be COMPLETE but their `card_index` will be `0` (default). This creates an inconsistent state: `lessonProgress()` would return 20% for a COMPLETE lesson, and review-mode entry would land the user on Card 1 instead of the expected Card 5.
 
 ---
 
@@ -535,7 +551,7 @@ The following operations MUST use `multiSet`:
 | Lesson COMPLETE | `lesson_{m}_{l}_state`, `lesson_{m}_{l}_card_index`, optionally `lesson_{m}_{l+1}_state`, optionally `module_{m}_state` |
 | MKC Pass | `mkc_{m}_state`, `module_{m}_state`, optionally `module_{m+1}_state`, optionally `lesson_{m+1}_1_state` |
 | Module 4 COMPLETE | `mkc_4_state`, `module_4_state`, `f0_learning_path_complete` |
-| Placement Quiz Pass | All 11 keys listed in Section 3.3 |
+| Placement Quiz Pass | All 16 keys listed in Section 3.3 (including 5 card_index = 4 writes for M1 lessons) |
 | Placement Quiz Fail | `f0_placement_quiz_completed`, `f0_placement_quiz_passed` |
 | MKC Fail | `f0_mkc_{m}_state`, `f0_mkc_{m}_cooldown_start` |
 
@@ -554,6 +570,7 @@ const ALL_F0_KEYS: string[] = [
   'f0_placement_quiz_passed',
   'f0_learning_path_complete',
   'f0_age_gate_shown',
+  'f0_explore_path_taken',
   'f0_module_1_state', 'f0_module_2_state', 'f0_module_3_state', 'f0_module_4_state',
   // 20 lesson state keys
   ...Array.from({ length: 4 }, (_, m) =>
@@ -624,6 +641,7 @@ async function initializeLearningPathState(): Promise<LearningPathState> {
     placementQuizPassed: get<boolean>('f0_placement_quiz_passed', false),
     learningPathComplete: get<boolean>('f0_learning_path_complete', false),
     ageGateShown: get<boolean>('f0_age_gate_shown', false),
+    explorePathTaken: get<boolean>('f0_explore_path_taken', false),
     modules,
   };
 
@@ -674,14 +692,14 @@ All values are stored as JSON strings. Sizes below are conservative estimates in
 
 | Key Group | # Keys | Avg Value Size (bytes) | Subtotal |
 |---|---|---|---|
-| Global boolean keys (5 keys) | 5 | 5 (`"true"` = 4, `"false"` = 5) | ~25 B |
+| Global boolean keys (6 keys) | 6 | 5 (`"true"` = 4, `"false"` = 5) | ~30 B |
 | Module state keys (4 keys) | 4 | 15 (`"LESSONS_COMPLETE"` = 18, worst case) | ~60 B |
 | Lesson state keys (20 keys) | 20 | 15 | ~300 B |
 | Lesson card index keys (20 keys) | 20 | 3 (`"4"` = 3) | ~60 B |
 | MKC state keys (4 keys) | 4 | 15 (`"NOT_STARTED"` = 13) | ~60 B |
 | MKC cooldown timestamp keys (4 keys) | 4 | 15 (13-digit Unix ms = 13) | ~60 B |
-| **Key names themselves** | 49 keys | avg 25 chars per key | ~1,225 B |
-| **Total** | **49** | — | **~1,790 B (~1.75 KB)** |
+| **Key names themselves** | 50 keys | avg 25 chars per key | ~1,250 B |
+| **Total** | **50** | — | **~1,820 B (~1.78 KB)** |
 
 **Maximum state (all keys set to longest values):** ~2.5 KB
 

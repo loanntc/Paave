@@ -465,10 +465,11 @@ Identical to F-2 except:
 
 | Document | Path |
 |---|---|
-| F0 Learning Path Requirements | `/docs/business/f0-learning/01-requirements.md` |
-| Flow B — Welcome Modal | `flow-b-welcome-modal.md` |
-| Flow C — Module Unlock | `flow-c-module-unlock.md` |
-| Flow D — Lesson Navigation | `flow-d-lesson-navigation.md` |
-| Flow E — Module Knowledge Check | `flow-e-mkc.md` |
-| Flow G — Learning Complete | `flow-g-learning-complete.md` |
+| F0 Learning Path Requirements | `docs/business/f0-learning/01-requirements.md` |
+| Flow A — Welcome Modal | `docs/business/f0-learning/flow-a-welcome-modal.md` |
+| Flow B — Grow Tab | `docs/business/f0-learning/flow-b-grow-tab.md` |
+| Flow C — Lesson Experience | `docs/business/f0-learning/flow-c-lesson-experience.md` |
+| Flow D — Module Completion | `docs/business/f0-learning/flow-d-module-completion.md` |
+| Flow E — Module Knowledge Check | `docs/business/f0-learning/flow-e-mkc.md` |
+| Flow G — Learning Complete | `docs/business/f0-learning/flow-g-learning-complete.md` |
 | Kinetic Drop V2.0 Design System | Internal Figma — Kinetic Drop V2.0 |

@@ -51,7 +51,9 @@
 
 ### 2.3 Fail Sequence
 
-1. Write `f0_mkc_{n}_cooldown_start = Date.now()`.
+1. Write (batch, single `multiSet` call):
+   - `f0_mkc_{n}_state = 'FAILED'`
+   - `f0_mkc_{n}_cooldown_start = Date.now()`
 2. Show Fail screen:
    - "Chưa đạt. Cần ≥ 3/5 câu đúng."
    - Score displayed in `negative (#EF4444)`.
@@ -409,11 +411,11 @@ At T=0, button transitions to:
 
 | Document | Path |
 |---|---|
-| F0 Learning Path Requirements | `/docs/business/f0-learning/01-requirements.md` |
-| Flow A — Home & Grow Tab | `flow-a-home-grow.md` |
-| Flow B — Welcome Modal | `flow-b-welcome-modal.md` |
-| Flow C — Module Unlock | `flow-c-module-unlock.md` |
-| Flow D — Lesson Navigation | `flow-d-lesson-navigation.md` |
-| Flow F — Placement Quiz | `flow-f-placement-quiz.md` |
-| Flow G — Learning Complete | `flow-g-learning-complete.md` |
+| F0 Learning Path Requirements | `docs/business/f0-learning/01-requirements.md` |
+| Flow A — Welcome Modal | `docs/business/f0-learning/flow-a-welcome-modal.md` |
+| Flow B — Grow Tab | `docs/business/f0-learning/flow-b-grow-tab.md` |
+| Flow C — Lesson Experience | `docs/business/f0-learning/flow-c-lesson-experience.md` |
+| Flow D — Module Completion | `docs/business/f0-learning/flow-d-module-completion.md` |
+| Flow F — Placement Quiz | `docs/business/f0-learning/flow-f-placement-quiz.md` |
+| Flow G — Learning Complete | `docs/business/f0-learning/flow-g-learning-complete.md` |
 | Kinetic Drop V2.0 Design System | Internal Figma — Kinetic Drop V2.0 |

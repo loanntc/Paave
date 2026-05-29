@@ -44,9 +44,10 @@
 
 ### 2.2 Case A — Age ≥ 18
 
-1. Write `f0_age_gate_shown = true`.
-2. Navigate to Trade tab (main trading screen).
-3. Show brief snackbar/tooltip: "Sẵn sàng đặt lệnh đầu tiên! 💪" — auto-dismiss after 2,500 ms.
+1. Navigate to Trade tab (main trading screen).
+2. Show brief snackbar/tooltip: "Sẵn sàng đặt lệnh đầu tiên! 💪" — auto-dismiss after 2,500 ms.
+
+> **Note:** `f0_age_gate_shown` is NOT written for Case A. The key semantics are "age gate bottom sheet was shown" — for Case A, no bottom sheet is shown. Writing it here would corrupt analytics (making it impossible to distinguish "user was ≥18 and navigated to Trade" from "user saw the under-18 bottom sheet").
 
 ### 2.3 Case B — Age < 18
 
@@ -106,7 +107,6 @@ Learning Complete Screen
           ▼
       Age ≥ 18?
       ├── YES (Case A)
-      │     ├── Write age_gate_shown = true
       │     ├── Navigate to Trade tab
       │     └── Show snackbar (2500ms auto-dismiss)
       │
@@ -156,7 +156,7 @@ Learning Complete Screen
 ### AC-G-06: Age Gate — Case A (≥ 18) Navigation
 **Given** the user taps "Bắt đầu đầu tư →" and their calculated age is ≥ 18
 **When** the navigation executes
-**Then** `f0_age_gate_shown = true` is written; user is navigated to the Trade tab; snackbar "Sẵn sàng đặt lệnh đầu tiên! 💪" appears and auto-dismisses after 2,500 ms.
+**Then** user is navigated to the Trade tab; snackbar "Sẵn sàng đặt lệnh đầu tiên! 💪" appears and auto-dismisses after 2,500 ms. `f0_age_gate_shown` is NOT written (no bottom sheet was shown).
 
 ### AC-G-07: Age Gate — Case B (< 18) Navigation
 **Given** the user taps "Bắt đầu đầu tư →" and their calculated age is < 18
@@ -378,7 +378,7 @@ Same as G-3 but the personalized date line is replaced with:
 | 1,500 ms elapses | M4 Pass screen visible, no CTA tapped | Auto-navigate to Learning Complete screen |
 | Tap "Xem kết quả →" | M4 Pass screen | Immediate navigation to Learning Complete screen; timer cancelled |
 | Learning Complete screen mounts | First visit | Write `f0_learning_path_complete = true` |
-| Tap "Bắt đầu đầu tư →" | Age ≥ 18 | Write age_gate_shown=true; navigate to Trade tab; show snackbar 2,500 ms |
+| Tap "Bắt đầu đầu tư →" | Age ≥ 18 | Navigate to Trade tab; show snackbar 2,500 ms (no `f0_age_gate_shown` write) |
 | Tap "Bắt đầu đầu tư →" | Age < 18 | Write age_gate_shown=true; navigate to Home tab; show AgeGateBottomSheet |
 | Tap "Bắt đầu đầu tư →" | DOB missing/invalid | Write age_gate_shown=true; navigate to Home tab; show AgeGateBottomSheet (no date, + profile note) |
 | Tap "Xem thị trường" | AgeGateBottomSheet visible | Dismiss sheet; navigate to Market tab |
@@ -435,7 +435,7 @@ Same as G-3 but the personalized date line is replaced with:
 |---|---|---|---|---|
 | QA-G-01 | M4 MKC pass → Learning Complete screen appears | M4 MKC answered with ≥ 3/5 correct | Submit M4 MKC | M4 Pass screen with lime + plasma orbs; "Module 4 Hoàn Thành!"; auto-transitions to Learning Complete screen after 1,500 ms |
 | QA-G-02 | Manual CTA overrides auto-transition | M4 Pass screen visible, < 1,500 ms elapsed | Tap "Xem kết quả →" | Immediate navigation to Learning Complete screen; `f0_learning_path_complete=true` written |
-| QA-G-03 | "Bắt đầu đầu tư →" tap — age ≥ 18 | User DOB = 20 years ago; Learning Complete screen visible | Tap "Bắt đầu đầu tư →" | `f0_age_gate_shown=true` written; Trade tab opens; snackbar "Sẵn sàng đặt lệnh đầu tiên! 💪" shows and dismisses after 2,500 ms |
+| QA-G-03 | "Bắt đầu đầu tư →" tap — age ≥ 18 | User DOB = 20 years ago; Learning Complete screen visible | Tap "Bắt đầu đầu tư →" | Trade tab opens; snackbar "Sẵn sàng đặt lệnh đầu tiên! 💪" shows and dismisses after 2,500 ms; `f0_age_gate_shown` is NOT written to AsyncStorage |
 | QA-G-04 | "Bắt đầu đầu tư →" tap — age < 18 | User DOB = 16 years ago; Learning Complete screen visible | Tap "Bắt đầu đầu tư →" | `f0_age_gate_shown=true` written; Home tab active; AgeGateBottomSheet shows with personalized 18th birthday date |
 | QA-G-05 | "Bắt đầu đầu tư →" tap — DOB missing | No DOB in local profile; Learning Complete screen visible | Tap "Bắt đầu đầu tư →" | Home tab active; AgeGateBottomSheet shows WITHOUT specific date; note "Cập nhật ngày sinh trong Hồ sơ" visible |
 | QA-G-06 | "Xem thị trường" on AgeGateBottomSheet | AgeGateBottomSheet visible | Tap "Xem thị trường" | Bottom sheet dismisses; Market tab opens |
@@ -465,8 +465,10 @@ Same as G-3 but the personalized date line is replaced with:
 
 | Document | Path |
 |---|---|
-| F0 Learning Path Requirements | `/docs/business/f0-learning/01-requirements.md` |
-| Flow A — Home & Grow Tab | `flow-a-home-grow.md` |
-| Flow E — Module Knowledge Check | `flow-e-mkc.md` |
-| Flow F — Placement Quiz | `flow-f-placement-quiz.md` |
+| F0 Learning Path Requirements | `docs/business/f0-learning/01-requirements.md` |
+| Flow A — Welcome Modal | `docs/business/f0-learning/flow-a-welcome-modal.md` |
+| Flow B — Grow Tab | `docs/business/f0-learning/flow-b-grow-tab.md` |
+| Flow D — Module Completion | `docs/business/f0-learning/flow-d-module-completion.md` |
+| Flow E — Module Knowledge Check | `docs/business/f0-learning/flow-e-mkc.md` |
+| Flow F — Placement Quiz | `docs/business/f0-learning/flow-f-placement-quiz.md` |
 | Kinetic Drop V2.0 Design System | Internal Figma — Kinetic Drop V2.0 |

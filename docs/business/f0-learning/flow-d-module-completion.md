@@ -70,7 +70,7 @@ START: Card 5 of Lesson 5 of Module N renders
 │   │           └── FAIL (score < 3/5):
 │   │               ├── Show MKC result screen with score + encouragement
 │   │               ├── CTA: "Ôn lại bài học →" → navigate back to L{n}.1 in review mode
-│   │               ├── CTA: "Làm lại →" → restart MKC immediately
+│   │               ├── CTA: "Thử lại sau 00:60" (DISABLED) → 60s cooldown (see Flow E §2.3) → activates as "Thử lại ngay →" at T=0
 │   │               └── Module state stays LESSONS_COMPLETE (not COMPLETE)
 │   │
 │   └── DISMISSES banner (swipes down or taps outside):
@@ -214,7 +214,7 @@ If the app crashes during or immediately after a MKC pass (before module state i
 |---|---|
 | EC-D-01: Force-kill on Lesson 5 Card 5 before MKC | Module state = LESSONS_COMPLETE is written at Card 5 render. On relaunch: Grow tab shows LESSONS_COMPLETE; "Làm bài kiểm tra →" CTA available. |
 | EC-D-02: App crashes during MKC pass state write | Module state may remain LESSONS_COMPLETE. On Grow tab mount: validate all 5 lesson states COMPLETE; if so, re-write module state = COMPLETE and unlock next module. |
-| EC-D-03: User taps "Làm lại →" on fail screen multiple times | MKC is restartable unlimited times. No cooldown in this version. Each attempt is independent. |
+| EC-D-03: User taps retry on fail screen multiple times | MKC has a 60-second cooldown after each fail (see Flow E §2.3). The retry button is disabled during cooldown ("Thử lại sau MM:SS"). After cooldown expires, user taps "Thử lại ngay →" to start a fresh MKC. Each fail writes a new `f0_mkc_{n}_cooldown_start = Date.now()` timestamp. Retries are unlimited but each fail incurs a 60s wait. |
 | EC-D-04: User completes Lesson 5, banner shown, taps "Thực hành ngay" on Card 5 | "Thực hành ngay" navigates to in-app action. MKC banner was already shown; when user returns to Grow tab, ModuleCard shows LESSONS_COMPLETE with MKC CTA. |
 | EC-D-05: M4 MKC pass — app crashes before Learning Complete screen loads | Module state = COMPLETE written; all 4 modules COMPLETE. On relaunch: Grow tab shows celebration state. Learning Path Complete screen accessible from there. |
 | EC-D-06: MKC starts but user exits mid-quiz | Module state stays LESSONS_COMPLETE. MKC answers (in-progress) are discarded. User must restart MKC from beginning. |
