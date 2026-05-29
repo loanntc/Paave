@@ -1267,3 +1267,29 @@ All open questions resolved as of 2026-05-27.
 | OQ-05 | "Market Scholar" badge (M4) — Common or Rare? | Product | **Rare** (`#60A5FA`, 3px border). M4 is the F0 capstone (20 lessons + 4 MKCs + 5 trading days). Updated in FR-LEARN-09, FR-LEARN-16, module-c-gamification-extended.md. | ✅ Resolved |
 | OQ-06 | M3 bonus XP (+25): separate line item or rolled into total in completion modal? | Design | **Separate line items.** "+125 XP từ bài học" + "+25 XP 🎓 Thưởng hoàn thành!". Same pattern applied to M4. Defined in FR-LEARN-09 XP Display Rules table. | ✅ Resolved |
 | OQ-07 | L3.3 bulk watchlist add — silent skip or confirmation toast on duplicates? | Design | **Toast confirmation.** "Đã thêm [N] cổ phiếu mới · [M] đã có sẵn" (2s auto-dismiss). If all 5 already in watchlist: "5 cổ phiếu đã có trong danh sách theo dõi". Updated in FR-LEARN-15 AC-03. | ✅ Resolved |
+
+---
+
+## Related Documents
+
+**Business Layer**
+| Document | Path |
+|----------|------|
+| UX Flows: F0 Learning Path | `docs/business/frd/module-f0-learning-ux-flows.md` |
+| Gamification FRD | `docs/business/frd/module-c-gamification-extended.md` |
+
+**Design Layer**
+| Document | Path |
+|----------|------|
+| Design Alignment + Tokens | `docs/design/DESIGN-F0-LEARN-00-alignment.md` |
+| UX Flows (Design Detail) | `docs/design/DESIGN-F0-LEARN-01-ux-flows.md` |
+| Screen Wireframes | `docs/design/DESIGN-F0-LEARN-02-wireframes.md` |
+| UI Specification | `docs/design/DESIGN-F0-LEARN-03-ui-spec.md` |
+| Component Specs | `docs/design/DESIGN-F0-LEARN-04-component-spec.md` |
+| Interaction Rules | `docs/design/DESIGN-F0-LEARN-05-interactions.md` |
+| QA Test Cases | `docs/design/DESIGN-F0-LEARN-06-qa-cases.md` |
+
+**Engineering Layer**
+| Document | Path |
+|----------|------|
+| Dev/QA Handoff Spec | `docs/design/DEV-QA-SPEC-F0-Learning-Path.md` |
