@@ -1,15 +1,18 @@
 # FRD-20: Order Placement V2
 ## Paave — Vietnam Gen Z Paper-Trading & Social Investing App
 
-**Version:** 1.0
-**Date:** 2026-05-29
+**Version:** 1.1
+**Date:** 2026-06-01
 **Author:** Business Analysis Team
-**Supersedes:** FRD-10 §6 UI/UX Notes (Order Entry Screen, Order Confirmation Screen)
+**Supersedes:** FRD-10 §6 UI/UX Notes (Order Entry Screen, Order Confirmation Screen); FRD-20 v1.0
 **Linked BRD:** BRD.md §BO-04 (Paper Trading Core Loop), §BO-08
 **Linked SRD:** SRD-order-engine-v2.3.md, SRD-20-order-placement-v2.md (to be authored)
-**Status:** Draft — Pending Design Screenshot Confirmation
+**Status:** Draft — Design Confirmed from Screenshots (v1.1 update)
 
-> **Purpose:** This document specifies the Order Placement V2 screen — the full user interface and interaction model for placing paper trades on Paave. FRD-10 specifies the underlying order engine rules (price bands, fill mechanics, state machine, error codes). This document specifies the screen that exposes those rules to the user. A developer reading this document in conjunction with FRD-10 must be able to implement the complete order placement experience. A QA engineer must be able to write complete test cases covering all 6 order types × BUY/SELL from this document alone.
+> **V1 Scope:** LO (Limit Order), Stop-Limit, Stop — virtual paper trading only.
+> **V2 Roadmap:** Adds real trading account linking. Real trading will support: LO, Stop-Limit, Stop, MP (Market Price), ATO, ATC. V2 spec to be created as a separate document when brokerage integration is defined (see FRD-16 and FRD-i-brokerage.md). All MP, ATO, ATC requirements have been removed from this document.
+
+> **Purpose:** This document specifies the Order Placement V2 screen — the full user interface and interaction model for placing paper trades on Paave. FRD-10 specifies the underlying order engine rules (price bands, fill mechanics, state machine, error codes). This document specifies the screen that exposes those rules to the user. A developer reading this document must be able to implement the complete order placement experience. A QA engineer must be able to write complete test cases covering all 3 order types × BUY/SELL from this document alone.
 
 ---
 
@@ -36,125 +39,128 @@
 | Feature | Order Placement V2 Screen |
 | Module Role | Primary trading action surface — the screen where every paper trade begins |
 | Primary Actors | Registered user (LEARN_MODE or FULL_ACCESS) |
-| Goal | Allow the user to specify, review, and confirm a paper trade order for any supported VN stock across all 6 order types (LO, MP, ATO, ATC, STOP_LIMIT, STOP) |
+| Goal | Allow the user to specify, review, and confirm a paper trade order for any supported VN stock across 3 V1 order types (LO, Stop-Limit, Stop) |
 | Entry Trigger | User taps "Đặt lệnh" (Trade) button on the Stock Detail screen |
-| Supported Exchanges | HOSE, HNX, UPCOM (primary, VN real-time); KOSPI, KOSDAQ, GLOBAL (reference-only; order type support limited to LO and MP) |
-| Markets In Scope | All markets supported by FRD-10 |
-| Previous Version | FRD-10 §6 UI/UX Notes — basic entry screen; no STOP_LIMIT, no STOP, no order summary card, no dynamic form switching |
-| Non-negotiable | "Tiền ảo" badge mandatory; no real trades executed; VND formatting `1.250.000 ₫` |
+| Supported Exchanges | HOSE, HNX (primary, VN real-time) |
+| Markets In Scope | HOSE and HNX markets as supported by FRD-10 |
+| Previous Version | FRD-10 §6 UI/UX Notes — basic entry screen; no Stop-Limit, no Stop, no order summary card, no dynamic form switching |
+| Non-negotiable | Paper trading only; no real trades executed; VND formatting `1.250.000 ₫`; "Vốn ảo" context shown throughout |
 
-### 1.1 Order Types in Scope
+### 1.1 Order Types in Scope (V1)
 
-| Order Type | Vietnamese Name | Price Fields | Exchanges | Sessions |
-|------------|-----------------|--------------|-----------|----------|
-| LO | Lệnh Giới Hạn | `price` (limit) | HOSE, HNX, UPCOM, KR, Global | PRE_OPEN, CONT (both halves), LUNCH, AFTER |
-| MP | Lệnh Thị Trường | none (null) | HOSE, HNX | CONT only |
-| ATO | Lệnh ATO | none (null) | HOSE, HNX | PRE_OPEN (09:00–09:15 ICT) |
-| ATC | Lệnh ATC | none (null) | HOSE, HNX | ATC Period (14:30–14:45 ICT) |
-| STOP_LIMIT | Lệnh Dừng-Giới Hạn | `stop_price` + `price` | HOSE, HNX, UPCOM | PRE_OPEN, CONT (both halves), LUNCH, AFTER |
-| STOP | Lệnh Dừng | `stop_price` | HOSE, HNX, UPCOM | PRE_OPEN, CONT (both halves), LUNCH, AFTER |
+| Order Type | Vietnamese Name | Tab Label | Price Fields |
+|------------|-----------------|-----------|--------------|
+| LO | Lệnh Giới Hạn | LO | `price` (limit price) |
+| Stop-Limit | Lệnh Dừng-Giới Hạn | Stop-Limit | `stop_price` (trigger) + `limit_price` |
+| Stop | Lệnh Dừng | Stop | `stop_price` (trigger); `ref_price` is read-only |
 
 ### 1.2 Core Invariants (Never Violated)
 
 | Invariant | Rule |
 |-----------|------|
 | No real trades | No brokerage API call is ever made; all trades are simulated in Paave's virtual portfolio system |
-| "Tiền ảo" badge | Must appear at all times on this screen; non-dismissible; renders as `<VirtualFundsLabel />` |
+| Paper trading context | "Phí & thuế: Miễn phí" label appears on all order summaries; this is virtual — no real fees |
 | VND formatting | `1.250.000 ₫` — period as thousands separator, space before dong symbol, zero decimal places |
 | Board lot | All VN exchange quantities must be positive multiples of 100 |
-| Fee + Tax display | 0.25% fee for all sides; 0.1% sell tax on SELL orders; both shown on the summary card before confirm |
-| STOP/STOP_LIMIT educational note | "Paave mô phỏng lệnh dừng — không có trên thị trường thực Việt Nam" shown whenever STOP or STOP_LIMIT is selected |
+| Stop order educational note | "Paave mô phỏng lệnh dừng — không có trên thị trường thực Việt Nam" shown whenever Stop or Stop-Limit is selected |
+| Pending orders cap | Maximum 50 pending orders per user; enforced client-side and server-side |
 
 ---
 
 ## 2. User Flow
 
-The complete user flow from discovery to post-trade state:
+The complete user flow from entry to post-trade state, reflecting the full-screen layout confirmed by screenshots:
 
 ```
 Stock Detail Screen
        │
-       │  User taps "Đặt lệnh" button
+       │  User taps "Đặt lệnh" (Trade) button
        ▼
-[FR-OP-01] Screen Opens
-  Order Placement Sheet (bottom sheet on mobile / full-screen modal)
-  State: FORM
-  - Pre-filled: symbol_code, exchange, last_price (live)
-  - Default side: BUY
-  - Default order type: LO (unless session context favors another — see FR-OP-05)
+[FR-OP-01] Screen Opens — Full-screen layout, top to bottom:
+  ┌─────────────────────────────────────┐
+  │ Error/warning banner (if blocked)   │  ← sticky, red/orange, shown only when order blocked
+  │ Price header (sticky)               │  ← live indicator · timestamp · exchange + ceiling/ref/floor + price
+  │ Orderbook / Chart toggle tabs       │  ← "≡ Sổ lệnh" | "∿ Biểu đồ"
+  │ Current position card (if holding)  │  ← shown only when user holds this stock
+  │ CTA: ↑ MUA | ↓ BÁN                 │  ← side selection, full-width row
+  │ LOẠI LỆNH selector: LO|Stop-Limit|Stop  │
+  │ Dynamic form fields                 │  ← change based on order type
+  │ Order summary card                  │  ← always visible below form
+  │ [Primary CTA] Đặt lệnh / Kiểm tra lại  │
+  ├─────────────────────────────────────┤
+  │ Panel: Sổ lệnh chờ | Danh mục | Lịch sử  │  ← fixed panel below CTA
+  └─────────────────────────────────────┘
        │
-       │  User selects BUY or SELL (side toggle)
-       │  User selects order type tab
-       │  User fills form fields (price, stop_price, quantity)
+       │  User selects MUA or BÁN (side)
+       │  User selects order type tab (LO / Stop-Limit / Stop)
+       │  User fills form fields
        │  [FR-OP-08] Summary card updates live as user types
        ▼
-[FR-OP-03] Form Validation (client-side, real-time)
+[FR-OP-11] Form Validation (client-side, real-time)
   - Each field validated on blur and on change
-  - Inline error messages appear below each invalid field
-  - Confirm button remains disabled while any field has an error
+  - Inline error states: red border + red number on invalid field
+  - Primary CTA shows "Kiểm tra lại thông tin" (gray, disabled) while any field invalid
+  - Primary CTA shows "Đặt lệnh" (yellow-green, enabled) when all fields valid
        │
        │  All fields pass client validation
-       │  User taps "Xem lại lệnh" (Review Order)
+       │  User taps "Đặt lệnh"
        ▼
-[FR-OP-09] Confirmation Modal
-  State: CONFIRMING
-  - Full order summary displayed
-  - "Tiền ảo" badge visible
-  - STOP/STOP_LIMIT: educational note displayed
-  - Two CTAs: "Xác nhận đặt lệnh" (primary) | "Sửa lệnh" (secondary — returns to FORM)
+[FR-OP-12] Confirmation Sheet (bottom sheet slides up over blurred background)
+  - Drag handle at top
+  - Title: "Xác nhận mua [TICKER]" (or "bán")
+  - Subtitle: "[type] · POST /orders · vốn ảo, không rủi ro thật"
+  - Full order summary table
+  - Two CTAs full-width: "Huỷ" (dark/gray) | "✦ Xác nhận mua/bán" (yellow-green)
        │
-       │  User taps "Xác nhận đặt lệnh"
+       │  User taps "✦ Xác nhận mua/bán"
        ▼
-[FR-OP-10] Submission
-  State: PROCESSING
-  - Loading spinner; button disabled
+[FR-OP-13] Submission
   - POST /api/v1/paper-trading/orders with idempotency_key
        │
-       ├─── [HTTP 201] Order accepted
-       │           ▼
-       │    State: SUCCESS
-       │    [FR-OP-11] Success state shown
-       │    - Order ID, type, side, quantity, price/stop_price displayed
-       │    - "Xem danh mục" CTA → navigates to Portfolio
-       │    - "Đặt lệnh mới" CTA → resets form (returns to FORM state)
-       │    - Sheet auto-dismisses after 3 seconds if user takes no action
-       │
-       └─── [HTTP 4xx / 5xx] Submission rejected
-                   ▼
-            State: ERROR
-            [FR-OP-12] Error state shown
-            - Error message (exact string from error code table — see §9)
-            - "Thử lại" CTA → returns to FORM with current values preserved
-            - "Huỷ" CTA → dismisses sheet entirely
+       ├─── [HTTP 201] Order accepted → SUCCESS state
+       └─── [HTTP 4xx / 5xx] Submission rejected → ERROR state (back to form with banner)
 ```
 
 ---
 
 ## 3. UX Screen States
 
-The Order Placement Sheet cycles through the following states. Each state is mutually exclusive — only one is active at a time.
+### 3.1 Full-Screen Layout States
 
-| State ID | State Name | Description | Entry Condition | Exit Condition |
-|----------|-----------|-------------|-----------------|----------------|
-| S-OP-01 | CLOSED | Sheet not rendered in DOM/view tree | App default | User taps "Đặt lệnh" on Stock Detail |
-| S-OP-02 | FORM | Form is visible and editable; user fills fields | Sheet opens; or user taps "Sửa lệnh" from CONFIRMING; or user taps "Thử lại" from ERROR | User taps "Xem lại lệnh" with all fields valid |
-| S-OP-03 | VALIDATING | Brief transitional state: client-side validation runs synchronously | User taps "Xem lại lệnh" | Validation passes → CONFIRMING; validation fails → FORM (with inline errors) |
-| S-OP-04 | CONFIRMING | Full order summary displayed; waiting for user confirmation | VALIDATING passes | User taps "Xác nhận đặt lệnh" → PROCESSING; user taps "Sửa lệnh" → FORM |
-| S-OP-05 | PROCESSING | API call in flight; UI locked | User taps "Xác nhận đặt lệnh" | HTTP 201 → SUCCESS; HTTP 4xx/5xx → ERROR |
-| S-OP-06 | SUCCESS | Order accepted confirmation displayed | HTTP 201 received | User taps "Xem danh mục" → Portfolio; user taps "Đặt lệnh mới" → FORM; 3s auto-dismiss → CLOSED |
-| S-OP-07 | ERROR | Rejection or network error displayed | HTTP 4xx/5xx received, or network timeout | User taps "Thử lại" → FORM (values preserved); user taps "Huỷ" → CLOSED |
+The Order Placement screen is a full-screen view (not a bottom sheet). The primary CTA and its state drive the submission flow.
 
-### 3.1 Sheet Animation Specification
+| State ID | State Name | Primary CTA Label | Primary CTA Style | Description |
+|----------|-----------|-------------------|-------------------|-------------|
+| S-OP-01 | FORM_INVALID | "Kiểm tra lại thông tin" | Gray, disabled | Form has one or more invalid or empty fields |
+| S-OP-02 | FORM_VALID | "Đặt lệnh" | Yellow-green, enabled | All fields valid; user may proceed |
+| S-OP-03 | CONFIRMING | Sheet slides up | Bottom sheet over blurred background | Confirmation sheet visible; form behind is blurred |
+| S-OP-04 | PROCESSING | Sheet CTA shows spinner | Yellow-green with loading indicator | API call in flight |
+| S-OP-05 | SUCCESS | Toast or inline | — | HTTP 201 received; order placed |
+| S-OP-06 | ERROR | Banner at top | Red/orange banner | HTTP 4xx/5xx or network error |
+
+### 3.2 Error/Warning Banner
+
+The sticky banner at the top of the screen (above the price header) is shown only when order placement is entirely blocked. It is not shown for field-level validation errors.
+
+| Condition | Banner Title | Banner Message |
+|-----------|-------------|----------------|
+| Market closed / suspended | "KHÔNG THỂ ĐẶT LỆNH" | "HOSE tạm ngưng giao dịch — lỗi hệ thống. Thử lại sau ít phút." |
+| Symbol suspended | "KHÔNG THỂ ĐẶT LỆNH" | "Giao dịch [TICKER] đang tạm dừng theo quyết định của sàn." |
+| Delisted | "KHÔNG THỂ ĐẶT LỆNH" | "Cổ phiếu này đã hủy niêm yết trên [EXCHANGE] và không thể giao dịch." |
+| Market holiday | "KHÔNG THỂ ĐẶT LỆNH" | "Hôm nay là ngày nghỉ thị trường. Thị trường sẽ mở cửa vào ngày giao dịch tiếp theo." |
+| Market closed (weekend/after hours) | "KHÔNG THỂ ĐẶT LỆNH" | "Thị trường đã đóng cửa lúc 14:45. Hãy thử lại vào ngày giao dịch tiếp theo." |
+
+Banner style: red or orange background, white or red text, warning icon, uppercase "KHÔNG THỂ ĐẶT LỆNH" title label.
+
+### 3.3 Confirmation Sheet Animation
 
 | Transition | Animation |
 |-----------|-----------|
-| CLOSED → FORM | Sheet slides up from bottom edge; duration 300ms; easing: ease-out cubic-bezier(0.0, 0.0, 0.2, 1.0) |
-| FORM → CONFIRMING | Sheet content crossfades; form replaced by confirmation summary; duration 200ms |
-| CONFIRMING → FORM (back) | Reverse crossfade; duration 200ms; form fields retain their values |
-| Any state → CLOSED | Sheet slides down to bottom edge; duration 250ms; easing: ease-in cubic-bezier(0.4, 0.0, 1.0, 1.0) |
-| PROCESSING | Confirm button shows loading spinner; all inputs and CTAs disabled |
-| SUCCESS | Success illustration animates in (scale from 0.8 to 1.0); duration 300ms |
-| ERROR | Error icon and message fade in; duration 200ms |
+| FORM_VALID → CONFIRMING | Bottom sheet slides up from screen bottom over blurred background; duration 300ms; ease-out |
+| CONFIRMING → FORM (Huỷ) | Sheet slides back down; duration 250ms; background blur lifts |
+| CONFIRMING → PROCESSING | Confirm CTA button shows loading spinner; all sheet elements disabled |
+| PROCESSING → SUCCESS | Sheet dismisses; success feedback (toast or inline) |
+| PROCESSING → ERROR | Sheet dismisses; error banner appears at top of screen |
 
 ---
 
@@ -162,617 +168,612 @@ The Order Placement Sheet cycles through the following states. Each state is mut
 
 ---
 
-### FR-OP-01 — Sheet Entry and Pre-Fill
+### FR-OP-01 — Price Header (Sticky)
 
 **Priority:** P0
 
-**Actor:** Authenticated user (LEARN_MODE or FULL_ACCESS)
+**Actor:** Authenticated user
 
 **Description:**
-When the user taps "Đặt lệnh" on the Stock Detail screen, the Order Placement Sheet opens in FORM state. The sheet is pre-filled with the stock's context. The last price displayed in the sheet header is fetched from the same live price feed as the Stock Detail screen and updates every 15 seconds while the sheet is open.
+The price header is sticky at the top of the order placement screen (below the error banner if shown). It displays live market data for the stock being traded and updates every 15 seconds while the screen is open.
 
-**Pre-fill behaviour:**
+**Header layout (left to right, top to bottom):**
 
-| Field | Pre-filled Value | Source |
-|-------|-----------------|--------|
-| `symbol_code` | Ticker symbol of the stock | Stock Detail screen context |
-| `exchange` | Exchange of the stock | Stock Detail screen context |
-| Last price display | `last_price` | Live price feed; updates every 15 seconds |
-| Side toggle | BUY (default) | Hardcoded default |
-| Order type | LO (default) unless overridden by session context (see FR-OP-05) | Session-aware default |
-| All price/quantity fields | Empty (user must fill) | — |
+| Element | Content | Style |
+|---------|---------|-------|
+| Live indicator | "● LIVE · [HH:MM:SS] · [EXCHANGE]" | Green dot; small secondary text |
+| Price band row | "Trần [ceiling_price]  TC [ref_price]  Sàn [floor_price]" | Three labeled values; ceiling = purple/orange, TC = gray, floor = teal/blue |
+| Large price | "[last_price]" | H1, colored red (down) or green (up) relative to ref_price |
+| Change row | "[change_vnd] · [change_pct]%" | Red for negative, green for positive; e.g., "-1.600 · -3,74%" |
 
 **Preconditions:**
-- User is authenticated with ACTIVE account
-- User has an ACTIVE virtual portfolio
-- Stock Detail screen has a valid `symbol_code` and `exchange`
+- User has navigated to Order Placement for a valid ticker on HOSE or HNX
+- Live price feed is available
 
 **Postconditions:**
-- Sheet is visible in FORM state
-- Header shows stock ticker, exchange chip, and live last price
-- "Tiền ảo" badge is visible in header
-- Side toggle shows BUY (green) as selected
-- Default order type tab is selected (LO unless session override applies)
-- Available cash (BUY side) or available holdings count (SELL side) is displayed
+- Header shows current ticker data
+- Price updates within 15 seconds of market data change
 
 **Acceptance Criteria:**
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-01-01 | User is on Stock Detail for VIC (HOSE) | User taps "Đặt lệnh" | Sheet opens; header shows "VIC · HOSE · [last_price] ₫"; BUY selected; LO tab selected; "Tiền ảo" badge visible |
-| AC-OP-01-02 | Current time is 09:05 ICT (HOSE PRE_OPEN session) | User opens sheet for VIC | Default order type tab is ATO (not LO); LO and MP tabs are present but not selected by default |
-| AC-OP-01-03 | Current time is 14:35 ICT (HOSE ATC session) | User opens sheet for VIC | Default order type tab is ATC; STOP, STOP_LIMIT, LO, MP tabs present but not default |
-| AC-OP-01-04 | User switches from Stock Detail to Order Placement then back to Stock Detail | Price changes by 500 VND during that time | Sheet header price updates to new value within 15 seconds of change |
+| AC-OP-01-01 | User opens Order Placement for VIC (HOSE), last_price = 41,200, ref = 42,800, ceiling = 45,800, floor = 39,800, change = -1,600 (-3.74%) | Screen loads | Header shows "● LIVE · [time] · HOSE"; "Trần 45.800  TC 42.800  Sàn 39.800"; large price "41.200" in red; "-1.600 · -3,74%" in red below |
+| AC-OP-01-02 | User has screen open for 15 seconds; price changes to 41,500 | Price feed delivers update | Large price updates to "41.500" within 15 seconds; brief flash animation (200ms) plays on the price value |
+| AC-OP-01-03 | Stock has no change from ref_price (change = 0) | User views header | Large price and change row display in neutral/gray color; change row shows "0 · 0,00%" |
 
 ---
 
-### FR-OP-02 — Side Toggle (BUY / SELL)
-
-**Priority:** P0
-
-**Actor:** Authenticated user
-
-**Description:**
-A two-state toggle at the top of the form allows the user to switch between BUY (Mua) and SELL (Bán). The toggle is always visible and always enabled. Switching side immediately updates: the available balance/holdings display, the order summary card values, and any side-specific validation messages. The toggle has distinct visual treatment: BUY = green background; SELL = red background.
-
-**BUY side:**
-- Available balance line reads: "Khả dụng: [available_cash] ₫" where `available_cash = total_cash − SUM(open_buy_limit_reserves)`
-- Order summary shows: Gross value, Fee (0.25%), Total estimated cost
-
-**SELL side:**
-- Available holdings line reads: "Đang nắm giữ: [available_quantity] cổ phiếu [TICKER]" where `available_quantity = holdings.quantity − soft_locked_quantity`
-- Order summary shows: Gross value, Fee (0.25%), Sell tax (0.1%), Total estimated proceeds
-
-**Acceptance Criteria:**
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-02-01 | User has 50,000,000 ₫ available cash; 5,000,000 ₫ reserved for open BUY limits | Opens sheet on BUY side | Shows "Khả dụng: 45.000.000 ₫" |
-| AC-OP-02-02 | User holds 500 VIC shares; 100 are soft-locked by open SELL limit | Opens sheet on SELL side for VIC | Shows "Đang nắm giữ: 400 cổ phiếu VIC" (unlocked quantity only) |
-| AC-OP-02-03 | User is on BUY side | Taps SELL toggle | Visual switches to red; available balance area switches to holdings display; summary card recalculates; all form fields reset to empty |
-| AC-OP-02-04 | User has 0 shares of VIC | Switches to SELL side | Shows "Đang nắm giữ: 0 cổ phiếu VIC"; quantity field accepts input but validation will fail on review |
-
----
-
-### FR-OP-03 — Order Type Selector
-
-**Priority:** P0
-
-**Actor:** Authenticated user
-
-**Description:**
-A horizontal tab row (or segmented control) displays the available order types. Only order types valid for the current exchange AND current market session are enabled. Order types unavailable for the session are shown as disabled tabs (greyed out, not hidden) with a tooltip explaining why they are unavailable.
-
-**Order type tab availability rules:**
-
-| Order Type | HOSE/HNX PRE_OPEN | HOSE/HNX CONT | HOSE/HNX LUNCH | HOSE/HNX ATC | HOSE/HNX AFTER | UPCOM | KR/Global |
-|-----------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| LO | enabled | enabled | enabled | disabled¹ | enabled | enabled | enabled |
-| MP | disabled² | enabled | disabled³ | disabled¹ | disabled | disabled⁴ | enabled |
-| ATO | enabled | disabled⁵ | disabled⁵ | disabled⁵ | disabled⁵ | disabled⁵ | disabled⁵ |
-| ATC | disabled⁵ | disabled⁵ | disabled⁵ | enabled | disabled⁵ | disabled⁵ | disabled⁵ |
-| STOP_LIMIT | enabled | enabled | enabled | disabled¹ | enabled | enabled | disabled⁵ |
-| STOP | enabled | enabled | enabled | disabled¹ | enabled | enabled | disabled⁵ |
-
-Footnotes:
-1. New orders not accepted during ATC Period (14:30–14:45); only ATC orders accepted
-2. MP not accepted during PRE_OPEN; ATO is the correct type
-3. MP not accepted during LUNCH break; orders accepted at CONT resume
-4. MP not supported on UPCOM (E-PT-121)
-5. Not applicable to this exchange/session
-
-**Tooltip text for disabled tabs:**
-
-| Disabled Tab | Session | Tooltip |
-|-------------|---------|---------|
-| LO, MP, STOP, STOP_LIMIT | ATC Period | "Chỉ nhận lệnh ATC trong phiên đóng cửa (14:30–14:45)" |
-| MP, STOP, STOP_LIMIT, ATO, ATC | PRE_OPEN | "Lệnh MP không được chấp nhận trong phiên tiền mở cửa. Dùng lệnh ATO." |
-| ATO | Outside PRE_OPEN | "Lệnh ATO chỉ được đặt trong phiên 09:00–09:15" |
-| ATC | Outside ATC Period | "Lệnh ATC chỉ được đặt trong phiên 14:30–14:45" |
-| STOP, STOP_LIMIT | KR/Global | "Lệnh dừng chỉ hỗ trợ trên các sàn VN (HOSE, HNX, UPCOM)" |
-| MP | UPCOM | "Lệnh thị trường không có trên UPCOM. Dùng lệnh LO." |
-
-**Session displayed to user:**
-A small session indicator line below the order type tabs shows the current session and time remaining (e.g., "Phiên liên tục · Còn 2 giờ 15 phút" or "Phiên tiền mở cửa · Còn 8 phút").
-
-**Acceptance Criteria:**
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-03-01 | HOSE PRE_OPEN session (09:05 ICT) | User opens sheet for HPG | ATO tab enabled and selected by default; MP, LO, STOP, STOP_LIMIT tabs present but disabled; ATC tab disabled |
-| AC-OP-03-02 | HOSE CONT session (10:30 ICT) | User views order type tabs | LO, MP, STOP, STOP_LIMIT tabs enabled; ATO, ATC tabs disabled with tooltips |
-| AC-OP-03-03 | HOSE ATC Period (14:35 ICT) | User views order type tabs | Only ATC tab enabled; all other tabs disabled with tooltip "Chỉ nhận lệnh ATC trong phiên đóng cửa (14:30–14:45)" |
-| AC-OP-03-04 | UPCOM stock in CONT session | User views order type tabs | LO tab enabled; MP tab disabled with tooltip "Lệnh thị trường không có trên UPCOM. Dùng lệnh LO."; ATO, ATC tabs disabled |
-| AC-OP-03-05 | KR stock | User views order type tabs | LO and MP tabs enabled; ATO, ATC, STOP, STOP_LIMIT tabs disabled |
-| AC-OP-03-06 | Any session | User taps a disabled tab | Tooltip appears immediately (200ms delay); tab does not become selected |
-
----
-
-### FR-OP-04 — Dynamic Form: LO (Limit Order)
-
-**Priority:** P0
-
-**Actor:** Authenticated user
-
-**Description:**
-When LO is selected, the form renders two input fields: Price (VND) and Quantity. No other fields are shown.
-
-**Form fields:**
-
-| Field | Label (VI) | Type | Constraints |
-|-------|-----------|------|-------------|
-| `price` | "Giá lệnh (VND)" | Numeric | Must be between `floor_price` and `ceiling_price` inclusive; must conform to tick size; for BUY: must be ≤ `last_price`; for SELL: must be ≥ `last_price` |
-| `quantity` | "Khối lượng (cổ phiếu)" | Integer | Must be ≥ 100; must be a multiple of 100 for VN exchanges; must be ≤ 1,000,000 |
-
-**Price input helpers shown below the price field:**
-- "Trần: [ceiling_price] ₫ · Sàn: [floor_price] ₫" — updates whenever reference data updates
-- Tick size hint: "Nhập giá theo bước [tick_size] ₫"
-
-**Quantity input helpers shown below the quantity field:**
-- "Phải là bội số của 100" (VN exchanges)
-- Quick-select chips: [100] [200] [500] [1.000]
-
-**Acceptance Criteria:**
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-04-01 | LO selected, BUY side, VIC last_price = 85,000 ₫ | User enters price = 87,000 ₫ | Inline error: "Giá mua lệnh giới hạn phải ≤ giá hiện tại (85.000 ₫). Dùng lệnh MP hoặc nhập giá ≤ 85.000 ₫." |
-| AC-OP-04-02 | LO selected, SELL side, VIC last_price = 85,000 ₫ | User enters price = 83,000 ₫ | Inline error: "Giá bán lệnh giới hạn phải ≥ giá hiện tại (85.000 ₫). Dùng lệnh MP hoặc nhập giá ≥ 85.000 ₫." |
-| AC-OP-04-03 | LO selected, HOSE, ceiling = 90,950 ₫ | User enters price = 91,000 ₫ | Inline error: "Giá vượt mức trần hôm nay (90.950 ₫) cho VIC trên HOSE." |
-| AC-OP-04-04 | LO selected, quantity field | User enters 250 | Inline error: "Khối lượng phải là bội số của 100. Gợi ý: 200 hoặc 300 cổ phiếu." |
-| AC-OP-04-05 | LO selected | User enters quantity = 50 | Inline error: "Khối lượng tối thiểu là 100 cổ phiếu." |
-| AC-OP-04-06 | LO, BUY, price = 80,000 ₫, quantity = 100 | User views form | Summary card shows: Gross = 8.000.000 ₫; Fee (0,25%) = 20.000 ₫; Tổng chi = 8.020.000 ₫ |
-
----
-
-### FR-OP-05 — Dynamic Form: MP (Market Order)
-
-**Priority:** P0
-
-**Actor:** Authenticated user
-
-**Description:**
-When MP is selected, the form renders only the Quantity field. No price field is shown. A persistent warning banner is shown below the order type selector for the duration that MP is selected.
-
-**Warning banner (non-dismissible, shown while MP is active):**
-- "Lệnh thị trường có thể khớp ở giá không mong đợi"
-
-**Form fields:**
-
-| Field | Label (VI) | Type | Constraints |
-|-------|-----------|------|-------------|
-| `quantity` | "Khối lượng (cổ phiếu)" | Integer | Must be ≥ 100; must be multiple of 100 for VN exchanges; must be ≤ 1,000,000 |
-
-**Estimated price display:**
-Below the quantity field, the system shows: "Giá ước tính: ~[last_price] ₫ (giá thực tế có thể khác)" — this is purely informational and updates with the live feed.
-
-**Acceptance Criteria:**
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-05-01 | MP selected | User views form | Warning banner "Lệnh thị trường có thể khớp ở giá không mong đợi" is visible; no price input field is shown |
-| AC-OP-05-02 | MP selected, HOSE CONT session | User enters quantity = 100 | Form is valid; "Xem lại lệnh" button becomes enabled |
-| AC-OP-05-03 | MP selected, HOSE PRE_OPEN session | MP tab is disabled | User cannot select MP; ATO is the only non-disabled option (AC-OP-03-01 applies) |
-| AC-OP-05-04 | MP, SELL, quantity = 100 | User views summary | Summary shows: Gross = ~[last_price × 100] ₫ (estimated); Fee (0,25%); Thuế bán (0,1%); Tổng thu ước tính |
-
----
-
-### FR-OP-06 — Dynamic Form: ATO (At-The-Open)
-
-**Priority:** P0
-
-**Actor:** Authenticated user
-
-**Description:**
-When ATO is selected, the form renders only the Quantity field. No price field is shown. An informational note explains the ATO mechanism. ATO is only selectable during PRE_OPEN session (09:00–09:15 ICT) on HOSE and HNX.
-
-**Informational note (non-dismissible, shown while ATO is active):**
-- "Lệnh ATO khớp theo giá mở cửa được tính toán vào 09:15. Giá khớp do sàn xác định."
-
-**Form fields:**
-
-| Field | Label (VI) | Type | Constraints |
-|-------|-----------|------|-------------|
-| `quantity` | "Khối lượng (cổ phiếu)" | Integer | Must be ≥ 100; must be multiple of 100; must be ≤ 1,000,000 |
-
-**Acceptance Criteria:**
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-06-01 | ATO selected | User views form | No price input; informational note "Lệnh ATO khớp theo giá mở cửa được tính toán vào 09:15. Giá khớp do sàn xác định." visible |
-| AC-OP-06-02 | ATO, BUY, quantity = 200 | User views summary | Summary shows: Quantity = 200; Price = "Theo giá mở cửa" (not a number); Fee displayed as "0,25% × giá khớp"; "Tiền ảo" badge visible |
-| AC-OP-06-03 | ATO, SELL | User views form | SELL side shows available holdings; same quantity-only form |
-
----
-
-### FR-OP-07 — Dynamic Form: ATC (At-The-Close)
-
-**Priority:** P0
-
-**Actor:** Authenticated user
-
-**Description:**
-When ATC is selected, the form renders only the Quantity field. Mirrors ATO behaviour but for closing auction. ATC is only selectable during the ATC Period (14:30–14:45 ICT) on HOSE and HNX.
-
-**Informational note (non-dismissible, shown while ATC is active):**
-- "Lệnh ATC khớp theo giá đóng cửa được tính toán vào 14:45. Giá khớp do sàn xác định."
-
-**Form fields:**
-
-| Field | Label (VI) | Type | Constraints |
-|-------|-----------|------|-------------|
-| `quantity` | "Khối lượng (cổ phiếu)" | Integer | Must be ≥ 100; must be multiple of 100; must be ≤ 1,000,000 |
-
-**Acceptance Criteria:**
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-07-01 | ATC selected | User views form | No price input; informational note "Lệnh ATC khớp theo giá đóng cửa được tính toán vào 14:45. Giá khớp do sàn xác định." visible |
-| AC-OP-07-02 | ATC, SELL, quantity = 300 | User views summary | Quantity = 300; Price = "Theo giá đóng cửa"; fee shown as percentage |
-
----
-
-### FR-OP-08 — Dynamic Form: STOP_LIMIT (Stop-Limit Order)
+### FR-OP-02 — Orderbook / Chart Tab Toggle
 
 **Priority:** P1
 
 **Actor:** Authenticated user
 
 **Description:**
-When STOP_LIMIT is selected, the form renders three fields: Stop Price, Limit Price, and Quantity. A mandatory educational note is displayed. STOP_LIMIT is a Paave simulation only — it does not exist on VN exchanges in real trading.
+Below the sticky price header, two tabs allow the user to toggle between the orderbook view and an intraday price chart.
 
-**Educational note (non-dismissible, shown while STOP_LIMIT is active):**
-- "Paave mô phỏng lệnh dừng — không có trên thị trường thực Việt Nam"
+**Tab labels:**
+- "≡ Sổ lệnh" — orderbook view (default)
+- "∿ Biểu đồ" — intraday price chart
 
-**Trigger logic explanation shown in a collapsible tooltip (tapping the "?" icon next to "Lệnh Dừng-Giới Hạn"):**
-- BUY: "Khi giá chạm [stop_price], Paave tự động đặt lệnh mua LO tại [price]."
-- SELL: "Khi giá giảm xuống [stop_price], Paave tự động đặt lệnh bán LO tại [price]."
+**Sổ lệnh view layout:**
 
-**Form fields:**
-
-| Field | Label (VI) | Type | Constraints |
-|-------|-----------|------|-------------|
-| `stop_price` | "Giá dừng (VND)" | Numeric | BUY: must be > `last_price` (breakout buy trigger); SELL: must be < `last_price` (loss protection trigger); must be within exchange price band; must conform to tick size |
-| `price` | "Giá giới hạn (VND)" | Numeric | Standard LO price validation applies; must be between floor_price and ceiling_price; must conform to tick size |
-| `quantity` | "Khối lượng (cổ phiếu)" | Integer | Must be ≥ 100; multiple of 100 for VN; ≤ 1,000,000 |
-
-**Stop price direction validation:**
-
-| Side | Valid stop_price range | Error when violated |
-|------|----------------------|---------------------|
-| BUY STOP_LIMIT | `stop_price > last_price` | "Giá dừng lệnh mua phải cao hơn giá hiện tại ([last_price] ₫) để kích hoạt đột phá giá." |
-| SELL STOP_LIMIT | `stop_price < last_price` | "Giá dừng lệnh bán phải thấp hơn giá hiện tại ([last_price] ₫) để bảo vệ khỏi thua lỗ." |
+| Row | Content |
+|-----|---------|
+| Buy/sell pressure bar | "Mua [N]%" (green bar left) \| "Bán [M]%" (red bar right); N + M = 100 |
+| Orderbook header | MUA-KL \| GIÁ MUA \| GIÁ KHỚP \| GIÁ BÁN \| BÁN-KL (5 columns) |
+| 3 bid/ask rows | Top 3 price levels on each side; buy side left (green), sell side right (red) |
+| Last row | Mở [open_price] · Cao [high_price] · Thấp [low_price] · KL [total_volume] |
 
 **Acceptance Criteria:**
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-08-01 | STOP_LIMIT selected | User views form | Three fields shown: Stop Price, Limit Price, Quantity; educational note "Paave mô phỏng lệnh dừng — không có trên thị trường thực Việt Nam" visible |
-| AC-OP-08-02 | STOP_LIMIT, BUY, last_price = 50,000 ₫ | User enters stop_price = 48,000 ₫ | Inline error: "Giá dừng lệnh mua phải cao hơn giá hiện tại (50.000 ₫) để kích hoạt đột phá giá." |
-| AC-OP-08-03 | STOP_LIMIT, SELL, last_price = 50,000 ₫ | User enters stop_price = 52,000 ₫ | Inline error: "Giá dừng lệnh bán phải thấp hơn giá hiện tại (50.000 ₫) để bảo vệ khỏi thua lỗ." |
-| AC-OP-08-04 | STOP_LIMIT, BUY, stop_price = 55,000, price = 54,000, quantity = 100 | User reviews summary | Summary shows stop_price, limit price, quantity; educational note present; trigger logic description shown |
-| AC-OP-08-05 | STOP_LIMIT selected on KR stock | User views tabs | STOP_LIMIT tab is disabled; tooltip "Lệnh dừng chỉ hỗ trợ trên các sàn VN (HOSE, HNX, UPCOM)" shown |
+| AC-OP-02-01 | User is on Order Placement screen | Screen loads | "≡ Sổ lệnh" tab is selected by default; orderbook view is shown |
+| AC-OP-02-02 | "≡ Sổ lệnh" is active | User taps "∿ Biểu đồ" | Tab switches; intraday chart replaces orderbook view |
+| AC-OP-02-03 | "∿ Biểu đồ" is active | User taps "≡ Sổ lệnh" | Orderbook view restored with current data |
+| AC-OP-02-04 | Orderbook is displayed | User reads the table | 5 columns are present: MUA-KL, GIÁ MUA, GIÁ KHỚP, GIÁ BÁN, BÁN-KL; 3 bid/ask rows shown |
+| AC-OP-02-05 | Orderbook total buy = 53,000 shares, total ask = 47,000 shares | User views pressure bar | "Mua 53%" green bar \| "Bán 47%" red bar shown |
 
 ---
 
-### FR-OP-09 — Dynamic Form: STOP (Stop Market Order)
+### FR-OP-03 — Current Position Card
+
+**Priority:** P1
+
+**Actor:** Authenticated user who holds the stock
+
+**Description:**
+A card displaying the user's current holding for the stock on this screen. Shown only when the user holds at least 1 share. Hidden when holdings = 0.
+
+**Card layout:**
+
+| Element | Content |
+|---------|---------|
+| Label | "● VỊ THẾ HIỆN TẠI" (small, left) |
+| Quantity | "[N] CP" (right) |
+| Average cost | "Giá vốn ₫[avg_cost_per_share]" (left) |
+| Unrealized P&L | "+₫[unrealized_pnl] · +[pnl_pct]%" or "-₫[unrealized_loss] · -[loss_pct]%" (right; green for profit, red for loss) |
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-OP-03-01 | User holds 200 shares of VIC, avg_cost = 40,500 ₫/share, current_price = 41,200, unrealized PnL = +140,000 ₫ (+1.73%) | User opens Order Placement for VIC | Position card is visible; shows "● VỊ THẾ HIỆN TẠI"; "200 CP"; "Giá vốn ₫40.500"; "+₫140.000 · +1,73%" in green |
+| AC-OP-03-02 | User holds 0 shares of VIC | User opens Order Placement for VIC | Position card is not shown |
+| AC-OP-03-03 | User holds VIC; unrealized PnL is negative (-50,000 ₫, -0.6%) | User views position card | Shows "-₫50.000 · -0,60%" in red |
+
+---
+
+### FR-OP-04 — Side Selection: MUA / BÁN
+
+**Priority:** P0
+
+**Actor:** Authenticated user
+
+**Description:**
+A full-width two-button row below the position card (or below the orderbook/chart if no position). Left button: "↑ MUA"; right button: "↓ BÁN". Tapping a button selects that side. The active side is highlighted. Switching side resets the form fields (quantity and price inputs) but preserves the selected order type tab.
+
+**Button styles:**
+
+| Button | Active State | Inactive State |
+|--------|-------------|----------------|
+| "↑ MUA" | Yellow-green background, bold white text | Dark/muted background |
+| "↓ BÁN" | Dark/gray background, bold white text | Dark/muted background |
+
+Default selection: MUA (BUY).
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-OP-04-01 | Screen loads | Default state | "↑ MUA" button is highlighted (yellow-green); "↓ BÁN" is in dark state |
+| AC-OP-04-02 | User is on MUA side with LO selected, quantity = 200, price = 41,000 | User taps "↓ BÁN" | Side switches to BÁN; form fields (quantity, price) reset to empty; LO tab remains selected |
+| AC-OP-04-03 | BÁN side selected | User views order summary card | Summary card shows sell-side context: "VỐN ẢO SAU LỆNH" based on proceeds, not cost |
+
+---
+
+### FR-OP-05 — Order Type Selector (LOẠI LỆNH)
+
+**Priority:** P0
+
+**Actor:** Authenticated user
+
+**Description:**
+Below the MUA/BÁN row, a labeled section "LOẠI LỆNH" (left label) with an "ⓘ Giải thích" pill button (right) allows the user to select an order type. The selector is a 3-tab segmented control. The active tab has a yellow background. Tapping "ⓘ Giải thích" opens an explanation sheet for the selected order type.
+
+**V1 tabs (always all 3 shown, all enabled):**
+
+| Tab | Label | Order Type |
+|-----|-------|------------|
+| 1 | LO | Limit Order |
+| 2 | Stop-Limit | Stop-Limit Order |
+| 3 | Stop | Stop Market Order |
+
+All 3 tabs are enabled at all times in V1. There is no session-based tab disabling in V1. Switching tabs changes the dynamic form below; it does not reset the quantity field.
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-OP-05-01 | Screen loads | Default state | LO tab is selected (yellow active state) |
+| AC-OP-05-02 | LO tab is active | User taps "Stop-Limit" | Stop-Limit tab becomes active (yellow); LO tab returns to inactive; form below updates to Stop-Limit fields |
+| AC-OP-05-03 | Stop-Limit tab is active | User taps "Stop" | Stop tab becomes active; form switches to Stop fields; quantity field value is preserved |
+| AC-OP-05-04 | Any tab is active | User taps "ⓘ Giải thích" | An explanation sheet or modal opens with description of the selected order type; does not switch tab |
+
+---
+
+### FR-OP-06 — Dynamic Form: LO (Limit Order)
+
+**Priority:** P0
+
+**Actor:** Authenticated user
+
+**Description:**
+When LO tab is selected, the form shows two input fields: SỐ LƯỢNG (quantity) and GIÁ ĐẶT (limit price). A percentage quick-select row appears below GIÁ ĐẶT for fast quantity selection based on available capital.
+
+**Field: SỐ LƯỢNG**
+
+| Element | Content |
+|---------|---------|
+| Label | "SỐ LƯỢNG" (left) |
+| Helper | "Mua tối đa [N] CP" (right, for MUA side) or "Bán tối đa [N] CP" (right, for BÁN side); [N] = available quantity at current price |
+| Input | [-] [quantity value] CP [+]; stepper buttons on each side; unit "CP" shown inside field |
+| Invalid state | Red border around field; quantity number shown in red |
+
+**Field: GIÁ ĐẶT**
+
+| Element | Content |
+|---------|---------|
+| Label | "GIÁ ĐẶT" (left) |
+| Helper | "Trần [ceiling_price]" (right, orange text) |
+| Input | [-] [price value] đ [+]; unit "đ" shown inside field |
+| Invalid state | Red border around field |
+
+**% Quick-select row:**
+5 pill buttons below the form: [10%] [25%] [50%] [75%] [100%]
+- Selecting a percentage sets the quantity to: `floor((available_capital / current_price) × pct / 100) × 100` (rounded down to nearest 100)
+- The active selected percentage pill has a yellow background
+- Tapping any other pill or editing quantity manually deselects the active pill
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-OP-06-01 | LO selected, MUA side, available_cash = 10,000,000 ₫, price_field = 41,200 | User taps [50%] pill | Quantity field updates to: floor(10,000,000 / 41,200 × 0.5 / 100) × 100 = 100 CP; [50%] pill turns yellow |
+| AC-OP-06-02 | LO selected, MUA side, [25%] pill is active | User manually types quantity = 300 | [25%] pill deselects (returns to inactive style) |
+| AC-OP-06-03 | LO selected, BUY | User enters quantity = 150 | Red border appears on SỐ LƯỢNG field; "150" shown in red; error text: "Sai lô · 150 CP (bội 100)" |
+| AC-OP-06-04 | LO selected, BUY, ceiling = 45,800 ₫ | User enters price = 46,000 ₫ | Red border on GIÁ ĐẶT field; error: "Vượt trần · 46.000 (trần 45.800)" |
+| AC-OP-06-05 | LO selected, BUY, floor = 39,800 ₫ | User enters price = 39,000 ₫ | Red border on GIÁ ĐẶT field; error: "Dưới sàn · 39.000 (sàn 39.800)" |
+| AC-OP-06-06 | LO selected, BUY, tick size = 100 ₫ | User enters price = 41,050 ₫ | Red border on GIÁ ĐẶT field; error: "Sai bước · 41.050đ (bước 100đ)" |
+| AC-OP-06-07 | LO selected, quantity = 0 | User submits | Error: "SL trống (0)" |
+
+---
+
+### FR-OP-07 — Dynamic Form: Stop-Limit Order
 
 **Priority:** P1
 
 **Actor:** Authenticated user
 
 **Description:**
-When STOP is selected, the form renders two fields: Stop Price and Quantity. A mandatory educational note is displayed. Same simulation note as STOP_LIMIT.
+When Stop-Limit tab is selected, the form shows three input fields: SỐ LƯỢNG, GIÁ KÍCH HOẠT (trigger/stop price), GIÁ LO SAU TRIGGER (limit price), and a HIỆU LỰC LỆNH (validity) section.
 
-**Educational note (non-dismissible, shown while STOP is active):**
-- "Paave mô phỏng lệnh dừng — không có trên thị trường thực Việt Nam"
+**Field: SỐ LƯỢNG**
+Same layout as LO form (label + helper + stepper input + invalid state).
 
-**Trigger logic explanation (collapsible tooltip):**
-- BUY: "Khi giá chạm [stop_price], Paave tự động đặt lệnh mua theo thị trường (MP)."
-- SELL: "Khi giá giảm xuống [stop_price], Paave tự động đặt lệnh bán theo thị trường (MP)."
+**Field: GIÁ KÍCH HOẠT**
 
-**Form fields:**
+| Element | Content |
+|---------|---------|
+| Label | "GIÁ KÍCH HOẠT" (left) |
+| Badge | "TRIGGER" pill badge (orange background, white text, right) |
+| Input | [-] [stop_price value] đ [+] |
+| Invalid state | Red border; value shown in red |
 
-| Field | Label (VI) | Type | Constraints |
-|-------|-----------|------|-------------|
-| `stop_price` | "Giá dừng (VND)" | Numeric | BUY: `stop_price > last_price`; SELL: `stop_price < last_price`; must be within exchange price band; must conform to tick size |
-| `quantity` | "Khối lượng (cổ phiếu)" | Integer | Must be ≥ 100; multiple of 100 for VN; ≤ 1,000,000 |
+**Field: GIÁ LO SAU TRIGGER**
 
-**Estimated cost/proceeds:**
-Since STOP triggers an MP child order, exact price is unknown at placement. Summary shows: "Giá ước tính: ~[last_price] ₫ (giá thực tế khi kích hoạt có thể khác)"
+| Element | Content |
+|---------|---------|
+| Label | "GIÁ LO SAU TRIGGER" (left) |
+| Badge | "LIMIT" pill badge (blue/teal background, white text, right) |
+| Input | [-] [limit_price value] đ [+] |
+| Invalid state | Red border |
+
+**Section: HIỆU LỰC LỆNH**
+
+| Element | Content |
+|---------|---------|
+| Label | "HIỆU LỰC LỆNH" (left) |
+| Day count | "[N] ngày" (right, orange text); N = (end_date - today) in calendar days |
+| Quick buttons | [Hôm nay] [7 ngày] [30 ngày] [90 ngày] — pill buttons; active = yellow |
+| Date display | "TỪ NGÀY [DD/MM/YY] → ĐẾN NGÀY [DD/MM/YY]" |
+
+Default validity on first open: 30 ngày (from today to today + 30 calendar days).
+"Hôm nay" = order expires at end of current trading day.
+7/30/90 ngày = expires at end of the Nth calendar day from today.
+The user cannot select a past date as the end date.
 
 **Acceptance Criteria:**
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-09-01 | STOP selected | User views form | Two fields shown: Stop Price, Quantity; educational note visible; no Limit Price field |
-| AC-OP-09-02 | STOP, SELL, last_price = 50,000 ₫ | User enters stop_price = 53,000 ₫ | Inline error: "Giá dừng lệnh bán phải thấp hơn giá hiện tại (50.000 ₫) để bảo vệ khỏi thua lỗ." |
-| AC-OP-09-03 | STOP, BUY, last_price = 50,000 ₫, stop_price = 52,000 ₫ | User views summary | Summary shows: stop_price = 52.000 ₫; Giá ước tính: ~50.000 ₫ (giá thực tế khi kích hoạt có thể khác); educational note |
+| AC-OP-07-01 | Stop-Limit tab selected | User views form | Three fields shown: SỐ LƯỢNG, GIÁ KÍCH HOẠT (with TRIGGER badge), GIÁ LO SAU TRIGGER (with LIMIT badge); HIỆU LỰC LỆNH section visible below |
+| AC-OP-07-02 | Stop-Limit tab selected, today = 28/05/26 | User views HIỆU LỰC LỆNH default | [30 ngày] pill is active (yellow); "TỪ NGÀY 28/05/26 → ĐẾN NGÀY 27/06/26"; "30 ngày" displayed right of label |
+| AC-OP-07-03 | HIỆU LỰC LỆNH showing 30 ngày | User taps [7 ngày] | [7 ngày] pill activates; end date updates to today + 7; day count shows "7 ngày" |
+| AC-OP-07-04 | HIỆU LỰC LỆNH showing 30 ngày | User taps [Hôm nay] | [Hôm nay] pill activates; end date = today; day count shows "1 ngày" (expires end of today) |
+| AC-OP-07-05 | Stop-Limit, BUY, stop_price field invalid | User enters a stop_price not on tick size | Red border on GIÁ KÍCH HOẠT field; value shown in red; error message per §9.3 |
+| AC-OP-07-06 | Stop-Limit, SELL side | User views form | SỐ LƯỢNG helper shows "Bán tối đa [N] CP" |
 
 ---
 
-### FR-OP-10 — Order Summary Card
+### FR-OP-08 — Dynamic Form: Stop Order
+
+**Priority:** P1
+
+**Actor:** Authenticated user
+
+**Description:**
+When Stop tab is selected, the form shows two input fields (SỐ LƯỢNG and GIÁ KÍCH HOẠT) plus a read-only GIÁ THAM CHIẾU field, and a HIỆU LỰC LỆNH section.
+
+**Field: SỐ LƯỢNG**
+Same layout as LO and Stop-Limit forms.
+
+**Field: GIÁ KÍCH HOẠT**
+Same layout as Stop-Limit form (label + TRIGGER badge + stepper input).
+
+**Field: GIÁ THAM CHIẾU (READ-ONLY)**
+
+| Element | Content |
+|---------|---------|
+| Label | "GIÁ THAM CHIẾU" (left) |
+| Helper | "Snapshot khi trigger" (right, gray text) |
+| Input | [-] [ref_price] đ [+] — GRAYED OUT; not tappable; [-] and [+] steppers are disabled |
+| Value | Displays the current reference price (TC price); this field is informational only; it shows the snapshot price that will be used as the market reference when the stop triggers |
+
+The GIÁ THAM CHIẾU field is read-only and cannot be edited by the user. It displays the current `ref_price` (TC / tham chiếu) at the time the form is loaded. When the stop order triggers, the actual fill price will be determined by market conditions at trigger time; this field is for display/education purposes.
+
+**Section: HIỆU LỰC LỆNH**
+Identical to Stop-Limit HIỆU LỰC LỆNH (same quick buttons, same date range display, same default = 30 ngày).
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-OP-08-01 | Stop tab selected | User views form | Three fields shown: SỐ LƯỢNG, GIÁ KÍCH HOẠT (TRIGGER badge), GIÁ THAM CHIẾU (grayed out, read-only); HIỆU LỰC LỆNH section below |
+| AC-OP-08-02 | Stop tab selected, TC price = 42,800 ₫ | User views GIÁ THAM CHIẾU | Field shows "42.800" in grayed out state; "Snapshot khi trigger" helper shown; [-] and [+] steppers are visually disabled; user cannot edit the value |
+| AC-OP-08-03 | Stop tab, GIÁ THAM CHIẾU | User attempts to tap the field or steppers | No action; field remains grayed and unchanged |
+| AC-OP-08-04 | Stop tab, HIỆU LỰC LỆNH | Default on first open | Same as Stop-Limit: 30 ngày selected, date range shown |
+
+---
+
+### FR-OP-09 — Order Summary Card
 
 **Priority:** P0
 
 **Actor:** Authenticated user
 
 **Description:**
-The Order Summary Card is displayed at the bottom of the FORM state, above the "Xem lại lệnh" button. It updates in real-time as the user types into any field. It shows the economic breakdown of the order. If any required field is empty or invalid, the card shows dashes ("—") for calculated values.
+The Order Summary Card is always visible below the form fields, above the primary CTA button. It updates in real-time as the user types. If any required field is empty or invalid, calculated rows show "—".
 
-**Summary card rows by order type and side:**
+**Summary card for LO (BUY):**
 
-**BUY orders (LO, MP estimated, ATO/ATC estimated):**
+| Row Label | Formula | Display |
+|-----------|---------|---------|
+| "Giá × Số lượng" | — | "₫[price] × [qty]" |
+| "Tổng giá trị" | `price × qty` | "₫[gross]" |
+| "Phí & thuế" | Paper trading = no real fees | "Miễn phí" (orange/yellow text) |
+| "Vốn ảo dự trữ" (amber highlight box) | `price × qty` (reserved for pending BUY) | "₫[reserve_amount]" with info tooltip |
+| Tooltip (info icon) | — | "Tạm giữ đủ tiền cho lệnh mua chờ khớp. Phần này không dùng được cho lệnh khác cho đến khi lệnh khớp hoặc huỷ." |
+| "VỐN ẢO SAU LỆNH" | `available_cash − reserve_amount` | "₫[remaining] / [pct]% khả dụng" |
 
-| Row Label | Formula | Display Format |
-|-----------|---------|----------------|
-| Giá trị giao dịch | `quantity × price` (or `quantity × last_price` for MP/ATO/ATC) | "X.XXX.XXX ₫" or "~X.XXX.XXX ₫ (ước tính)" |
-| Phí giao dịch (0,25%) | `gross_value × 0.0025` | "X.XXX ₫" |
-| Tổng chi | `gross_value + fee` | "X.XXX.XXX ₫" (bold) |
-| Tiền khả dụng | `available_cash` | "X.XXX.XXX ₫" |
-| Thiếu / Đủ indicator | `available_cash − total_cost` | Green "Đủ vốn" if ≥ 0; Red "Thiếu [X.XXX.XXX] ₫" if < 0 |
+**Summary card for LO (SELL):**
 
-**SELL orders:**
+| Row Label | Formula | Display |
+|-----------|---------|---------|
+| "Giá × Số lượng" | — | "₫[price] × [qty]" |
+| "Tổng giá trị" | `price × qty` | "₫[gross]" |
+| "Phí & thuế" | Paper trading | "Miễn phí" |
+| "VỐN ẢO SAU LỆNH" | `available_cash + gross` (estimated) | "₫[remaining] / [pct]% khả dụng" |
 
-| Row Label | Formula | Display Format |
-|-----------|---------|----------------|
-| Giá trị giao dịch | `quantity × price` (or `quantity × last_price` for MP/ATC) | "X.XXX.XXX ₫" |
-| Phí giao dịch (0,25%) | `gross_value × 0.0025` | "X.XXX ₫" |
-| Thuế bán (0,1%) | `gross_value × 0.001` | "X.XXX ₫" |
-| Tổng thu | `gross_value − fee − tax` | "X.XXX.XXX ₫" (bold) |
-| Cổ phiếu khả dụng | `available_quantity` | "XXX cổ phiếu" |
-| Thiếu / Đủ indicator | `available_quantity − quantity` | Green "Đủ cổ phiếu" if ≥ 0; Red "Thiếu [X] cổ phiếu" if < 0 |
+**Summary card for Stop-Limit:**
 
-**STOP/STOP_LIMIT orders:**
-Show stop_price, limit price (STOP_LIMIT only), quantity, and a note: "Chi phí / Thu nhập xác nhận sau khi lệnh được kích hoạt".
+| Row Label | Content |
+|-----------|---------|
+| "Khi giá chạm" | "₫[stop_price]" (orange text) |
+| "Đặt LO giá" | "₫[limit_price] × [qty]" |
+| "Tổng ước tính" | "₫[limit_price × qty]" |
+| "Hiệu lực" | "[from_date] → [to_date]" |
+| "Phí & thuế" | "Miễn phí" |
+| Reserve notice (amber text box) | "Chưa giữ tiền — chỉ trừ vốn khi giá chạm mức kích hoạt và lệnh được đặt." |
+| "VỐN ẢO SAU LỆNH" | "₫[available_cash] / [pct]% khả dụng" (unchanged until triggered) |
+
+**Summary card for Stop:**
+
+| Row Label | Content |
+|-----------|---------|
+| "Khi giá chạm" | "₫[stop_price]" (orange text) |
+| "Khớp theo TT, tham chiếu" | "₫[ref_price] × [qty]" |
+| "Tổng ước tính" | "₫[ref_price × qty]" |
+| "Hiệu lực" | "[from_date] → [to_date]" |
+| "Phí & thuế" | "Miễn phí" |
+| Reserve notice (amber text box) | "Chưa giữ tiền — chỉ trừ vốn khi giá chạm mức kích hoạt và lệnh được đặt." |
+| "VỐN ẢO SAU LỆNH" | "₫[available_cash] / [pct]% khả dụng" (unchanged until triggered) |
 
 **Acceptance Criteria:**
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-10-01 | LO, BUY, price = 80,000 ₫, quantity = 200 | User fills both fields | Giá trị = 16.000.000 ₫; Phí = 40.000 ₫; Tổng chi = 16.040.000 ₫ |
-| AC-OP-10-02 | LO, SELL, price = 80,000 ₫, quantity = 200 | User fills both fields | Giá trị = 16.000.000 ₫; Phí = 40.000 ₫; Thuế bán = 16.000 ₫; Tổng thu = 15.944.000 ₫ |
-| AC-OP-10-03 | BUY, total cost > available_cash | User fills fields | Red indicator: "Thiếu [shortfall] ₫"; "Xem lại lệnh" button disabled |
-| AC-OP-10-04 | SELL, quantity > available_holdings | User fills quantity | Red indicator: "Thiếu [X] cổ phiếu"; "Xem lại lệnh" button disabled |
-| AC-OP-10-05 | Any order type, quantity field empty | User has not entered quantity yet | All calculated rows show "—" |
+| AC-OP-09-01 | LO, BUY, price = 41,200 ₫, quantity = 100 | User fills both fields | Summary shows: "₫41.200 × 100"; "Tổng giá trị: ₫4.120.000"; "Phí & thuế: Miễn phí"; amber reserve box "₫4.120.000"; VỐN ẢO SAU LỆNH shows reduced available cash |
+| AC-OP-09-02 | Stop-Limit, stop_price = 44,000, limit_price = 43,500, qty = 100, validity = 30 days | User fills all fields | "Khi giá chạm: ₫44.000"; "Đặt LO giá: ₫43.500 × 100"; "Tổng ước tính: ₫4.350.000"; "Hiệu lực: [from] → [to]"; reserve notice amber box; VỐN ẢO unchanged |
+| AC-OP-09-03 | Stop, stop_price = 38,000, ref_price = 42,800, qty = 200 | User fills fields | "Khi giá chạm: ₫38.000"; "Khớp theo TT, tham chiếu: ₫42.800 × 200"; "Tổng ước tính: ₫8.560.000"; reserve notice amber box |
+| AC-OP-09-04 | LO, BUY, quantity field empty | Form not complete | All calculated rows show "—"; VỐN ẢO SAU LỆNH shows current available_cash unchanged |
+| AC-OP-09-05 | LO, BUY, total required > available_cash | User fills fields | VỐN ẢO SAU LỆNH shows negative or 0%; primary CTA remains "Kiểm tra lại thông tin" (disabled) |
 
 ---
 
-### FR-OP-11 — "Xem lại lệnh" Button and VALIDATING Transition
+### FR-OP-10 — Primary CTA Button States
 
 **Priority:** P0
 
 **Actor:** Authenticated user
 
 **Description:**
-The "Xem lại lệnh" (Review Order) CTA at the bottom of the form initiates the transition from FORM to CONFIRMING state. The button is disabled whenever: any required field is empty, any inline validation error is active, or the summary card shows a "Thiếu" (insufficient) indicator.
-
-When the user taps the enabled button:
-1. State transitions to VALIDATING (synchronous, < 50ms)
-2. All client-side validations run in sequence (field validations, cross-field validations, balance check, holdings check)
-3. If all pass: state transitions to CONFIRMING
-4. If any fail: state returns to FORM with inline error messages rendered
+The primary CTA button sits below the order summary card. Its state is binary: disabled or enabled. There is no intermediate "review" step before the confirmation sheet — tapping the enabled CTA directly opens the confirmation sheet.
 
 **Button states:**
 
-| Condition | Button State | Button Label |
+| Condition | Button Label | Button Style |
 |-----------|-------------|--------------|
-| Any required field empty or invalid | Disabled (greyed out) | "Xem lại lệnh" |
-| All fields valid; balance/holdings sufficient | Enabled (green for BUY, red for SELL) | "Xem lại lệnh" |
-| VALIDATING state | Loading (spinner) | — |
+| Any required field is empty | "Kiểm tra lại thông tin" | Gray, disabled |
+| Any field has a validation error | "Kiểm tra lại thông tin" | Gray, disabled |
+| Insufficient balance (BUY) | "Kiểm tra lại thông tin" | Gray, disabled |
+| Sell quantity exceeds holdings | "Kiểm tra lại thông tin" | Gray, disabled |
+| All fields valid and sufficient balance/holdings | "Đặt lệnh" | Yellow-green, enabled |
 
 **Acceptance Criteria:**
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-11-01 | LO, price empty, quantity = 100 | User views button | Button is disabled |
-| AC-OP-11-02 | LO, price = 80,000 ₫, quantity = 100, balance sufficient | User views button | Button is enabled (green for BUY) |
-| AC-OP-11-03 | All fields valid, balance insufficient | User views button | Button is disabled; red "Thiếu X ₫" shown in summary |
-| AC-OP-11-04 | All fields valid, balance sufficient | User taps "Xem lại lệnh" | State transitions to CONFIRMING; confirmation screen appears |
+| AC-OP-10-01 | LO selected; both fields empty | User views CTA | Shows "Kiểm tra lại thông tin" in gray, disabled |
+| AC-OP-10-02 | LO selected; quantity = 100, price = 41,000; balance sufficient | User views CTA | Shows "Đặt lệnh" in yellow-green, enabled |
+| AC-OP-10-03 | LO BUY; price × qty > available_cash | User fills fields | Shows "Kiểm tra lại thông tin", disabled; VỐN ẢO SAU LỆNH shows 0% or negative |
+| AC-OP-10-04 | BÁN; qty = 500; holdings = 200 | User fills fields | Shows "Kiểm tra lại thông tin", disabled |
+| AC-OP-10-05 | Stop-Limit; stop_price, limit_price, qty all valid; validity set | User fills all fields | Shows "Đặt lệnh" in yellow-green, enabled |
 
 ---
 
-### FR-OP-12 — Confirmation Modal
+### FR-OP-11 — Confirmation Sheet (Step 2)
 
 **Priority:** P0
 
 **Actor:** Authenticated user
 
 **Description:**
-The Confirmation Modal replaces the form content in the sheet. It displays a complete, read-only summary of the order. No fields are editable here. Two CTAs are present.
+When the user taps the enabled "Đặt lệnh" CTA, a confirmation bottom sheet slides up over the blurred screen background. The sheet contains a full order summary and two CTAs. The user must confirm before the order is submitted.
 
-**Confirmation modal content by order type:**
+**Sheet header:**
+- Drag handle at top of sheet
+- Title: "Xác nhận mua [TICKER]" (for MUA side) or "Xác nhận bán [TICKER]" (for BÁN side)
+- Subtitle: "[Order type name] · POST /orders · vốn ảo, không rủi ro thật"
 
-**All order types — always displayed:**
-- "Tiền ảo" badge (top of modal)
-- Ticker symbol + exchange chip
-- Side badge (MUA / BÁN with color)
-- Order type name (Vietnamese: "Lệnh Giới Hạn", "Lệnh Thị Trường", etc.)
+**Summary table rows:**
 
-**LO specific:**
-- Giá lệnh: [price] ₫
-- Khối lượng: [quantity] cổ phiếu
-- Giá trị: [gross] ₫
-- Phí (0,25%): [fee] ₫
-- Thuế bán (0,1%): [tax] ₫ (SELL only)
-- Tổng: [total] ₫ (bold)
+| Row | Content |
+|-----|---------|
+| Hành động | "MUA · LO" or "BÁN · Stop-Limit" etc. |
+| Mã | "[TICKER] · [EXCHANGE]" |
+| Số lượng | "[N] CP" |
+| Giá đặt | "₫[price]" (for LO); or trigger + limit info (Stop-Limit); or trigger + ref (Stop) |
+| Phí & thuế | "Miễn phí" |
+| Tổng ước tính | "₫[amount]" (orange/yellow text) |
 
-**MP specific:**
-- Giá ước tính: ~[last_price] ₫ (giá thực tế có thể khác)
-- Khối lượng: [quantity] cổ phiếu
-- Phí và tổng chi hiển thị dựa trên giá ước tính
+**CTAs (two buttons, full-width row):**
 
-**ATO/ATC specific:**
-- Khối lượng: [quantity] cổ phiếu
-- Giá khớp: Theo giá [mở cửa/đóng cửa] (do sàn xác định)
-- Note: "Phí sẽ được tính sau khi lệnh khớp"
-
-**STOP_LIMIT specific:**
-- Giá dừng: [stop_price] ₫
-- Giá giới hạn: [price] ₫
-- Khối lượng: [quantity] cổ phiếu
-- Educational note: "Paave mô phỏng lệnh dừng — không có trên thị trường thực Việt Nam"
-
-**STOP specific:**
-- Giá dừng: [stop_price] ₫
-- Khối lượng: [quantity] cổ phiếu
-- Giá khi kích hoạt: "Theo giá thị trường tại thời điểm kích hoạt"
-- Educational note: "Paave mô phỏng lệnh dừng — không có trên thị trường thực Việt Nam"
-
-**CTAs:**
-- Primary: "Xác nhận đặt lệnh" — green for BUY, red for SELL; tapping transitions to PROCESSING
-- Secondary: "Sửa lệnh" — text button; tapping returns to FORM state with all values preserved
+| Button | Style | Action |
+|--------|-------|--------|
+| "Huỷ" | Left half; dark/gray background | Closes sheet; returns to FORM_VALID state; no data reset |
+| "✦ Xác nhận mua" or "✦ Xác nhận bán" | Right half; yellow-green; bold | Triggers API submission |
 
 **Acceptance Criteria:**
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-12-01 | LO BUY confirmed | User views confirmation | Shows all fields; "Tiền ảo" badge visible; "Xác nhận đặt lệnh" (green) and "Sửa lệnh" buttons present |
-| AC-OP-12-02 | STOP_LIMIT SELL confirmed | User views confirmation | Educational note "Paave mô phỏng lệnh dừng — không có trên thị trường thực Việt Nam" visible |
-| AC-OP-12-03 | User taps "Sửa lệnh" | From confirmation | Returns to FORM state; all previously entered values are preserved; no data loss |
-| AC-OP-12-04 | MP BUY confirmation | User views confirmation | Shows "Giá ước tính: ~[last_price] ₫ (giá thực tế có thể khác)"; not a fixed price |
+| AC-OP-11-01 | LO, BUY VIC, qty = 100, price = 41,200 | User taps "Đặt lệnh" | Sheet slides up; title = "Xác nhận mua VIC"; subtitle shows "LO · POST /orders · vốn ảo, không rủi ro thật"; table shows Hành động "MUA · LO", Mã "VIC · HOSE", Số lượng "100 CP", Giá đặt "₫41.200", Phí & thuế "Miễn phí", Tổng ước tính "₫4.120.000" in orange; CTA "✦ Xác nhận mua" |
+| AC-OP-11-02 | Stop-Limit, BÁN VIC, stop = 38,000, limit = 37,500, qty = 200, validity = 30 days | User taps "Đặt lệnh" | Sheet shows "Xác nhận bán VIC"; Hành động "BÁN · Stop-Limit"; Giá đặt shows trigger + limit; CTA "✦ Xác nhận bán" |
+| AC-OP-11-03 | Confirmation sheet open | User taps "Huỷ" | Sheet closes; form returns to FORM_VALID state with all entered values preserved; no fields are reset |
+| AC-OP-11-04 | Confirmation sheet open | User swipes down on drag handle | Same behavior as tapping "Huỷ" |
+| AC-OP-11-05 | Confirmation sheet open; user taps "✦ Xác nhận mua" | API call begins | CTA shows loading spinner; all sheet elements disabled; sheet cannot be dismissed |
 
 ---
 
-### FR-OP-13 — Order Submission and PROCESSING State
+### FR-OP-12 — Order Submission and Outcome
 
 **Priority:** P0
 
 **Actor:** Authenticated user; Paave Paper Trading Engine
 
 **Description:**
-When the user taps "Xác nhận đặt lệnh", the app transitions to PROCESSING state and submits the order to the Paper Trading Engine API.
+When the user taps the confirm CTA on the confirmation sheet, the order is submitted via API. The sheet remains visible with a loading state during submission. On outcome, the sheet dismisses and the screen updates accordingly.
 
 **Submission payload:**
 
 | Field | Type | Source |
 |-------|------|--------|
-| `symbol_code` | string | Pre-filled from Stock Detail |
-| `exchange` | enum | Pre-filled from Stock Detail |
-| `side` | enum | User selection (`BUY` or `SELL`) |
-| `order_type` | enum | User selection (`LO`, `MP`, `ATO`, `ATC`, `STOP_LIMIT`, `STOP`) |
-| `price` | decimal or null | User input for LO and STOP_LIMIT; null for MP, ATO, ATC, STOP |
-| `stop_price` | decimal or null | User input for STOP_LIMIT and STOP; null for all other types |
+| `symbol_code` | string | Pre-filled from entry context |
+| `exchange` | enum | Pre-filled from entry context |
+| `side` | enum | "BUY" or "SELL" |
+| `order_type` | enum | "LO", "STOP_LIMIT", "STOP" |
+| `price` | decimal or null | User input for LO; null for Stop and Stop-Limit (`limit_price` used instead) |
+| `limit_price` | decimal or null | User input for Stop-Limit; null for LO and Stop |
+| `stop_price` | decimal or null | User input for Stop-Limit and Stop; null for LO |
 | `quantity` | integer | User input |
-| `idempotency_key` | UUID v4 | Client-generated at the moment user taps "Xác nhận đặt lệnh"; not reused between submissions |
-
-**PROCESSING state UI:**
-- "Xác nhận đặt lệnh" button replaced by a loading spinner
-- All inputs are disabled; all CTAs except sheet close are disabled
-- Sheet close (swipe down or X button) is disabled during PROCESSING to prevent orphaned orders
-- Loading text: "Đang đặt lệnh..."
+| `validity_days` | integer | 1 (Hôm nay), 7, 30, or 90; for Stop-Limit and Stop only; not sent for LO |
+| `idempotency_key` | UUID v4 | Client-generated at the moment user taps "✦ Xác nhận"; not reused between attempts |
 
 **Timeout handling:**
-- If no response received within 10,000ms: transition to ERROR state with message "Kết nối bị gián đoạn. Vui lòng kiểm tra lại trong Danh mục > Lệnh chờ trước khi thử lại."
+If no API response within 10,000ms: show error banner "Kết nối bị gián đoạn. Vui lòng kiểm tra lại trong Sổ lệnh chờ trước khi thử lại." Return to FORM_VALID state.
+
+**Success (HTTP 201):**
+- Sheet dismisses
+- Success feedback shown (toast or inline indicator)
+- Panel below CTA auto-updates to show the new pending order in "Sổ lệnh chờ" tab
+
+**Error (HTTP 4xx/5xx):**
+- Sheet dismisses
+- Error banner appears at top of screen with exact server message from API `message` field
+- Form remains populated with the user's values
+- User may edit and retry
 
 **Acceptance Criteria:**
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-13-01 | User taps "Xác nhận đặt lệnh" | API call begins | Button shows spinner; all inputs disabled; sheet close disabled; "Đang đặt lệnh..." shown |
-| AC-OP-13-02 | PROCESSING state; user attempts to swipe sheet down | User tries to dismiss | Sheet does not close; no action taken |
-| AC-OP-13-03 | API responds in 200ms with HTTP 201 | Normal success | Transitions to SUCCESS state |
-| AC-OP-13-04 | 10,001ms pass with no API response | Network timeout | Transitions to ERROR state; message: "Kết nối bị gián đoạn. Vui lòng kiểm tra lại trong Danh mục > Lệnh chờ trước khi thử lại." |
+| AC-OP-12-01 | User taps "✦ Xác nhận mua"; API responds in 300ms with HTTP 201 | SUCCESS | Sheet dismisses; success feedback visible; new order appears in Sổ lệnh chờ tab |
+| AC-OP-12-02 | User taps "✦ Xác nhận"; API returns HTTP 422 with E-OP-09 (50 orders cap) | ERROR | Sheet dismisses; red error banner at top: "Đạt 50 lệnh chờ (cap)"; form remains with values; user may cancel an order to proceed |
+| AC-OP-12-03 | User double-taps "✦ Xác nhận" rapidly | First tap begins PROCESSING | Second tap has no effect; button disabled on first tap; same idempotency_key on both; server deduplicates; only 1 order created |
+| AC-OP-12-04 | API call exceeds 10,000ms with no response | Timeout | Error banner: "Kết nối bị gián đoạn. Vui lòng kiểm tra lại trong Sổ lệnh chờ trước khi thử lại."; form preserved |
 
 ---
 
-### FR-OP-14 — SUCCESS State
-
-**Priority:** P0
-
-**Actor:** Authenticated user
-
-**Description:**
-When the API returns HTTP 201, the sheet transitions to SUCCESS state.
-
-**SUCCESS state content:**
-- Success illustration/icon (animated: scale from 0.8 to 1.0 over 300ms)
-- "Đặt lệnh thành công!" heading
-- Order summary line: "[MUA/BÁN] [quantity] cổ phiếu [TICKER] · [order_type_name]"
-- For LO: "Giá: [price] ₫"
-- For MP: "Theo giá thị trường"
-- For ATO: "Theo giá mở cửa"
-- For ATC: "Theo giá đóng cửa"
-- For STOP_LIMIT: "Kích hoạt tại: [stop_price] ₫ · Giới hạn: [price] ₫"
-- For STOP: "Kích hoạt tại: [stop_price] ₫ · Theo giá thị trường"
-- Order ID: "Mã lệnh: [order_id]" (small, secondary text)
-- "Tiền ảo" badge
-
-**CTAs:**
-- "Xem danh mục" — navigates to Portfolio screen (Open Orders section); closes sheet
-- "Đặt lệnh mới" — resets all form fields and returns to FORM state for the same ticker; idempotency_key is regenerated
-- Auto-dismiss: if user takes no action for 3 seconds, sheet slides down (CLOSED state)
-
-**Acceptance Criteria:**
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-14-01 | HTTP 201 received for LO BUY | Transition to SUCCESS | Shows "Đặt lệnh thành công!"; "MUA 100 cổ phiếu VIC · Lệnh Giới Hạn"; "Giá: 80.000 ₫"; success icon animates |
-| AC-OP-14-02 | HTTP 201 received for STOP_LIMIT | SUCCESS state | Shows "Kích hoạt tại: [stop_price] ₫ · Giới hạn: [price] ₫" |
-| AC-OP-14-03 | User takes no action for 3 seconds | Timer expires | Sheet dismisses; navigates to nothing (returns to Stock Detail screen) |
-| AC-OP-14-04 | User taps "Đặt lệnh mới" | From SUCCESS | Form resets; FORM state shown for same ticker; new idempotency_key generated |
-
----
-
-### FR-OP-15 — ERROR State
-
-**Priority:** P0
-
-**Actor:** Authenticated user
-
-**Description:**
-When the API returns HTTP 4xx or 5xx, or when the client times out (>10,000ms), the sheet transitions to ERROR state. The exact error message string from the Paper Trading Engine (per FRD-10 Error Code Reference §4) is displayed.
-
-**ERROR state content:**
-- Error icon (red)
-- Error heading: "Không thể đặt lệnh"
-- Error message: exact string from API response `message` field (see §9 Validation Logic Table for all messages)
-- For network timeout: "Kết nối bị gián đoạn. Vui lòng kiểm tra lại trong Danh mục > Lệnh chờ trước khi thử lại."
-
-**CTAs:**
-- "Thử lại" — returns to FORM state; all user-entered values are preserved; a new idempotency_key is generated
-- "Huỷ" — closes the sheet entirely (CLOSED state)
-
-**Form value preservation on "Thử lại":**
-All field values entered before the failed submission are restored to their exact previous values. The user must not re-enter data after a transient failure.
-
-**Acceptance Criteria:**
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-15-01 | API returns HTTP 400 with error_code E-PT-108 | Transition to ERROR | Shows "Không thể đặt lệnh"; message: "Không đủ tiền ảo. Khả dụng: [X] ₫. Chi phí ước tính: [Y] ₫." |
-| AC-OP-15-02 | API returns HTTP 400 with error_code E-PT-116 | Transition to ERROR | Shows message: "Bạn đã đạt giới hạn 10 lệnh chờ. Huỷ lệnh hiện có để đặt lệnh mới." |
-| AC-OP-15-03 | User taps "Thử lại" from ERROR | Transition to FORM | All previously entered values present; user can edit and resubmit without re-entering from scratch |
-| AC-OP-15-04 | User taps "Huỷ" from ERROR | Sheet closes | CLOSED state; user returns to Stock Detail screen |
-
----
-
-### FR-OP-16 — Session Change Mid-Form
+### FR-OP-13 — Panel Below CTA: Sổ lệnh chờ / Danh mục / Lịch sử
 
 **Priority:** P1
 
-**Actor:** Authenticated user; Market Calendar Service
+**Actor:** Authenticated user
 
 **Description:**
-The market session can change while the user has the Order Placement Sheet open. The sheet must detect session changes and update the available order types accordingly, without discarding the user's current form state where possible.
+A fixed panel below the primary CTA button contains three tabs. This panel is always visible while the order placement screen is open.
 
-**Session change handling:**
+**Tab labels (with live counts):**
+- "Sổ lệnh chờ [N]" — N = count of pending orders
+- "Danh mục [N]" — N = count of holdings
+- "Lịch sử (thường + ĐK)" — LO + stop order history combined
 
-| Scenario | Action |
-|----------|--------|
-| Session transitions to ATC Period (14:30) while user is filling an LO form | Currently selected LO tab becomes disabled; ATC tab becomes enabled; user is shown a toast: "Phiên giao dịch đã chuyển sang ATC (14:30–14:45). Chỉ nhận lệnh ATC." User's LO fields are preserved but form cannot be submitted as LO; user must switch to ATC manually |
-| Session transitions to CLOSED (14:45) while user is filling any form | All order type tabs disabled; banner shown: "Thị trường đã đóng cửa lúc 14:45. Hãy thử lại vào ngày giao dịch tiếp theo."; "Xem lại lệnh" button disabled |
-| Session transitions from PRE_OPEN to CONT (09:15) while user is filling ATO form | ATO tab remains enabled (ATO is valid during the ATO matching window itself); no disruption |
-| Market holiday detected during form fill | All tabs disabled; banner: "Hôm nay là ngày nghỉ thị trường. Thị trường sẽ mở cửa vào ngày giao dịch tiếp theo." |
+---
 
-**Session polling:** The sheet polls the Market Calendar Service every 30 seconds to detect session transitions.
+#### FR-OP-13a — Sổ lệnh chờ Tab (Pending Orders)
+
+**Header:** "ĐANG CHỜ · [N]" (uppercase label + count)
+
+**Each pending order row:**
+
+| Element | Content |
+|---------|---------|
+| Side badge | "MUA" (green background) or "BÁN" (red background) |
+| Type badge | "LO" / "Stop-Limit" / "Stop" |
+| Center: ticker + qty | "[TICKER] [qty] CP" |
+| Center: price / trigger | LO: price "₫[price]"; Stop-Limit/Stop: "trigger ₫[stop_price]" |
+| Center: status + ID | "● [status_label]" + "#[order_id]" |
+| Right: action buttons | "SỬA" (blue/teal pill) + "HUỶ" (red pill, shown only when cancellable) + ">" chevron |
+
+**Status labels:**
+- "Đang chờ" (yellow dot)
+- "Đã nhận" (blue dot)
 
 **Acceptance Criteria:**
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-16-01 | User has LO form partially filled; time is 14:29 | Clock reaches 14:30 (ATC starts) | Toast appears: "Phiên giao dịch đã chuyển sang ATC (14:30–14:45). Chỉ nhận lệnh ATC."; LO tab greyed; ATC tab highlighted |
-| AC-OP-16-02 | User has MP form partially filled; time is 14:44 | Clock reaches 14:45 (market close) | All tabs disabled; "Thị trường đã đóng cửa lúc 14:45" banner shown; submit button disabled |
+| AC-OP-13a-01 | User has 3 pending orders (2 LO, 1 Stop-Limit) | User views Sổ lệnh chờ tab | Header shows "ĐANG CHỜ · 3"; each row shows correct side badge, type badge, ticker, qty, price/trigger, status, ID |
+| AC-OP-13a-02 | Pending LO order, order_id = #12345, qty = 100, price = 41,200 | Row displayed | "MUA" green badge + "LO" badge; "VIC 100 CP"; "₫41.200"; "● Đang chờ"; "#12345"; "SỬA" + "HUỶ" buttons |
+| AC-OP-13a-03 | Pending Stop-Limit order, stop_price = 44,000 | Row displayed | Stop-Limit badge; "trigger ₫44.000" shown instead of price |
+| AC-OP-13a-04 | User places a new order successfully | HTTP 201 received | New order appears in Sổ lệnh chờ tab immediately; count increments |
+
+---
+
+#### FR-OP-13b — Danh mục Tab (Current Holdings)
+
+**Summary row:**
+- "TỔNG GIÁ TRỊ: ₫[total_portfolio_value]" (left)
+- "LÃI/LỖ CHƯA THỰC HIỆN: +₫[unrealized_pnl] +[pnl_pct]%" (right; green for positive, red for negative)
+
+**Holdings header:** "CỔ PHIẾU ĐANG NẮM GIỮ · [N]" (left) + "GIÁ TRỊ ▼" sort button (right)
+
+**Each holding row:**
+
+| Element | Content |
+|---------|---------|
+| Ticker badge | "[TICKER]" pill |
+| Quantity + sector | "[qty] CP · [sector]" |
+| Current price | "₫[current_price]" |
+| PnL percentage | "+[pct]%" or "-[pct]%" (green/red) |
+| Action | "BÁN" button (red pill) |
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-OP-13b-01 | User holds 2 stocks: VIC (200 CP) and HPG (500 CP) | User views Danh mục tab | Summary row shows total value + unrealized PnL; holdings header shows count 2; each stock row displayed |
+| AC-OP-13b-02 | User views holding row for VIC; current_price = 41,200, qty = 200 | Row displayed | VIC badge; "200 CP · [sector]"; "₫41.200"; PnL%; "BÁN" red pill |
+| AC-OP-13b-03 | User taps "BÁN" on a holding row | Tap registered | Side switches to BÁN; ticker pre-selected; form resets to SELL LO for that ticker |
+
+---
+
+#### FR-OP-13c — Lịch sử Tab (Order History)
+
+**Sub-tabs:**
+- "Lệnh LO [N]" — history of LO orders
+- "Stop / Stop-Limit [N]" — history of stop orders
+
+**API note:** Lệnh LO uses `/orders/history`; Stop / Stop-Limit uses `/stop-orders/history`; pagination: 20 records per page, maximum 100.
+
+**Lệnh LO sub-tab:**
+
+Status filters: "Tất cả" (default selected) | "Đã khớp" | "Đã huỷ"
+
+Each row:
+- Side badge + "LO" type badge
+- "[TICKER] · [qty] CP"
+- "@ ₫[price] · [date] · [time]"
+- Status chip: "ĐÃ KHỚP" (green) or "ĐÃ HUỶ" (gray)
+- "#[order_id]"
+
+**Stop / Stop-Limit sub-tab:**
+
+Status filters: "Tất cả" | "Đang chờ" | "Đã kích hoạt" | "Hết hạn" | "Đã huỷ"
+
+Each PENDING row:
+- Side badges + "STL" (Stop-Limit) or "STO" (Stop) type badge
+- "[TICKER] · [qty] CP"
+- Trigger logic: e.g., "Khi chạm ₫[stop_price] → LO ₫[limit_price]" (Stop-Limit) or "Khi chạm ₫[stop_price] → TT" (Stop)
+- "ĐANG CHỜ" status chip + "Huỷ" button
+- "#[order_id] · Hết hạn [DD/MM/YY]"
+
+Each TRIGGERED row:
+- "ĐÃ KÍCH HOẠT" status chip
+- "Đã tự đặt LO #[child_order_id]" note below (Stop-Limit); or "Đã khớp theo TT" (Stop)
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-OP-13c-01 | User taps "Lịch sử (thường + ĐK)" tab | Default | "Lệnh LO" sub-tab is active; LO order history shown |
+| AC-OP-13c-02 | LO sub-tab, filter = "Tất cả" | 3 orders (2 matched, 1 cancelled) | All 3 rows shown with correct status chips |
+| AC-OP-13c-03 | LO sub-tab | User taps "Đã khớp" filter | Only matched orders shown |
+| AC-OP-13c-04 | Stop/Stop-Limit sub-tab, filter = "Đã kích hoạt" | 1 triggered Stop-Limit order | Row shows "ĐÃ KÍCH HOẠT" chip + "Đã tự đặt LO #[child_id]" note |
+| AC-OP-13c-05 | Stop/Stop-Limit sub-tab | Pending Stop order row | Shows "ĐANG CHỜ" chip + "Huỷ" button + expiry date |
 
 ---
 
@@ -780,124 +781,79 @@ The market session can change while the user has the Order Placement Sheet open.
 
 | Rule ID | Rule | Source | Violation Behaviour |
 |---------|------|--------|---------------------|
-| BR-OP-01 | The "Tiền ảo" badge (component `<VirtualFundsLabel />`) must be visible in the Order Placement Sheet header at all times in all states (FORM, CONFIRMING, PROCESSING, SUCCESS, ERROR). It has no `hidden`, `dismissible`, or conditional rendering prop. | BRD BR-18; FRD-10 FR-PT-06 | Regression: badge absent in any state is a P0 UI bug |
-| BR-OP-02 | Fee rate for all paper trade orders is 0.25% of gross trade value, applied to both BUY and SELL orders. The fee is shown on the order summary card and on the confirmation modal before the user taps "Xác nhận đặt lệnh". | Paave paper trading fee model (V2 rate update) | Fee not shown before confirmation = P1 bug; wrong rate displayed = P0 bug |
-| BR-OP-03 | Sell tax rate is 0.1% of gross trade value, applied only to SELL orders. The sell tax line is shown on the order summary card for SELL orders only. It is not shown for BUY orders. | Paave sell tax simulation (mirrors VN real-market tax for educational purposes) | Tax line shown on BUY = P1 bug; tax not shown on SELL = P1 bug |
-| BR-OP-04 | All VN exchange (HOSE, HNX, UPCOM) order quantities must be multiples of 100. The quantity input must not accept submission of a non-multiple-of-100 value. Client-side validation runs on blur; server-side validation also enforces this (E-PT-107). | BRD BR-PT-07; FRD-10 BR-PT-01 | Client must catch this before API call; error message per §9 |
-| BR-OP-05 | Quantity maximum is 1,000,000 shares per order. Values above this are rejected at the client layer with message: "Khối lượng tối đa cho mỗi lệnh là 1.000.000 cổ phiếu." | Order engine constraint | Client enforces; API also rejects |
-| BR-OP-06 | A BUY order's total estimated cost (gross + fee) must not exceed the user's available cash at the time the user taps "Xem lại lệnh". The client computes this check from the cached balance value. The server re-checks at submission. | FRD-10 FR-PT-03 precondition | "Thiếu [X] ₫" indicator in summary card; "Xem lại lệnh" button disabled |
-| BR-OP-07 | A SELL order's quantity must not exceed the user's available (unlocked) holdings for that ticker at the time the user taps "Xem lại lệnh". Client checks from cached holdings. Server re-checks at submission. | FRD-10 FR-PT-03 precondition | "Thiếu [X] cổ phiếu" indicator in summary card; "Xem lại lệnh" button disabled |
-| BR-OP-08 | STOP_LIMIT and STOP orders are a Paave simulation. The mandatory educational note "Paave mô phỏng lệnh dừng — không có trên thị trường thực Việt Nam" must appear: (a) in the FORM state whenever STOP or STOP_LIMIT tab is selected, (b) in the CONFIRMING state, and (c) in the SUCCESS state. | Product requirement: F0 education accuracy | Note absent in any of the three states = P1 bug |
-| BR-OP-09 | The MP warning "Lệnh thị trường có thể khớp ở giá không mong đợi" must appear in the FORM state whenever MP is selected and in the CONFIRMING state for MP orders. It must not appear for LO, ATO, ATC, STOP, or STOP_LIMIT. | FRD-10 §FR-PT-02; market order slippage education | Wrong placement (shown for non-MP types) = P2 bug; absent for MP = P1 bug |
-| BR-OP-10 | The `idempotency_key` (UUID v4) must be generated fresh at the moment the user taps "Xác nhận đặt lệnh". It must not be reused across different submission attempts. When the user taps "Đặt lệnh mới" from SUCCESS or "Thử lại" from ERROR, a new key must be generated before the next submission. | FRD-10 BR-PT-15 | Reused key = potential silent deduplication of intended new orders = P0 bug |
-| BR-OP-11 | The Order Placement Sheet must not be dismissible during PROCESSING state. The sheet close gesture (swipe down on mobile) and any close button must be disabled from the moment the user taps "Xác nhận đặt lệnh" until the API responds (HTTP 201, 4xx, 5xx, or 10s timeout). | Prevents orphaned orders | Sheet dismissible during PROCESSING = P0 bug |
-| BR-OP-12 | No short selling. A SELL order for a ticker the user does not hold must be rejected client-side: "Bạn không sở hữu cổ phiếu [TICKER]. Giao dịch bán khống không có trong paper trading." Available holdings = 0 causes the summary card to show "Thiếu [quantity] cổ phiếu" and disables "Xem lại lệnh". | FRD-10 FC-PT-09; BRD no-short-sell rule | Zero-holding SELL reaching confirmation modal = P0 bug |
-| BR-OP-13 | For BUY STOP_LIMIT and BUY STOP orders: `stop_price` must be strictly greater than `last_price` at the time of validation. For SELL STOP_LIMIT and SELL STOP orders: `stop_price` must be strictly less than `last_price`. This is a client-side check using the live price displayed in the header. | STOP/STOP_LIMIT trigger logic semantics | Wrong direction stop accepted = P0 data integrity bug |
-| BR-OP-14 | ATO orders must not include a `price` field. If the user somehow has a price value cached from switching from LO to ATO, the client must null out the `price` field in the submission payload when order_type is ATO. Same rule applies to ATC orders. | FRD-10 BR-PT-19, BR-PT-20 | ATO/ATC submitted with price = P0 API error |
-| BR-OP-15 | The Order Placement Sheet session indicator ("Phiên liên tục · Còn 2 giờ 15 phút") must update in real time. It must not show stale session information for more than 30 seconds. | Session change awareness; prevents user confusion | Stale session display (> 30s off) = P2 bug |
-| BR-OP-16 | Available cash and available holdings displayed in the sheet must be fetched fresh when the sheet opens (not cached from the previous session or previous sheet open). They may be cached for up to 30 seconds once the sheet is open. If the sheet has been open for more than 30 seconds, values are refreshed from the server before the "Xem lại lệnh" transition. | Stale balance/holdings = incorrect "Thiếu" indicator | Balance not refreshed = P1 bug if it causes a false "sufficient" display |
+| BR-OP-01 | Paper trading context must be visible throughout the screen. "Phí & thuế: Miễn phí" must appear in the order summary card and on the confirmation sheet for every order. The confirmation sheet subtitle must include "vốn ảo, không rủi ro thật". | BRD BR-18; FRD-10 FR-PT-06 | Missing in any state = P0 UI bug |
+| BR-OP-02 | In V1, there are no real fees or taxes on paper trades. The order summary card and confirmation sheet must show "Phí & thuế: Miễn phí" for all order types and both sides. No fee or tax amount is calculated or deducted. | Paave paper trading model V1 | Fee calculated and deducted = P0 data bug |
+| BR-OP-03 | All VN exchange (HOSE, HNX) order quantities must be multiples of 100 (board lot). The quantity input must not allow submission of a non-multiple-of-100 value. Client-side validation runs on change; server-side also enforces this. | BRD BR-PT-07; FRD-10 BR-PT-01 | Error: "Sai lô · [qty] CP (bội 100)" |
+| BR-OP-04 | Quantity maximum is 1,000,000 shares per order. Values above this are rejected client-side. | Order engine constraint | Error: "Khối lượng tối đa cho mỗi lệnh là 1.000.000 cổ phiếu." |
+| BR-OP-05 | A BUY LO order reserves capital immediately upon submission: `reserve_amount = price × qty`. The reserved amount is locked until the order is filled or cancelled. The order summary card must show this reserve in the amber "Vốn ảo dự trữ" box before the user confirms. | Virtual capital reserve model | Reserve not shown before confirmation = P1 bug |
+| BR-OP-06 | Stop-Limit and Stop orders do NOT reserve capital at placement time. Capital is only reserved when the stop triggers and a child LO order is placed. The amber reserve notice must state this: "Chưa giữ tiền — chỉ trừ vốn khi giá chạm mức kích hoạt và lệnh được đặt." | Stop order simulation logic | Reserve shown for stop orders = P1 data bug |
+| BR-OP-07 | No short selling. A SELL order for a ticker with 0 holdings must be rejected: "Bán mã chưa sở hữu ([TICKER])". A SELL order where qty > available_holdings must show E-OP-06 before confirmation. | FRD-10 FC-PT-09; BRD no-short-sell rule | Zero-holding SELL reaching confirmation = P0 bug |
+| BR-OP-08 | Maximum pending orders: 50 per user (includes LO, Stop-Limit, and Stop orders combined). The client must check this limit before showing the confirmation sheet. Error when cap is reached: "Đạt 50 lệnh chờ (cap)". | Design confirmation: cap = 50 (corrected from 10 in FRD-10 v1.0) | Cap at wrong number = P1 product bug |
+| BR-OP-09 | The `idempotency_key` (UUID v4) must be generated at the moment the user taps "✦ Xác nhận". It must not be reused across different submission attempts. A new key must be generated for each new attempt. | FRD-10 BR-PT-15 | Reused key = silent deduplication of intended new orders = P0 bug |
+| BR-OP-10 | The confirmation sheet must not be dismissible during PROCESSING state. Sheet close gesture (drag handle swipe) and the "Huỷ" button are both disabled from the moment the user taps "✦ Xác nhận" until the API responds or times out. | Prevents orphaned orders | Sheet dismissible during PROCESSING = P0 bug |
+| BR-OP-11 | Stop-Limit and Stop orders require a HIỆU LỰC LỆNH (validity) period. The minimum is 1 day (Hôm nay) and the maximum is 90 days. The default is 30 days. LO orders do not have a validity period field. | Stop order simulation model | Validity field shown for LO = P2 bug; missing for Stop/Stop-Limit = P1 bug |
+| BR-OP-12 | The GIÁ THAM CHIẾU field on the Stop form is read-only. It displays the current TC (tham chiếu) price. The user must not be able to edit this value. The stepper buttons [-] and [+] adjacent to this field must be visually disabled and non-interactive. | Stop order simulation: reference price is system-provided | Editable ref price field = P0 data integrity bug |
+| BR-OP-13 | For LO tick size validation: if `price % tick_size ≠ 0`, the error is shown inline on the price field. The server also validates. Tick size for HOSE/HNX depends on price range (see FRD-10 §tick size table). | FRD-10 price band rules | Tick size not validated client-side = P1 bug (extra API round-trips) |
+| BR-OP-14 | The error/warning banner at the top of the screen (S-OP-06 ERROR state) must display the exact error message string from the API `message` field. The client must not rewrite, summarize, or translate API error messages. | Exact error strings required by QA | Paraphrased error = P2 bug (test failure) |
+| BR-OP-15 | Available cash and available holdings are fetched fresh when the screen opens. They may be cached for up to 30 seconds while the screen is open. If the screen has been open more than 30 seconds and the user taps the enabled "Đặt lệnh" CTA, values are refreshed from the server before the confirmation sheet opens. | Stale balance = false "sufficient" display | Balance not refreshed = P1 bug |
 
 ---
 
 ## 6. Acceptance Criteria
 
-This section provides complete Given/When/Then acceptance criteria for all 6 order types × BUY + SELL = 12 base scenarios, plus key cross-cutting scenarios.
+This section provides complete Given/When/Then acceptance criteria for all 3 V1 order types × BUY + SELL = 6 base scenarios.
 
 ### AC-SET-01: LO BUY (Limit Order Buy)
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-LO-BUY-01 | User has 20,000,000 ₫ available; VIC last_price = 85,000 ₫; HOSE CONT session | User opens sheet, selects LO, BUY, enters price = 83,000 ₫, quantity = 200 | Summary: Gross = 16.600.000 ₫; Phí = 41.500 ₫; Tổng chi = 16.641.500 ₫; "Đủ vốn" shown in green |
-| AC-OP-LO-BUY-02 | Same setup | User taps "Xem lại lệnh" | Confirmation modal shows: "MUA 200 cổ phiếu VIC · Lệnh Giới Hạn"; Giá = 83.000 ₫; Tổng chi = 16.641.500 ₫ |
-| AC-OP-LO-BUY-03 | Confirmation modal shown | User taps "Xác nhận đặt lệnh"; API returns 201 | SUCCESS state: "Đặt lệnh thành công! MUA 200 cổ phiếu VIC · Lệnh Giới Hạn · Giá: 83.000 ₫" |
-| AC-OP-LO-BUY-04 | BUY LO, price = 86,000 ₫ (above last_price = 85,000 ₫) | User fills price field and taps out | Inline error: "Giá mua lệnh giới hạn phải ≤ giá hiện tại (85.000 ₫). Dùng lệnh MP hoặc nhập giá ≤ 85.000 ₫." |
+| AC-OP-LO-BUY-01 | User has 20,000,000 ₫ available cash; VIC last_price = 41,200 ₫; ceiling = 45,800, floor = 39,800, tick = 100 | User selects LO, MUA, enters price = 41,200 ₫, quantity = 100 | Summary: "₫41.200 × 100"; Tổng: "₫4.120.000"; "Miễn phí"; amber reserve box "₫4.120.000"; VỐN ẢO SAU LỆNH = 20,000,000 - 4,120,000 |
+| AC-OP-LO-BUY-02 | All fields valid, balance sufficient | User taps "Đặt lệnh" | Confirmation sheet opens; title "Xác nhận mua VIC"; Hành động "MUA · LO"; Số lượng "100 CP"; Giá đặt "₫41.200"; Tổng ước tính "₫4.120.000" in orange |
+| AC-OP-LO-BUY-03 | Confirmation sheet shown | User taps "✦ Xác nhận mua"; API returns 201 | Sheet dismisses; new order appears in Sổ lệnh chờ tab |
+| AC-OP-LO-BUY-04 | LO BUY, ceiling = 45,800 ₫ | User enters price = 46,000 ₫ | Red border on GIÁ ĐẶT; error: "Vượt trần · 46.000 (trần 45.800)"; CTA shows "Kiểm tra lại thông tin" |
+| AC-OP-LO-BUY-05 | LO BUY, tick size = 100 ₫ | User enters price = 41,150 ₫ | Red border; error: "Sai bước · 41.150đ (bước 100đ)" |
 
 ### AC-SET-02: LO SELL (Limit Order Sell)
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-LO-SELL-01 | User holds 500 VIC; VIC last_price = 85,000 ₫; HOSE CONT | User selects LO, SELL, enters price = 87,000 ₫, quantity = 200 | Summary: Gross = 17.400.000 ₫; Phí = 43.500 ₫; Thuế bán = 17.400 ₫; Tổng thu = 17.339.100 ₫; "Đủ cổ phiếu" |
-| AC-OP-LO-SELL-02 | Same setup | User taps "Xem lại lệnh" → Confirmation | Shows "BÁN 200 cổ phiếu VIC · Lệnh Giới Hạn"; Giá = 87.000 ₫; Tổng thu = 17.339.100 ₫ |
-| AC-OP-LO-SELL-03 | SELL LO, price = 83,000 ₫ (below last_price = 85,000 ₫) | User fills price and taps out | Inline error: "Giá bán lệnh giới hạn phải ≥ giá hiện tại (85.000 ₫). Dùng lệnh MP hoặc nhập giá ≥ 85.000 ₫." |
-| AC-OP-LO-SELL-04 | User holds 300 VIC; 100 soft-locked in open SELL order | User enters quantity = 250 on SELL side | Summary shows "Thiếu 50 cổ phiếu" (250 requested, 200 available); "Xem lại lệnh" disabled |
+| AC-OP-LO-SELL-01 | User holds 500 VIC; last_price = 41,200 ₫; floor = 39,800 | User selects LO, BÁN, enters price = 41,500 ₫, quantity = 200 | Summary: "₫41.500 × 200"; Tổng: "₫8.300.000"; "Miễn phí"; VỐN ẢO SAU LỆNH shows cash + 8.300.000 |
+| AC-OP-LO-SELL-02 | All fields valid, holdings sufficient | User taps "Đặt lệnh" | Confirmation sheet: title "Xác nhận bán VIC"; Hành động "BÁN · LO"; CTA "✦ Xác nhận bán" |
+| AC-OP-LO-SELL-03 | LO SELL, user holds 200 shares | User enters quantity = 500 | Error: "Bán vượt nắm giữ (200 CP)"; CTA disabled |
+| AC-OP-LO-SELL-04 | LO SELL, holdings = 0 | User views sell form | Error: "Bán mã chưa sở hữu ([TICKER])"; CTA disabled |
 
-### AC-SET-03: MP BUY (Market Order Buy)
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-MP-BUY-01 | HOSE CONT session; user has 10,000,000 ₫ available | User selects MP, BUY, enters quantity = 100 | Warning banner "Lệnh thị trường có thể khớp ở giá không mong đợi" shown; no price field; summary shows estimated values with "~" prefix |
-| AC-OP-MP-BUY-02 | MP BUY quantity = 100 valid | User taps "Xem lại lệnh" | Confirmation shows: "MUA 100 cổ phiếu [TICKER] · Lệnh Thị Trường"; "Giá ước tính: ~[last_price] ₫ (giá thực tế có thể khác)"; warning banner visible in confirmation |
-| AC-OP-MP-BUY-03 | HOSE PRE_OPEN session | User opens sheet | MP tab is disabled; user cannot select MP; ATO is the default |
-
-### AC-SET-04: MP SELL (Market Order Sell)
+### AC-SET-03: Stop-Limit BUY
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-MP-SELL-01 | HOSE CONT; user holds 200 shares; last_price = 50,000 ₫ | User selects MP, SELL, quantity = 100 | Warning shown; Summary: Gross ~5.000.000 ₫ (estimated); Phí = ~12.500 ₫; Thuế bán = ~5.000 ₫; Tổng thu ~4.982.500 ₫ |
-| AC-OP-MP-SELL-02 | MP SELL, quantity = 100 valid | User taps confirm → API 201 | SUCCESS: "BÁN 100 cổ phiếu [TICKER] · Lệnh Thị Trường" |
+| AC-OP-STOPLIM-BUY-01 | HOSE; last_price = 41,200 ₫; ceiling = 45,800; user has 20,000,000 ₫ | User selects Stop-Limit, MUA; enters stop_price = 44,000, limit_price = 43,500, qty = 100; validity = 30 days | Summary: "Khi giá chạm: ₫44.000"; "Đặt LO giá: ₫43.500 × 100"; "Tổng ước tính: ₫4.350.000"; reserve notice amber box; VỐN ẢO unchanged |
+| AC-OP-STOPLIM-BUY-02 | All fields valid | User taps "Đặt lệnh" | Confirmation sheet: "Xác nhận mua VIC"; Hành động "MUA · Stop-Limit"; Giá đặt shows trigger + limit; Hiệu lực shows date range |
+| AC-OP-STOPLIM-BUY-03 | Stop-Limit BUY; stop_price = 44,000 | HIỆU LỰC LỆNH defaults | [30 ngày] pill active; dates shown from today to today+30 |
+| AC-OP-STOPLIM-BUY-04 | Stop-Limit BUY; submitted; API 201 | Success | New order appears in Sổ lệnh chờ; type badge "Stop-Limit"; trigger "₫44.000" shown |
 
-### AC-SET-05: ATO BUY (At-The-Open Buy)
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-ATO-BUY-01 | HOSE PRE_OPEN (09:05 ICT); user has sufficient balance | User selects ATO, BUY, quantity = 100 | No price field; informational note "Lệnh ATO khớp theo giá mở cửa được tính toán vào 09:15. Giá khớp do sàn xác định." visible |
-| AC-OP-ATO-BUY-02 | ATO BUY, quantity = 100 | User taps "Xem lại lệnh" | Confirmation: "MUA 100 cổ phiếu [TICKER] · Lệnh ATO"; Giá khớp: "Theo giá mở cửa"; "Phí sẽ được tính sau khi lệnh khớp" |
-| AC-OP-ATO-BUY-03 | ATO BUY; user taps confirm; API 201 | SUCCESS | "Đặt lệnh thành công! MUA 100 cổ phiếu [TICKER] · Lệnh ATO · Theo giá mở cửa" |
-| AC-OP-ATO-BUY-04 | ATO BUY submitted; no matching price at 09:15 opening auction | Server sends ATO_ATC_NO_MATCH event | Push notification: "Lệnh ATO của bạn cho [qty] [TICKER] không thể khớp — không có giá mở cửa tại phiên khớp lệnh. Tiền của bạn đã được hoàn lại." |
-
-### AC-SET-06: ATO SELL (At-The-Open Sell)
+### AC-SET-04: Stop-Limit SELL
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-ATO-SELL-01 | HOSE PRE_OPEN; user holds 300 shares | User selects ATO, SELL, quantity = 100 | Form shows available holdings = 300; no price field; informational note visible |
-| AC-OP-ATO-SELL-02 | ATO SELL, quantity = 100 | User confirms → API 201 | SUCCESS: "BÁN 100 cổ phiếu [TICKER] · Lệnh ATO" |
+| AC-OP-STOPLIM-SELL-01 | HOSE; last_price = 41,200 ₫; user holds 300 VIC | User selects Stop-Limit, BÁN; stop_price = 38,000, limit_price = 37,500, qty = 100; validity = 30 days | Summary shows stop_price, limit_price, qty; reserve notice: "Chưa giữ tiền — chỉ trừ vốn khi giá chạm mức kích hoạt và lệnh được đặt." |
+| AC-OP-STOPLIM-SELL-02 | Valid Stop-Limit SELL | User taps "Đặt lệnh"; API returns 201 | Order in Sổ lệnh chờ with BÁN badge + Stop-Limit badge + trigger info |
+| AC-OP-STOPLIM-SELL-03 | Stop-Limit SELL; qty = 400; holdings = 300 | User fills qty | Error: "Bán vượt nắm giữ (300 CP)"; CTA disabled |
 
-### AC-SET-07: ATC BUY (At-The-Close Buy)
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-ATC-BUY-01 | HOSE ATC Period (14:35 ICT); user has sufficient balance | User selects ATC, BUY, quantity = 200 | No price field; informational note "Lệnh ATC khớp theo giá đóng cửa được tính toán vào 14:45. Giá khớp do sàn xác định." |
-| AC-OP-ATC-BUY-02 | ATC BUY, quantity = 200 | User taps "Xem lại lệnh" | Confirmation: "MUA 200 cổ phiếu [TICKER] · Lệnh ATC"; Giá khớp: "Theo giá đóng cửa" |
-
-### AC-SET-08: ATC SELL (At-The-Close Sell)
+### AC-SET-05: Stop BUY
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-ATC-SELL-01 | HOSE ATC Period; user holds 400 shares | User selects ATC, SELL, quantity = 400 | All 400 available shares usable (no pre-launch ATO conflict); form shows holdings = 400 |
-| AC-OP-ATC-SELL-02 | ATC SELL quantity = 400 | User confirms → API 201 | SUCCESS: "BÁN 400 cổ phiếu [TICKER] · Lệnh ATC" |
+| AC-OP-STOP-BUY-01 | HOSE; last_price = 41,200 ₫; TC = 42,800; user has 20,000,000 ₫ | User selects Stop, MUA; enters stop_price = 44,000, qty = 100; validity = 30 days | Three fields shown: SỐ LƯỢNG, GIÁ KÍCH HOẠT (TRIGGER), GIÁ THAM CHIẾU (grayed = 42,800); HIỆU LỰC shown |
+| AC-OP-STOP-BUY-02 | Stop BUY; all fields valid | User taps "Đặt lệnh" | Confirmation sheet: "Xác nhận mua VIC"; Hành động "MUA · Stop"; Giá đặt shows trigger; Tổng ước tính based on ref × qty |
+| AC-OP-STOP-BUY-03 | Stop BUY; submitted; API 201 | Success | Order in Sổ lệnh chờ; type badge "Stop"; "trigger ₫44.000" displayed |
 
-### AC-SET-09: STOP_LIMIT BUY
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-STOPLIM-BUY-01 | HOSE CONT; last_price = 50,000 ₫; user has 10,000,000 ₫ | User selects STOP_LIMIT, BUY; enters stop_price = 52,000 ₫, price = 51,500 ₫, quantity = 100 | Educational note visible; summary shows stop_price and limit price |
-| AC-OP-STOPLIM-BUY-02 | Same setup | User taps "Xem lại lệnh" | Confirmation shows: "MUA 100 cổ phiếu [TICKER] · Lệnh Dừng-Giới Hạn"; Giá dừng: 52.000 ₫; Giá giới hạn: 51.500 ₫; educational note present |
-| AC-OP-STOPLIM-BUY-03 | BUY STOP_LIMIT, stop_price = 48,000 ₫ (below last_price = 50,000 ₫) | User fills stop_price and tabs out | Inline error: "Giá dừng lệnh mua phải cao hơn giá hiện tại (50.000 ₫) để kích hoạt đột phá giá." |
-| AC-OP-STOPLIM-BUY-04 | STOP_LIMIT BUY submitted; API 201 | SUCCESS | "Đặt lệnh thành công! MUA 100 cổ phiếu [TICKER] · Lệnh Dừng-Giới Hạn · Kích hoạt tại: 52.000 ₫ · Giới hạn: 51.500 ₫" |
-
-### AC-SET-10: STOP_LIMIT SELL
+### AC-SET-06: Stop SELL
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| AC-OP-STOPLIM-SELL-01 | HOSE CONT; last_price = 50,000 ₫; user holds 300 shares | User selects STOP_LIMIT, SELL; enters stop_price = 47,000 ₫, price = 46,500 ₫, quantity = 100 | Educational note visible; summary shows stop_price and limit price |
-| AC-OP-STOPLIM-SELL-02 | SELL STOP_LIMIT, stop_price = 53,000 ₫ (above last_price = 50,000 ₫) | User fills stop_price and tabs out | Inline error: "Giá dừng lệnh bán phải thấp hơn giá hiện tại (50.000 ₫) để bảo vệ khỏi thua lỗ." |
-| AC-OP-STOPLIM-SELL-03 | Valid STOP_LIMIT SELL submitted; API 201 | SUCCESS | SUCCESS state with educational note visible |
-
-### AC-SET-11: STOP BUY (Stop Market Buy)
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-STOP-BUY-01 | HOSE CONT; last_price = 50,000 ₫; user has 10,000,000 ₫ | User selects STOP, BUY; enters stop_price = 53,000 ₫, quantity = 100 | Two fields only (no Limit Price); educational note "Paave mô phỏng lệnh dừng — không có trên thị trường thực Việt Nam" |
-| AC-OP-STOP-BUY-02 | Valid STOP BUY | User taps "Xem lại lệnh" | Confirmation: "MUA 100 [TICKER] · Lệnh Dừng"; Giá dừng: 53.000 ₫; Giá khi kích hoạt: "Theo giá thị trường tại thời điểm kích hoạt" |
-| AC-OP-STOP-BUY-03 | STOP BUY submitted; API 201 | SUCCESS | "Đặt lệnh thành công! MUA 100 cổ phiếu [TICKER] · Lệnh Dừng · Kích hoạt tại: 53.000 ₫ · Theo giá thị trường" |
-
-### AC-SET-12: STOP SELL (Stop Market Sell)
-
-| # | Given | When | Then |
-|---|-------|------|------|
-| AC-OP-STOP-SELL-01 | HOSE CONT; last_price = 50,000 ₫; user holds 200 shares | User selects STOP, SELL; enters stop_price = 47,000 ₫, quantity = 100 | Two fields; educational note visible; available holdings = 200 shown |
-| AC-OP-STOP-SELL-02 | STOP SELL, stop_price = 53,000 ₫ (above last_price) | User fills stop_price | Inline error: "Giá dừng lệnh bán phải thấp hơn giá hiện tại (50.000 ₫) để bảo vệ khỏi thua lỗ." |
-| AC-OP-STOP-SELL-03 | Valid STOP SELL; API 201 | SUCCESS | SUCCESS state; "BÁN 100 cổ phiếu [TICKER] · Lệnh Dừng · Kích hoạt tại: 47.000 ₫" |
+| AC-OP-STOP-SELL-01 | HOSE; last_price = 41,200 ₫; TC = 42,800; user holds 200 VIC | User selects Stop, BÁN; stop_price = 38,000, qty = 100; validity = 30 days | Form shows stop_price field (TRIGGER), GIÁ THAM CHIẾU grayed = 42,800; reserve notice amber |
+| AC-OP-STOP-SELL-02 | Valid Stop SELL | User confirms; API 201 | Order in Sổ lệnh chờ with BÁN + Stop badges |
+| AC-OP-STOP-SELL-03 | Stop SELL; stop_price = 44,000 (above last_price = 41,200) | User views form | Error on GIÁ KÍCH HOẠT: "Giá dừng lệnh bán phải thấp hơn giá hiện tại ([last_price] ₫) để bảo vệ khỏi thua lỗ." |
 
 ---
 
@@ -905,160 +861,201 @@ This section provides complete Given/When/Then acceptance criteria for all 6 ord
 
 | Case ID | Scenario | Expected Behaviour |
 |---------|----------|-------------------|
-| EC-OP-01 | Market closes (14:45 ICT) while user has the FORM state open | All order type tabs disabled; persistent banner: "Thị trường đã đóng cửa lúc 14:45. Hãy thử lại vào ngày giao dịch tiếp theo."; "Xem lại lệnh" button disabled; user can still close the sheet |
-| EC-OP-02 | Session transitions to ATC Period (14:30) while user is mid-fill of an LO form | Toast notification: "Phiên giao dịch đã chuyển sang ATC (14:30–14:45). Chỉ nhận lệnh ATC."; LO tab greyed; ATC tab highlighted; user's existing field values preserved but form is in error state until user either switches to ATC or waits for market close |
-| EC-OP-03 | Daily price band changes (reference_price recalculates) while form is open | Ceiling/floor indicators in the price field helper update to new values; if user's currently entered price is now outside the new band, inline error appears: "Giá vượt mức trần mới ([new_ceiling] ₫) cho [TICKER] trên [EXCHANGE]." |
-| EC-OP-04 | Available cash decreases (another of the user's BUY limit orders gets reserved or filled) while form is open | On next 30-second refresh: available cash shown updates; if updated balance makes entered quantity now insufficient, summary card switches from "Đủ vốn" to "Thiếu [X] ₫"; "Xem lại lệnh" becomes disabled |
-| EC-OP-05 | User taps "Xác nhận đặt lệnh"; API returns HTTP 422 with error_code E-PT-116 (10 open orders limit) | ERROR state with message: "Bạn đã đạt giới hạn 10 lệnh chờ. Huỷ lệnh hiện có để đặt lệnh mới."; "Thử lại" returns to FORM; user must first cancel an existing order |
-| EC-OP-06 | User taps "Xác nhận đặt lệnh"; API returns HTTP 422; between the CONFIRMING state and the PROCESSING state, balance changed (another order filled), making the order invalid | ERROR state with exact server message; "Thử lại" returns to FORM; available cash display refreshed to current value |
-| EC-OP-07 | User double-taps "Xác nhận đặt lệnh" in rapid succession | The button is immediately disabled upon first tap (PROCESSING state entered); second tap has no effect; `idempotency_key` on both attempts is the same UUID generated at the first tap; server deduplicates; only one order created |
-| EC-OP-08 | User's ATO or ATC order is accepted (HTTP 201) but the auction produces no matching price | Order transitions server-side to CANCELLED (ATO_ATC_NO_MATCH); push notification sent: "Lệnh ATO của bạn cho [qty] [TICKER] không thể khớp — không có giá mở cửa tại phiên khớp lệnh. Tiền của bạn đã được hoàn lại." (for ATO) or "...không có giá đóng cửa..." (for ATC); the SUCCESS state was correctly shown at submission time; the cancellation is communicated async via push |
-| EC-OP-09 | User opens STOP_LIMIT form; last_price is live-updating via 15-second feed; stop_price the user entered was valid (above last_price for BUY) but then last_price jumps above stop_price | When the live price tick updates the header price and the now-invalid stop_price condition is detected: inline error appears on stop_price field: "Giá dừng lệnh mua phải cao hơn giá hiện tại ([new_last_price] ₫) để kích hoạt đột phá giá."; "Xem lại lệnh" becomes disabled |
-| EC-OP-10 | Ticker is suspended (halted) by the exchange while the user has the sheet open | Banner appears: "Giao dịch [TICKER] đang tạm dừng theo quyết định của sàn."; all order type tabs disabled; "Xem lại lệnh" disabled; user can close sheet |
-| EC-OP-11 | User opened sheet for a ticker on HOSE (CONT session); user switches device and reopens app; sheet is not preserved | Sheet does not persist across app restarts; user must re-open from Stock Detail; no crash or stale data |
-| EC-OP-12 | User places a SELL STOP order with stop_price = 47,000 ₫; before the stop triggers, the user also has an open SELL limit order for the same ticker (soft-lock) | Both orders count toward the 10-order limit (BR-OP-05 via BR-PT-14); soft-lock from the existing SELL limit reduces available_quantity shown in the STOP SELL form |
+| EC-OP-01 | Market closes (14:45 ICT) while user has the screen open and form partially filled | Error banner appears: "KHÔNG THỂ ĐẶT LỆNH" / "Thị trường đã đóng cửa lúc 14:45. Hãy thử lại vào ngày giao dịch tiếp theo."; CTA shows "Kiểm tra lại thông tin" (disabled); user can still view Sổ lệnh chờ / Danh mục / Lịch sử |
+| EC-OP-02 | Ticker is suspended (halted) while user has screen open | Error banner: "KHÔNG THỂ ĐẶT LỆNH" / "Giao dịch [TICKER] đang tạm dừng theo quyết định của sàn."; form inputs remain visible but CTA disabled |
+| EC-OP-03 | Ticker in "cảnh báo huỷ niêm yết" (delisting warning) state | Warning notice appears within the screen (not the blocking error banner); user is informed but can still attempt to place orders; exact warning text: "Cổ phiếu [TICKER] đang trong diện cảnh báo huỷ niêm yết." |
+| EC-OP-04 | Available cash decreases (another BUY limit order reserves capital) while screen is open | On next 30-second refresh: available cash display updates; if updated balance makes entered quantity now insufficient, VỐN ẢO SAU LỆNH shows 0% or negative; CTA switches to "Kiểm tra lại thông tin" |
+| EC-OP-05 | User has 50 pending orders (at cap) and tries to place a new one | CTA tap opens confirmation sheet; on submit, API returns error; error banner: "Đạt 50 lệnh chờ (cap)"; user must cancel an existing order |
+| EC-OP-06 | User enters a valid Stop-Limit form; validity = 7 days; taps confirm; between FORM_VALID and confirmation sheet appearing, end_date is in the past (clock edge) | Server returns error; error banner with server message; form preserved |
+| EC-OP-07 | User opens Stop form; GIÁ THAM CHIẾU shows 42,800; user attempts to interact with [-] or [+] steppers | Steppers are non-interactive (grayed visual state); no value change; no error toast |
+| EC-OP-08 | User taps [100%] quick-select on LO BUY; price field is empty | [100%] tapped but price field has no value, so quantity cannot be computed; quantity field remains empty or shows 0; no crash |
+| EC-OP-09 | User switches from Stop-Limit to LO; then switches back to Stop-Limit | The quantity value entered before the switch is preserved; price fields (stop_price, limit_price) are reset to empty on each tab switch |
+| EC-OP-10 | User's Stop-Limit order triggers while they have the Sổ lệnh chờ panel open | The pending order row updates to show "ĐÃ KÍCH HOẠT"; a new LO child order appears with "Đã tự đặt LO #[child_id]" note; or a push notification is sent if the screen is not in foreground |
+| EC-OP-11 | Weekend or market holiday; user opens screen | Error banner shown from screen open: "KHÔNG THỂ ĐẶT LỆNH" with holiday message; Sổ lệnh chờ, Danh mục, Lịch sử remain accessible |
+| EC-OP-12 | User places SELL Stop order with qty = 100; also has an open SELL LO for 150 shares of same ticker (soft-locked) | If total holdings = 200, available for new SELL = 200 - 150 = 50 (soft-lock from LO applied); qty = 100 triggers "Bán vượt nắm giữ (50 CP)" error |
 
 ---
 
 ## 8. Design Requirements
 
-[PENDING: Order Placement Screen Design Screenshot]
+Design confirmed from screenshots (v1.1 update). All dimensions, colors, and exact component names to be validated against Paave Design System (Figma). This section documents observed design decisions from the screenshot set.
 
-The following functional design requirements are specified from intent. All visual dimensions, exact color values, typography, and spacing are to be confirmed against the Paave Design System (Figma) once the screenshot is available.
+### 8.1 Screen Container
 
-### 8.1 Sheet Container
+- Full-screen layout (not a bottom sheet); no sheet animation for the primary form view
+- Sticky price header: remains fixed as user scrolls the form area
+- Error/warning banner: rendered above the price header when active; pushes header down
 
-- Renders as a bottom sheet on mobile (iOS and Android)
-- Sheet height: sufficient to show the full form without internal scroll for all order types; STOP_LIMIT (3 fields) is the tallest form; the sheet must accommodate it without requiring the user to scroll the sheet container itself
-- Sheet has a drag handle at the top
-- Sheet background: surface color from design system (matches card background in current theme)
-- Sheet is dismissible via swipe-down in all states except PROCESSING
+### 8.2 Price Header
 
-### 8.2 Header Section
+- Background: dark surface color matching the app's dark theme
+- "● LIVE" dot: green pulsing indicator
+- Timestamp: "HH:MM:SS" format (seconds visible); exchange name after dash
+- Ceiling label: "Trần" prefix; value in orange/purple
+- TC label: "TC" prefix; value in gray
+- Floor label: "Sàn" prefix; value in teal/blue
+- Large price: H1 bold; red when below TC, green when above TC
+- Change row: smaller font; same color coding as large price
 
-- Stock ticker: bold, H2 typography, primary text color
-- Exchange chip: small pill badge; color-coded by exchange (HOSE = blue, HNX = green, UPCOM = orange, reference exchanges = grey)
-- Last price: H1 typography, primary text color; updates every 15 seconds; a brief flash animation (200ms) plays on each price update to signal freshness
-- "Tiền ảo" badge: amber background, amber text, rendered as `<VirtualFundsLabel />` component; always visible in the top-right area of the header; occupies a fixed position and does not move when price updates
+### 8.3 Orderbook / Chart Tabs
 
-### 8.3 Side Toggle (BUY / SELL)
+- Two tabs: "≡ Sổ lệnh" (icon + text) and "∿ Biểu đồ" (icon + text)
+- Active tab: underlined or highlighted
+- Buy pressure bar: "Mua [N]%" green segment left; "Bán [M]%" red segment right; bar spans full width
+- Orderbook: 5 columns, 3 data rows; GIÁ KHỚP column centered; buy side values in green, sell side in red
 
-- Full-width toggle (two equal halves)
-- BUY side: green background when active (`#22C55E` or design system success-600); white text; "MUA" label
-- SELL side: red background when active (`#EF4444` or design system danger-500); white text; "BÁN" label
-- Inactive side: grey background; grey text
-- Touch target minimum: 44pt height per side
+### 8.4 Position Card
 
-### 8.4 Order Type Selector
+- Shown only when holdings > 0
+- Green bullet "●" before "VỊ THẾ HIỆN TẠI" label
+- Card has subtle background elevation
+- Unrealized PnL: green for positive, red for negative
 
-- Horizontal scrollable tab row (not a wrap-to-multiple-rows layout)
-- Active tab: underline indicator matching the side color (green for BUY, red for SELL)
-- Disabled tab: 40% opacity; cursor: not-allowed equivalent
-- Tab labels: short Vietnamese names ("LO", "MP", "ATO", "ATC", "Dừng", "Dừng-GL")
-- Session indicator line below tab row: secondary text color, 12sp font
+### 8.5 MUA / BÁN Buttons
 
-### 8.5 Form Fields
+- Full-width row; equal halves
+- MUA active: yellow-green (`#CDFF4C` approximate or design system accent); dark text; "↑ MUA" label
+- BÁN active: dark/charcoal background; white text; "↓ BÁN" label
+- Touch target minimum: 48dp height
 
-- Numeric inputs use the native numeric keyboard on mobile (no keyboard type switching required by the user)
-- Each field has a label above and an optional helper text / error text below
-- Error text color: red (`#EF4444` or design system danger-500)
-- Helper text color: secondary text color
-- Ceiling/floor helper for price fields: two values on one line ("Trần: X ₫ · Sàn: Y ₫")
-- Quick-select quantity chips: small, tappable pills below the quantity input
+### 8.6 Order Type Selector
 
-### 8.6 Warning / Informational Banners
+- "LOẠI LỆNH" label uppercase, secondary text color, left-aligned
+- "ⓘ Giải thích" pill button right-aligned; small text; pill shape with border
+- 3 tabs in a segmented control: LO | Stop-Limit | Stop
+- Active tab: yellow/accent background; dark text
+- Inactive tabs: dark background; muted text
+- No disabled tabs in V1
 
-- MP warning ("Lệnh thị trường có thể khớp ở giá không mong đợi"): amber background, amber-900 text; full width; appears between order type selector and form fields
-- STOP/STOP_LIMIT educational note: indigo or purple-tinted background (to visually distinguish from the MP warning); full width; appears between order type selector and form fields
-- ATO/ATC informational note: blue (info) background; full width
+### 8.7 Form Fields
 
-### 8.7 Order Summary Card
+- Field label: uppercase, secondary text color, left
+- Helper text: primary text color or orange (for ceiling), right
+- Input container: dark background; rounded; stepper [-] on left, [+] on right; value + unit centered
+- Invalid state: red border (2dp) around input container; value text in red
+- Error text below field: red, small font
 
-- Positioned at bottom of form content, above the CTA button
-- Card background: slightly elevated surface (shadow or border)
-- Each row: label on left (secondary text); value on right (primary text)
-- Total row: bold; slightly larger font
-- "Đủ vốn" indicator: green text, checkmark icon
-- "Thiếu" indicator: red text, warning icon
+### 8.8 HIỆU LỰC LỆNH (Stop-Limit and Stop forms)
 
-### 8.8 CTA Buttons
+- Section label: "HIỆU LỰC LỆNH" uppercase left; "[N] ngày" orange text right
+- Quick buttons: [Hôm nay] [7 ngày] [30 ngày] [90 ngày] in a row; pill shape; active = yellow
+- Date range row: "TỪ NGÀY [DD/MM/YY] → ĐẾN NGÀY [DD/MM/YY]"; secondary text color
 
-- "Xem lại lệnh" (primary CTA in FORM state): full width; rounded-lg; BUY state = green background, SELL state = red background; white text; H3 label
-- Disabled state: 50% opacity; no interaction response
-- "Xác nhận đặt lệnh" (primary CTA in CONFIRMING state): same styling as above
-- "Sửa lệnh" (secondary CTA in CONFIRMING state): text-only button; primary text color; placed below the primary CTA
-- Loading state during PROCESSING: primary CTA shows spinner replacing label; spinner white
+### 8.9 GIÁ THAM CHIẾU (Stop form only)
 
-### 8.9 SUCCESS State
+- Visually identical to other price fields but with 40% opacity / grayed appearance
+- [-] and [+] stepper buttons rendered in disabled state (not interactive)
+- "Snapshot khi trigger" helper text in gray (secondary color)
 
-- Centered layout within the sheet
-- Success icon: circular green background with checkmark; animated entrance (scale 0.8 → 1.0 over 300ms)
-- "Đặt lệnh thành công!" heading: H1, green text
-- Order summary: secondary text, two lines maximum
-- CTAs: two buttons stacked; "Xem danh mục" primary; "Đặt lệnh mới" secondary
+### 8.10 % Quick-Select (LO form only)
 
-### 8.10 ERROR State
+- 5 pill buttons: [10%] [25%] [50%] [75%] [100%]
+- Row below form fields, above order summary card
+- Active pill: yellow/accent background; dark text
+- Inactive pills: muted border; muted text
 
-- Centered layout within the sheet
-- Error icon: circular red background with X; no animation
-- "Không thể đặt lệnh" heading: H1, red text
-- Error message: body text, primary text color, left-aligned
-- CTAs: "Thử lại" primary; "Huỷ" secondary (text-only)
+### 8.11 Order Summary Card
+
+- Card with slight elevation or border; dark background
+- "Phí & thuế: Miễn phí" in orange/yellow accent text
+- Amber highlight box for "Vốn ảo dự trữ" (LO BUY) or reserve notice (Stop/Stop-Limit): amber background, dark amber text
+- "VỐN ẢO SAU LỆNH" row: label left; "₫[amount] / [pct]% khả dụng" right; bold
+
+### 8.12 Primary CTA Button
+
+- "Kiểm tra lại thông tin" (disabled): gray background; muted text; no interaction response
+- "Đặt lệnh" (enabled): yellow-green background (`#CDFF4C` approximate); dark bold text; full width; rounded-lg
+- Loading state during PROCESSING: spinner replaces text on confirmation sheet CTA only
+
+### 8.13 Confirmation Sheet
+
+- Bottom sheet over blurred background
+- Drag handle at top (pill shape, centered)
+- Title: bold, H2; subtitle: small, secondary text
+- Summary table: label left (secondary), value right (primary); Tổng ước tính in orange
+- Two buttons full-width: "Huỷ" left half (dark/charcoal); "✦ Xác nhận mua/bán" right half (yellow-green, bold)
+- "✦" decorative prefix on confirm button
+
+### 8.14 Panel Below CTA
+
+- Fixed below primary CTA button; does not scroll with form
+- Tab labels: "Sổ lệnh chờ [N]" | "Danh mục [N]" | "Lịch sử (thường + ĐK)"
+- Active tab underlined or highlighted
+- Side badge colors: MUA = green pill; BÁN = red pill
+- Order type badges: "LO" / "Stop-Limit" / "Stop" in gray pill
+- Action buttons in Sổ lệnh chờ: "SỬA" in blue/teal pill; "HUỶ" in red pill; ">" chevron for expand
+
+### 8.15 Error Banner
+
+- Sticky, full width, positioned above price header
+- Background: red or orange
+- "KHÔNG THỂ ĐẶT LỆNH": uppercase, bold, red or white label
+- Warning icon on left
+- Body message text below title
 
 ---
 
 ## 9. Validation Logic Table
 
-This table is the authoritative reference for every validation rule applied to order placement form fields. Every error message is an exact string, not a description.
+This table is the authoritative reference for every validation rule. Every error message is an exact string, not a description.
 
 ### 9.1 Quantity Field Validation
 
-| Rule | Condition | Exact Error Message (VI) | Error Code |
-|------|-----------|--------------------------|------------|
-| Minimum quantity | `quantity < 100` | "Khối lượng tối thiểu là 100 cổ phiếu." | E-OP-Q-01 |
-| Board lot (VN exchanges) | `quantity % 100 ≠ 0` AND exchange IN (HOSE, HNX, UPCOM) | "Khối lượng phải là bội số của 100. Gợi ý: [floor(qty/100)×100] hoặc [ceil(qty/100)×100] cổ phiếu." | E-PT-107 |
-| Maximum quantity | `quantity > 1,000,000` | "Khối lượng tối đa cho mỗi lệnh là 1.000.000 cổ phiếu." | E-OP-Q-02 |
-| Non-integer input | `quantity` contains decimals | "Khối lượng phải là số nguyên." | E-OP-Q-03 |
-| Zero or negative | `quantity ≤ 0` | "Khối lượng phải lớn hơn 0." | E-OP-Q-04 |
-| SELL quantity exceeds available holdings | `quantity > available_holdings` (client check) | "Thiếu [quantity − available_holdings] cổ phiếu. Bạn đang nắm giữ [available_holdings] cổ phiếu [TICKER] khả dụng." | E-PT-109 (server) |
+| Rule | Condition | Error Code | Exact Error Message (VI) — as shown in design |
+|------|-----------|------------|----------------------------------------------|
+| Empty / zero | `quantity = 0` or empty | E-OP-01 | "SL trống (0)" |
+| Board lot (VN exchanges) | `quantity % 100 ≠ 0` AND exchange IN (HOSE, HNX) | E-OP-02 | "Sai lô · [qty] CP (bội 100)" |
+| Non-integer | `quantity` contains decimals | E-OP-Q-03 | "Khối lượng phải là số nguyên." |
+| Zero or negative | `quantity < 0` | E-OP-Q-04 | "Khối lượng phải lớn hơn 0." |
+| Maximum quantity | `quantity > 1,000,000` | E-OP-Q-02 | "Khối lượng tối đa cho mỗi lệnh là 1.000.000 cổ phiếu." |
+| SELL quantity exceeds available holdings | `qty > available_holdings` | E-OP-06 | "Bán vượt nắm giữ ([available_holdings] CP)" |
+| SELL with zero holdings | `available_holdings = 0` | E-OP-07 | "Bán mã chưa sở hữu ([TICKER])" |
 
-### 9.2 Limit Price (LO) Field Validation
+### 9.2 Limit Price (LO: GIÁ ĐẶT) Field Validation
 
-| Rule | Condition | Exact Error Message (VI) | Error Code |
-|------|-----------|--------------------------|------------|
-| BUY limit above current price | `price > last_price` (BUY side) | "Giá mua lệnh giới hạn phải ≤ giá hiện tại ([last_price] ₫). Dùng lệnh MP hoặc nhập giá ≤ [last_price] ₫." | E-PT-201 |
-| SELL limit below current price | `price < last_price` (SELL side) | "Giá bán lệnh giới hạn phải ≥ giá hiện tại ([last_price] ₫). Dùng lệnh MP hoặc nhập giá ≥ [last_price] ₫." | E-PT-202 |
-| Price above ceiling | `price > ceiling_price` | "Giá vượt mức trần hôm nay ([ceiling_price] ₫) cho [TICKER] trên [EXCHANGE]." | E-PT-203 |
-| Price below floor | `price < floor_price` | "Giá thấp hơn mức sàn hôm nay ([floor_price] ₫) cho [TICKER] trên [EXCHANGE]." | E-PT-204 |
-| Tick size violation | `price % tick_size ≠ 0` (VN only) | "Giá phải là bội số của [tick_size] ₫. Bạn có muốn nhập [round_down] ₫ hoặc [round_up] ₫ không?" | E-PT-205 |
-| Zero or negative | `price ≤ 0` | "Giá phải lớn hơn 0." | E-OP-P-01 |
+| Rule | Condition | Error Code | Exact Error Message (VI) — as shown in design |
+|------|-----------|------------|----------------------------------------------|
+| Price above ceiling | `price > ceiling_price` | E-OP-04 | "Vượt trần · [price] (trần [ceiling_price])" |
+| Price below floor | `price < floor_price` | E-OP-05 | "Dưới sàn · [price] (sàn [floor_price])" |
+| Tick size violation | `price % tick_size ≠ 0` | E-OP-03 | "Sai bước · [price]đ (bước [tick_size]đ)" |
+| Zero or negative | `price ≤ 0` | E-OP-P-01 | "Giá phải lớn hơn 0." |
 
-### 9.3 Stop Price (STOP / STOP_LIMIT) Field Validation
+### 9.3 Stop Price (GIÁ KÍCH HOẠT: Stop-Limit and Stop) Field Validation
 
-| Rule | Condition | Exact Error Message (VI) | Error Code |
-|------|-----------|--------------------------|------------|
-| BUY stop below current price | `stop_price ≤ last_price` (BUY side) | "Giá dừng lệnh mua phải cao hơn giá hiện tại ([last_price] ₫) để kích hoạt đột phá giá." | E-OP-SP-01 |
-| SELL stop above current price | `stop_price ≥ last_price` (SELL side) | "Giá dừng lệnh bán phải thấp hơn giá hiện tại ([last_price] ₫) để bảo vệ khỏi thua lỗ." | E-OP-SP-02 |
-| Stop price above ceiling | `stop_price > ceiling_price` | "Giá dừng vượt mức trần hôm nay ([ceiling_price] ₫) cho [TICKER] trên [EXCHANGE]." | E-OP-SP-03 |
-| Stop price below floor | `stop_price < floor_price` | "Giá dừng thấp hơn mức sàn hôm nay ([floor_price] ₫) cho [TICKER] trên [EXCHANGE]." | E-OP-SP-04 |
-| Tick size violation | `stop_price % tick_size ≠ 0` (VN only) | "Giá dừng phải là bội số của [tick_size] ₫. Bạn có muốn nhập [round_down] ₫ hoặc [round_up] ₫ không?" | E-OP-SP-05 |
-| Zero or negative | `stop_price ≤ 0` | "Giá dừng phải lớn hơn 0." | E-OP-SP-06 |
+| Rule | Condition | Error Code | Exact Error Message (VI) |
+|------|-----------|------------|--------------------------|
+| BUY stop below current price | `stop_price ≤ last_price` (BUY) | E-OP-SP-01 | "Giá dừng lệnh mua phải cao hơn giá hiện tại ([last_price] ₫) để kích hoạt đột phá giá." |
+| SELL stop above current price | `stop_price ≥ last_price` (SELL) | E-OP-SP-02 | "Giá dừng lệnh bán phải thấp hơn giá hiện tại ([last_price] ₫) để bảo vệ khỏi thua lỗ." |
+| Stop price above ceiling | `stop_price > ceiling_price` | E-OP-SP-03 | "Giá dừng vượt mức trần hôm nay ([ceiling_price] ₫) cho [TICKER] trên [EXCHANGE]." |
+| Stop price below floor | `stop_price < floor_price` | E-OP-SP-04 | "Giá dừng thấp hơn mức sàn hôm nay ([floor_price] ₫) cho [TICKER] trên [EXCHANGE]." |
+| Tick size violation | `stop_price % tick_size ≠ 0` | E-OP-SP-05 | "Giá dừng phải là bội số của [tick_size] ₫." |
+| Zero or negative | `stop_price ≤ 0` | E-OP-SP-06 | "Giá dừng phải lớn hơn 0." |
 
-### 9.4 Balance and Holdings Check (Client-Side Pre-Submit)
+### 9.4 Balance Check (Client-Side Pre-Confirmation)
 
-| Rule | Condition | Exact Error Message (VI) | Error Code |
-|------|-----------|--------------------------|------------|
-| BUY total cost exceeds available cash | `(quantity × price × 1.0025) > available_cash` (client estimate) | "Không đủ tiền ảo. Cần thêm [shortfall] ₫. Khả dụng: [available_cash] ₫." | E-PT-108 (server) |
-| No holdings for SELL | `available_holdings = 0` | "Bạn không sở hữu cổ phiếu [TICKER]. Giao dịch bán khống không có trong paper trading." | E-PT-110 |
+| Rule | Condition | Error Code | Exact Error Message (VI) |
+|------|-----------|------------|--------------------------|
+| BUY LO: total cost exceeds available cash | `(qty × price) > available_cash` | E-OP-08 | "Thiếu vốn · [qty] CP @ [price]" |
+| Pending orders at cap | open_order_count ≥ 50 | E-OP-09 | "Đạt 50 lệnh chờ (cap)" |
+| Foreign ownership room full | foreign_room_remaining = 0 (for stocks with foreign limits) | E-OP-10 | "Room ngoại đầy (NĐT NN)" |
 
-### 9.5 Server-Returned Error Messages (Displayed in ERROR State)
+### 9.5 Market / Exchange State Validation (shown as error banner — "KHÔNG THỂ ĐẶT LỆNH")
 
-These are the exact strings the client must display verbatim from the API `message` field when the server returns a 4xx response:
+| State | Error Code | Banner Message |
+|-------|------------|----------------|
+| Market closed / suspended (HOSE tạm ngưng) | E-MK-01 | "HOSE tạm ngưng giao dịch — lỗi hệ thống. Thử lại sau ít phút." |
+| Symbol suspended | E-MK-02 | "Giao dịch [TICKER] đang tạm dừng theo quyết định của sàn." |
+| Symbol delisted | E-MK-03 | "Cổ phiếu này đã hủy niêm yết trên [EXCHANGE] và không thể giao dịch." |
+| Market holiday | E-MK-04 | "Hôm nay là ngày nghỉ thị trường. Thị trường sẽ mở cửa vào ngày giao dịch tiếp theo." |
+| Market closed after hours / weekend | E-MK-05 | "Thị trường đã đóng cửa lúc 14:45. Hãy thử lại vào ngày giao dịch tiếp theo." |
+
+### 9.6 Server-Returned Error Messages (Displayed as Error Banner After Failed Submission)
+
+The client must display these exact strings verbatim from the API `message` field:
 
 | Error Code | Exact Message (VI) to Display |
 |------------|-------------------------------|
 | E-PT-101 | "Thị trường VN đang đóng cửa. Giờ giao dịch: 09:00–14:45 ICT (Thứ 2–6, trừ ngày nghỉ lễ VN)." |
-| E-PT-103 | "Lệnh MP không được chấp nhận trong phiên tiền mở cửa (09:00–09:15 ICT). Dùng lệnh ATO để tham gia khớp giá mở cửa." |
 | E-PT-104 | "Cổ phiếu này đang bị đình chỉ giao dịch theo quyết định của sàn." |
 | E-PT-105 | "Cổ phiếu này đã hủy niêm yết trên [EXCHANGE] và không thể giao dịch." |
 | E-PT-107 | "Khối lượng phải là bội số của 100 cổ phiếu trên [EXCHANGE]. Gợi ý: [floor_qty] hoặc [ceil_qty] cổ phiếu." |
@@ -1066,49 +1063,40 @@ These are the exact strings the client must display verbatim from the API `messa
 | E-PT-109 | "Không đủ cổ phiếu. Bạn đang nắm giữ [available_qty] cổ phiếu [TICKER]; yêu cầu bán [requested_qty] cổ phiếu." |
 | E-PT-110 | "Bạn không sở hữu cổ phiếu [TICKER]. Giao dịch bán khống không có trong paper trading." |
 | E-PT-115 | "Không nhận lệnh mới trong phiên ATC (14:30–14:45 ICT). Đặt lệnh ATC thay thế." |
-| E-PT-116 | "Bạn đã đạt giới hạn 10 lệnh chờ. Huỷ lệnh hiện có để đặt lệnh mới." |
-| E-PT-117 | "Lệnh ATO không nhận giá — hệ thống tự xác định giá mở cửa." |
-| E-PT-118 | "Lệnh ATC không nhận giá — hệ thống tự xác định giá đóng cửa." |
-| E-PT-119 | "Lệnh ATO chỉ được đặt trong phiên tiền mở cửa (09:00–09:15 ICT)." |
-| E-PT-120 | "Lệnh ATC chỉ được đặt trong phiên ATC (14:30–14:45 ICT)." |
-| E-PT-121 | "Lệnh thị trường không có trên UPCOM. Dùng lệnh LO." |
-| E-PT-201 | "Giá mua ([price] ₫) cao hơn giá hiện tại ([current] ₫). Dùng lệnh MP hoặc nhập giá ≤ [current] ₫." |
-| E-PT-202 | "Giá bán ([price] ₫) thấp hơn giá hiện tại ([current] ₫). Dùng lệnh MP hoặc nhập giá ≥ [current] ₫." |
+| E-PT-116 | "Bạn đã đạt giới hạn 50 lệnh chờ. Huỷ lệnh hiện có để đặt lệnh mới." |
 | E-PT-203 | "Giá vượt mức trần hôm nay ([ceiling] ₫) cho [TICKER] trên [EXCHANGE]." |
 | E-PT-204 | "Giá thấp hơn mức sàn hôm nay ([floor] ₫) cho [TICKER] trên [EXCHANGE]." |
 | E-PT-205 | "Giá phải là bội số của [tick_size] ₫. Bạn có muốn nhập [round_down] ₫ hoặc [round_up] ₫ không?" |
 | E-PT-206 | "Không đủ số dư để đặt cọc. Khả dụng: [available] ₫. Cần: [required] ₫. Đã đặt cọc: [reserved] ₫ cho các lệnh khác." |
-| E-PT-207 | "Bạn đã có lệnh bán mở cho [TICKER]. Huỷ lệnh đó trước khi đặt lệnh bán khác trên cùng cổ phiếu." |
-| E-PT-208 | "Các lệnh mua đang chờ đã đặt cọc [reserved] ₫. Lệnh này cần thêm [required] ₫, vượt quá số dư khả dụng." |
-| Network timeout (client) | "Kết nối bị gián đoạn. Vui lòng kiểm tra lại trong Danh mục > Lệnh chờ trước khi thử lại." | — |
+| Network timeout (client) | "Kết nối bị gián đoạn. Vui lòng kiểm tra lại trong Sổ lệnh chờ trước khi thử lại." |
 
 ---
 
 ## 10. Traceability Matrix
 
-| Business Objective | Functional Requirement | Validation Logic | Test Case |
-|---------------------|------------------------|-----------------|-----------|
-| BO-04 (Paper Trading as Core Loop) | FR-OP-01 (Sheet Entry) | BR-OP-01 (Tiền ảo badge) | AC-OP-01-01 |
-| BO-04 (Paper Trading as Core Loop) | FR-OP-02 (Side Toggle) | BR-OP-02 (Fee 0.25%), BR-OP-03 (Sell tax) | AC-OP-02-01, AC-OP-10-01, AC-OP-10-02 |
-| BO-04 (Paper Trading as Core Loop) | FR-OP-03 (Order Type Selector) | Session availability matrix §1.1; BR-OP-15 (session refresh) | AC-OP-03-01, AC-OP-03-02, AC-OP-03-03, AC-OP-03-04, AC-OP-03-05 |
-| BO-04 (Paper Trading as Core Loop) | FR-OP-04 (LO Form) | §9.2 Limit price validation; E-PT-201, E-PT-202, E-PT-203, E-PT-204, E-PT-205; BR-OP-04, BR-OP-06, BR-OP-07 | AC-SET-01 (4 ACs), AC-SET-02 (4 ACs) |
-| BO-04 (Paper Trading as Core Loop) | FR-OP-05 (MP Form) | §9.1 Quantity validation; E-PT-103, E-PT-121; BR-OP-09 (MP warning) | AC-SET-03, AC-SET-04 |
-| BO-04 (Paper Trading as Core Loop) | FR-OP-06 (ATO Form) | §9.1 Quantity; BR-PT-19 (no price for ATO); E-PT-119 | AC-SET-05, AC-SET-06 |
-| BO-04 (Paper Trading as Core Loop) | FR-OP-07 (ATC Form) | §9.1 Quantity; BR-PT-20 (no price for ATC); E-PT-120 | AC-SET-07, AC-SET-08 |
-| BO-04 (Paper Trading as Core Loop) | FR-OP-08 (STOP_LIMIT Form) | §9.3 Stop price validation; E-OP-SP-01, E-OP-SP-02; BR-OP-08 (educational note); BR-OP-13 (stop direction) | AC-SET-09, AC-SET-10 |
-| BO-04 (Paper Trading as Core Loop) | FR-OP-09 (STOP Form) | §9.3 Stop price validation; BR-OP-08 (educational note); BR-OP-13 (stop direction) | AC-SET-11, AC-SET-12 |
-| BO-08 (≥70% of users place trade within 3 sessions) | FR-OP-10 (Summary Card) | BR-OP-02, BR-OP-03; §9.4 balance checks | AC-OP-10-01 through AC-OP-10-05 |
-| BO-08 (≥70% of users place trade within 3 sessions) | FR-OP-11 (Review CTA) | BR-OP-06, BR-OP-07 | AC-OP-11-01 through AC-OP-11-04 |
-| BO-08 (≥70% of users place trade within 3 sessions) | FR-OP-12 (Confirmation Modal) | BR-OP-01, BR-OP-08, BR-OP-09, BR-OP-14 | AC-OP-12-01 through AC-OP-12-04 |
-| BO-08 (≥70% of users place trade within 3 sessions) | FR-OP-13 (Submission + PROCESSING) | BR-OP-10 (idempotency_key), BR-OP-11 (no dismiss during PROCESSING) | AC-OP-13-01 through AC-OP-13-04 |
-| BO-08 (≥70% of users place trade within 3 sessions) | FR-OP-14 (SUCCESS State) | BR-OP-10 (new key on "Đặt lệnh mới") | AC-OP-14-01 through AC-OP-14-04 |
-| BO-08 (≥70% of users place trade within 3 sessions) | FR-OP-15 (ERROR State) | §9.5 Server error messages | AC-OP-15-01 through AC-OP-15-04 |
-| BO-12 (Serve 16–17 segment compliantly) | FR-OP-02, FR-OP-04 through FR-OP-09 | BR-OP-12 (no short selling); E-PT-110 | AC-OP-02-04; AC-SET-02, AC-OP-LO-SELL-04 |
-| BRD §BO-04 (Paper Trading Label) | FR-OP-01, FR-OP-12, FR-OP-14 | BR-OP-01 (Tiền ảo badge non-dismissible at all times) | AC-OP-01-01, AC-OP-12-01, AC-OP-14-01 |
-| Risk: Market session edge cases | FR-OP-16 (Session Change Mid-Form) | BR-OP-15 (30-second session poll) | AC-OP-16-01, AC-OP-16-02, EC-OP-01, EC-OP-02 |
-| Risk: Price movement mid-form | FR-OP-04, FR-OP-08, FR-OP-09 | §9.2 price validation with live last_price; §9.3 stop price direction live check | EC-OP-03, EC-OP-09 |
-| Risk: Concurrent order limit | FR-OP-15 | E-PT-116; BR-PT-14 (max 10 orders) | AC-OP-15-02, EC-OP-05 |
-| Risk: Double submission | FR-OP-13 | BR-OP-10 (idempotency_key); BR-OP-11 (disabled during PROCESSING) | AC-OP-13-01, EC-OP-07 |
+| Business Objective | Functional Requirement | Business Rule | Validation Logic | Test Case |
+|--------------------|------------------------|---------------|-----------------|-----------|
+| BO-04 (Paper Trading Core Loop) | FR-OP-01 (Price Header) | BR-OP-14 (exact error strings) | §3.2 Market state banner | AC-OP-01-01, AC-OP-01-02, AC-OP-01-03 |
+| BO-04 (Paper Trading Core Loop) | FR-OP-02 (Orderbook/Chart Toggle) | — | §8.3 Orderbook columns | AC-OP-02-01 through AC-OP-02-05 |
+| BO-04 (Paper Trading Core Loop) | FR-OP-03 (Position Card) | — | Holdings ≥ 1 → show card | AC-OP-03-01, AC-OP-03-02, AC-OP-03-03 |
+| BO-04 (Paper Trading Core Loop) | FR-OP-04 (Side Selection MUA/BÁN) | BR-OP-07 (no short selling) | §9.1 E-OP-06, E-OP-07 | AC-OP-04-01 through AC-OP-04-03 |
+| BO-04 (Paper Trading Core Loop) | FR-OP-05 (Order Type Selector) | — | 3 tabs, all enabled V1 | AC-OP-05-01 through AC-OP-05-04 |
+| BO-04 (Paper Trading Core Loop) | FR-OP-06 (LO Form) | BR-OP-03 (board lot), BR-OP-13 (tick size) | §9.1 E-OP-01, E-OP-02; §9.2 E-OP-03, E-OP-04, E-OP-05 | AC-SET-01, AC-SET-02 |
+| BO-04 (Paper Trading Core Loop) | FR-OP-07 (Stop-Limit Form) | BR-OP-11 (validity required), BR-OP-06 (no reserve) | §9.3 stop price validation | AC-SET-03, AC-SET-04 |
+| BO-04 (Paper Trading Core Loop) | FR-OP-08 (Stop Form) | BR-OP-12 (ref price read-only), BR-OP-11 (validity) | §9.3 stop price validation | AC-SET-05, AC-SET-06 |
+| BO-08 (≥70% place trade within 3 sessions) | FR-OP-09 (Order Summary Card) | BR-OP-02 (Miễn phí), BR-OP-05 (LO BUY reserve), BR-OP-06 (Stop no reserve) | §9.4 balance check E-OP-08 | AC-OP-09-01 through AC-OP-09-05 |
+| BO-08 (≥70% place trade within 3 sessions) | FR-OP-10 (CTA Button States) | BR-OP-04 (qty max), BR-OP-07 (no short) | §9.4 E-OP-08, E-OP-09 | AC-OP-10-01 through AC-OP-10-05 |
+| BO-08 (≥70% place trade within 3 sessions) | FR-OP-11 (Confirmation Sheet) | BR-OP-01 (paper trading context), BR-OP-09 (idempotency_key) | All validation passed before sheet shows | AC-OP-11-01 through AC-OP-11-05 |
+| BO-08 (≥70% place trade within 3 sessions) | FR-OP-12 (Submission and Outcome) | BR-OP-09 (idempotency_key), BR-OP-10 (no dismiss during PROCESSING) | §9.6 server error messages | AC-OP-12-01 through AC-OP-12-04 |
+| BO-04 (Paper Trading Core Loop) | FR-OP-13a (Sổ lệnh chờ Tab) | BR-OP-08 (50 order cap) | §9.4 E-OP-09 | AC-OP-13a-01 through AC-OP-13a-04 |
+| BO-04 (Paper Trading Core Loop) | FR-OP-13b (Danh mục Tab) | — | Holdings display | AC-OP-13b-01, AC-OP-13b-02, AC-OP-13b-03 |
+| BO-04 (Paper Trading Core Loop) | FR-OP-13c (Lịch sử Tab) | — | §9.5/9.6 status mapping | AC-OP-13c-01 through AC-OP-13c-05 |
+| BRD §BO-04 (Paper Trading Label) | FR-OP-11, FR-OP-12 | BR-OP-01 (paper trading context non-dismissible) | "Miễn phí" + "vốn ảo, không rủi ro thật" | AC-OP-11-01, AC-OP-09-01 |
+| Risk: Market state edge cases | FR-OP-01 (Price Header), §3.2 | BR-OP-14 (exact error strings) | §9.5 market state errors | EC-OP-01, EC-OP-02, EC-OP-03, EC-OP-11 |
+| Risk: Price movement mid-form | FR-OP-06 (LO Form) | BR-OP-13 (tick size) | §9.2 live ceiling/floor check | EC-OP-04 |
+| Risk: Concurrent order limit | FR-OP-10, FR-OP-12 | BR-OP-08 (50 order cap) | §9.4 E-OP-09 | EC-OP-05, AC-OP-12-02 |
+| Risk: Double submission | FR-OP-12 (Submission) | BR-OP-09 (idempotency_key), BR-OP-10 (no dismiss during PROCESSING) | Client disables CTA on first tap | AC-OP-12-03 |
+| Risk: Stop order read-only field | FR-OP-08 (Stop Form) | BR-OP-12 (GIÁ THAM CHIẾU read-only) | Field non-interactive | AC-OP-08-02, AC-OP-08-03, EC-OP-07 |
 
 ---
 
@@ -1116,17 +1104,20 @@ These are the exact strings the client must display verbatim from the API `messa
 
 | Document | Relationship |
 |----------|-------------|
-| FRD-10: Paper Trading Engine (v2.4) | Authority on all order engine rules, fill mechanics, error codes E-PT-xxx, state machine, and business rules BR-PT-xx; this FRD-20 specifies only the screen over those rules |
+| FRD-10: Paper Trading Engine (v2.4) | Authority on all order engine rules, fill mechanics, error codes E-PT-xxx, state machine, and business rules BR-PT-xx; FRD-20 specifies only the screen over those rules |
 | SRD-order-engine-v2.3.md | System-level order processing flow; API endpoint `POST /api/v1/paper-trading/orders`; validation sequence; Redis idempotency store |
-| SRD-20-order-placement-v2.md | To be authored: system-level specification of the order placement screen's API calls (live price feed subscription, market session polling, balance/holdings fetch) |
-| BRD.md §BO-04, §BO-08, §5.1.5 | Business objectives driving this feature; paper trading scope definition; board lot, fee, and session rules |
-| FRD-04: Stock Detail | Entry point for this screen ("Đặt lệnh" button on the Stock Detail action row, FR-23) |
-| FRD-19: Order Management | Order cancellation flow; open orders list where STOP/STOP_LIMIT pending orders appear |
-| FRD-18: Order History & Orderbook | Trade history records created as an outcome of successful fills triggered by orders placed here |
-| business-rules.md §BR-17, §BR-18 | Starting balance and Tiền ảo label rules that apply to all paper trading screens including this one |
+| SRD-20-order-placement-v2.md | To be authored: system-level specification of the order placement screen's API calls (live price feed subscription, market state polling, balance/holdings fetch, stop order history endpoint) |
+| BRD.md §BO-04, §BO-08, §5.1.5 | Business objectives driving this feature; paper trading scope definition; board lot and session rules |
+| FRD-04: Stock Detail | Entry point for this screen ("Đặt lệnh" button on the Stock Detail action row) |
+| FRD-19: Order Management | Order cancellation flow; "SỬA" and "HUỶ" actions in Sổ lệnh chờ tab link to this spec |
+| FRD-18: Order History & Orderbook | Trade history records created as an outcome of successful fills; Lịch sử tab in this screen is a summary view of that data |
+| business-rules.md §BR-17, §BR-18 | Starting balance and paper trading label rules that apply to all paper trading screens including this one |
+| FRD-16: Brokerage Integration (planned) | V2 scope: when real trading is added, this screen will be extended per a new FRD-20 v2.0 document |
+| FRD-i-brokerage.md (planned) | V2 roadmap: defines real trading account linking; will drive the MP, ATO, ATC order types removed from V1 scope |
 
 ---
 
 *End of FRD-20: Order Placement V2*
-*Version 1.0 — 2026-05-29*
+*Version 1.1 — 2026-06-01*
+*V1 Scope: LO, Stop-Limit, Stop — virtual paper trading only. MP, ATO, ATC deferred to V2.*
 *Authoritative for Order Placement Screen UI and UX. Engine rules remain in FRD-10.*

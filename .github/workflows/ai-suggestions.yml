@@ -1,0 +1,71 @@
+name: Paave AI — Daily Suggestions Pipeline
+
+# Runs at 18:45 ICT = 11:45 UTC, Mon–Fri (after HOSE close at 14:45 ICT + 4h buffer)
+# Manual trigger available for re-runs or testing
+on:
+  schedule:
+    - cron: '45 11 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry-run — generate but do not publish to Supabase'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+      symbol_override:
+        description: 'Space-separated symbols to process (overrides top-20 query, e.g. "VCB FPT HPG")'
+        required: false
+        default: ''
+        type: string
+      max_symbols:
+        description: 'Max symbols to process (default 20)'
+        required: false
+        default: '20'
+        type: string
+
+concurrency:
+  group: paave-ai-suggestions
+  cancel-in-progress: false   # never cancel mid-run; bad suggestions > no suggestions
+
+jobs:
+  generate:
+    name: Generate AI Suggestions
+    runs-on: ubuntu-latest
+    timeout-minutes: 30       # 20 symbols × ~60s each = ~20min; 30min cap
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run AI suggestion pipeline
+        env:
+          # Supabase
+          NEXT_PUBLIC_SUPABASE_URL:  ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Anthropic
+          ANTHROPIC_API_KEY:         ${{ secrets.ANTHROPIC_API_KEY }}
+          # Pipeline config
+          DRY_RUN:                   ${{ github.event.inputs.dry_run || 'false' }}
+          SYMBOL_OVERRIDE:           ${{ github.event.inputs.symbol_override || '' }}
+          MAX_SYMBOLS:               ${{ github.event.inputs.max_symbols || '20' }}
+          # Cost guard — alert if daily spend exceeds this (USD)
+          COST_ALERT_THRESHOLD_USD:  '2.00'
+        run: |
+          npx tsx scripts/ai-suggestions/run-pipeline.ts
+
+      - name: Upload run log artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-suggestions-run-${{ github.run_id }}
+          path: /tmp/ai-suggestions-run-*.json
+          retention-days: 30
