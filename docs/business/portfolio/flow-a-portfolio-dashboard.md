@@ -131,7 +131,7 @@ The dashboard renders 7 sections in fixed order. All monetary values display the
 
 ### Section 1 — Tổng Giá Trị Danh Mục (Total Portfolio Value)
 
-**Data source:** `GET /api/v1/virtual/equity/account/profit-loss`
+**Data source:** `GET /api/v1/virtual/equity/accounts/profit-loss`
 
 **Formula:**
 ```
@@ -161,7 +161,7 @@ Daily Change % = (Daily Change / Total Value at market open) × 100
 
 ### Section 2 — Số Dư Khả Dụng (Available Cash)
 
-**Data source:** `GET /api/v1/virtual/equity/account/buyable`
+**Data source:** `GET /api/v1/virtual/equity/accounts/profit-loss` (fields: `cashBalance`, `reservedAmount`)
 
 **Formula:**
 ```
@@ -186,7 +186,9 @@ Available Cash = total_cash − reserved_amount
 
 ### Section 3 — Danh Sách Cổ Phiếu Đang Nắm Giữ (Holdings List)
 
-**Data source:** `GET /api/v1/virtual/equity/account/sellable` + price data from profit-loss endpoint
+**Data source:** `GET /api/v1/virtual/equity/accounts/profit-loss` — the `openPositions` field returns all holdings (symbol, quantity, avgBuyPrice, currentPrice, unrealizedPnL, softLocked).
+
+> ⚠ `accounts/sellable` is NOT used here — it requires a specific `stockCode` and returns only max-sellable quantity for that stock. It belongs in the Order Form (FR-PORT-06), not the Holdings List.
 
 **Default sort:** Unrealized P&L % descending (best performers first)
 
@@ -222,7 +224,7 @@ Available Cash = total_cash − reserved_amount
 
 ### Section 4 — Biểu Đồ Giá Trị Danh Mục (Portfolio Value Chart)
 
-**Data source:** `GET /api/v1/virtual/equity/account/accumulative-profit-loss`
+**Data source:** `GET /api/v1/virtual/equity/accounts/accumulative-profit-loss`
 
 **Tab options:** 1D · 1W · 1M · 3M · 1Y
 
@@ -251,7 +253,7 @@ Available Cash = total_cash − reserved_amount
 
 ### Section 5 — Lãi/Lỗ Đã Thực Hiện (Realized P&L)
 
-**Data source:** `GET /api/v1/virtual/equity/account/profit-loss` (lifetime_realized_pnl field)
+**Data source:** `GET /api/v1/virtual/equity/accounts/profit-loss` (lifetime_realized_pnl field)
 
 **Display:**
 ```
@@ -269,7 +271,7 @@ Available Cash = total_cash − reserved_amount
 
 ### Section 6 — Lịch Sử Giao Dịch (Trade History)
 
-**Data source:** `GET /api/v1/virtual/equity/account/realized-profit-loss/history`
+**Data source:** `GET /api/v1/virtual/equity/accounts/realized-profit-loss/history`
 
 **Filter bar:**
 ```

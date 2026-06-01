@@ -132,11 +132,11 @@ Key constraints that apply across all flows:
 ```
 
 **APIs called (on load and every 15s):**
-- `GET /api/v1/virtual/equity/account/profit-loss`
-- `GET /api/v1/virtual/equity/account/accumulative-profit-loss`
-- `GET /api/v1/virtual/equity/account/realized-profit-loss/history`
-- `GET /api/v1/virtual/equity/account/buyable`
-- `GET /api/v1/virtual/equity/account/sellable`
+- `GET /api/v1/virtual/equity/accounts/profit-loss`
+- `GET /api/v1/virtual/equity/accounts/accumulative-profit-loss`
+- `GET /api/v1/virtual/equity/accounts/realized-profit-loss/history`
+- `GET /api/v1/virtual/equity/accounts/buyable`
+- `GET /api/v1/virtual/equity/accounts/sellable`
 
 **Key business rules:**
 - "Tiền ảo" badge persists on all monetary displays
@@ -233,8 +233,8 @@ Key constraints that apply across all flows:
 ```
 
 **APIs called:**
-- `GET /api/v1/virtual/equity/account/buyable` (BUY validation)
-- `GET /api/v1/virtual/equity/account/sellable` (SELL validation)
+- `GET /api/v1/virtual/equity/accounts/buyable` (BUY validation)
+- `GET /api/v1/virtual/equity/accounts/sellable` (SELL validation)
 - `POST /api/v1/virtual/equity/orders`
 
 **Key business rules:**
@@ -398,9 +398,9 @@ ENTRY: Tap Portfolio Value Chart (Section 4)
 ```
 
 **APIs called:**
-- `GET /api/v1/virtual/equity/account/profit-loss`
-- `GET /api/v1/virtual/equity/account/accumulative-profit-loss`
-- `GET /api/v1/virtual/equity/account/realized-profit-loss/history`
+- `GET /api/v1/virtual/equity/accounts/profit-loss`
+- `GET /api/v1/virtual/equity/accounts/accumulative-profit-loss`
+- `GET /api/v1/virtual/equity/accounts/realized-profit-loss/history`
 
 ---
 
@@ -408,15 +408,35 @@ ENTRY: Tap Portfolio Value Chart (Section 4)
 
 | Phase | Trigger | Method | Endpoint | Purpose |
 |-------|---------|--------|----------|---------|
-| 0 | First launch | POST | `/virtual/accounts` | Initialize virtual account |
-| 1 | Dashboard load / 15s | GET | `/virtual/equity/account/profit-loss` | Total P&L, portfolio value |
-| 1 | Dashboard load / 15s | GET | `/virtual/equity/account/accumulative-profit-loss` | Chart data |
-| 1 | Dashboard load | GET | `/virtual/equity/account/realized-profit-loss/history` | Trade history, realized P&L |
-| 1, 2 | Before order form | GET | `/virtual/equity/account/buyable` | Available balance for BUY |
-| 1, 2 | Before order form | GET | `/virtual/equity/account/sellable` | Holdings available to SELL |
-| 2 | Order submit | POST | `/virtual/equity/orders` | Place order |
-| 3 | Modify order | PUT | `/virtual/equity/orders/{orderId}` | Amend order |
-| 3 | Cancel order | DELETE | `/virtual/equity/orders/{orderId}` | Cancel order |
+| 0 | First launch | POST | `/virtual/accounts` | Initialize virtual account (500M VND) |
+| 1 | Dashboard load / 15s | GET | `/virtual/equity/accounts/profit-loss` | NAV + cash + holdings breakdown (open positions) |
+| 1 | Dashboard load / 15s | GET | `/virtual/equity/accounts/accumulative-profit-loss` | Chart data (1D/1W/3M/1Y ranges) |
+| 1 | Dashboard load | GET | `/virtual/accounts/one-month-normalized-nav` | Chart data (1M range) |
+| 1 | Dashboard load | GET | `/virtual/equity/accounts/realized-profit-loss/history` | Trade history (recent 5) |
+| 1 | Dashboard load | GET | `/virtual/equity/orders/history` | Open orders (standard) |
+| 1 | Dashboard load | GET | `/virtual/equity/stop-orders/history` | Open orders (stop/stop-limit) |
+| 1 | Per polling tick | GET | `/virtual/hit-the-ceiling-or-floor-price` | Ceiling/floor alerts on holdings |
+| 1 | Dashboard mount (cached 60s) | GET | `/virtual/equity/limited-stock` | Restricted tickers list |
+| 1 (holding detail) | Open HoldingDetailScreen | GET | `/virtual/equity/event/by-stock?stockCode=X` | Corporate actions for that holding |
+| 2 (order form, BUY) | After ticker + price entered | GET | `/virtual/equity/accounts/buyable?stockCode=X&orderPrice=Y` | Max buyable qty at entered price |
+| 2 (order form, SELL) | After ticker selected | GET | `/virtual/equity/accounts/sellable?stockCode=X` | Max sellable qty for that ticker |
+| 2 | Order submit (standard) | POST | `/virtual/equity/orders` | Place LO/MARKET/ATO/ATC order |
+| 2 | Order submit (stop-limit) | POST | `/virtual/equity/orders/stop-limit` | Place STOP_LIMIT order |
+| 2 | Order submit (stop) | POST | `/virtual/equity/stop-orders` | Place STOP order |
+| 3 | Modify order | PUT | `/virtual/equity/orders/{orderId}` | Amend standard order |
+| 3 | Cancel standard order | DELETE | `/virtual/equity/orders/{orderId}` | Cancel single standard order |
+| 3 | Cancel stop order | DELETE | `/virtual/equity/stop-orders/{orderId}` | Cancel single stop order |
+| 3 | Bulk cancel standard | POST | `/virtual/equity/orders/cancellations` | Cancel multiple standard orders |
+| 3 | Bulk cancel stop | DELETE | `/virtual/equity/stop-orders/bulk` | Cancel multiple stop orders |
+| 5 | P&L Analytics mount | GET | `/virtual/periodic-profit-loss` | Periodic P&L (1W, 1M, 3M, YTD) |
+| 5 | P&L Analytics | GET | `/virtual/equity/accounts/daily-profit-loss` | 30-day daily P&L bar chart |
+| 5 | P&L Analytics | GET | `/virtual/equity/accounts/realized-profit-loss` | Lifetime realized P&L |
+| 5 | P&L Analytics | GET | `/virtual/equity/vn-index-return` | VN-Index benchmark comparison |
+| 5 | P&L Analytics | GET | `/virtual/index/rank` | Portfolio ranking vs index |
+| 5 | P&L Analytics | GET | `/virtual/leaderboard/investing/user-ranking` | User rank on leaderboard |
+| 5 (if following) | P&L Analytics | GET | `/virtual/equity/accounts/following-profit-loss` | Followed users P&L comparison |
+| 5 (if following) | P&L Analytics | GET | `/virtual/equity/accounts/following-accumulative-pl` | Followed users cumulative P&L |
+| 5 (if following) | P&L Analytics | GET | `/virtual/equity/accounts/following-daily-profit-loss` | Followed users daily P&L |
 
 ---
 

@@ -46,14 +46,16 @@ The screen initiates a 15-second polling cycle on mount. All seven sections refr
 
 **API Calls per Section:**
 
-| Section | API Endpoint | Method |
-|---------|-------------|--------|
-| Total Portfolio Value + Available Cash | `GET /api/v1/virtual/equity/account/profit-loss` | GET |
-| Holdings List | `GET /api/v1/virtual/equity/account/sellable` | GET |
-| Portfolio Value Chart (default 1M) | `GET /api/v1/virtual/accounts/one-month-normalized-nav` | GET |
-| Realized P&L | `GET /api/v1/virtual/equity/account/realized-profit-loss` | GET |
-| Trade History (recent 5) | `GET /api/v1/virtual/equity/account/realized-profit-loss/history?limit=5` | GET |
-| Open Orders | `GET /api/v1/virtual/equity/orders/history?status=PENDING,QUEUED_AFTER_HOURS,SUSPENDED&limit=3` | GET |
+| Section | API Endpoint | Method | Notes |
+|---------|-------------|--------|-------|
+| Total Portfolio Value + Available Cash + Holdings breakdown | `GET /api/v1/virtual/equity/accounts/profit-loss` | GET | Returns NAV, cash balance, unrealized P&L, and **open positions breakdown** (this is the single source of truth for both Section 1 and Section 3) |
+| Portfolio Value Chart (default 1M) | `GET /api/v1/virtual/accounts/one-month-normalized-nav` | GET | — |
+| Realized P&L | `GET /api/v1/virtual/equity/accounts/realized-profit-loss` | GET | — |
+| Trade History (recent 5) | `GET /api/v1/virtual/equity/accounts/realized-profit-loss/history?page=1&size=5` | GET | — |
+| Open Orders (standard) | `GET /api/v1/virtual/equity/orders/history` | GET | Filter by status client-side or pass status query param if supported |
+| Open Orders (stop orders) | `GET /api/v1/virtual/equity/stop-orders/history` | GET | Separate endpoint for STOP and STOP_LIMIT open orders |
+
+> **⚠ Holdings source:** `profit-loss` returns `unrealizedPnL`, `nav`, `cashBalance`, and a breakdown of **open positions** (with qty, avg_buy_price, current_price per ticker). Do NOT use `sellable` for the Holdings List — `sellable` requires a specific `stockCode` parameter and returns only the max sellable quantity for that stock (used in the Order Form, not the Holdings display).
 
 **Input:** None (data is fetched from API on mount and every 15 seconds).
 
@@ -138,8 +140,12 @@ Selected sort option persists in local device storage across app sessions.
 - Delisted holdings are pinned to the bottom of the list regardless of sort order.
 
 **Input:**
-- API: `GET /api/v1/virtual/equity/account/sellable` returns array of position objects.
+- API: `GET /api/v1/virtual/equity/accounts/profit-loss` — the `openPositions` (or equivalent breakdown field) in the response contains all holdings with: `symbol`, `quantity`, `avgBuyPrice`, `currentPrice`, `totalValue`, `unrealizedPnL`, `softLocked`.
 - Sort selection: local enum stored in AsyncStorage key `portfolio_holdings_sort`.
+
+> **Note on `sellable` and `buyable`:** These endpoints are NOT used here.
+> - `GET /api/v1/virtual/equity/accounts/sellable?stockCode=X` — returns max sellable qty for a **specific stock**; used in the Order Form when user is placing a SELL order to show "Available to sell: N shares".
+> - `GET /api/v1/virtual/equity/accounts/buyable?stockCode=X&orderPrice=Y` — returns max buyable qty for a **specific stock at a specific price**; used in the Order Form for a BUY order.
 
 **Output:**
 - Rendered list of holding rows.
@@ -165,7 +171,7 @@ Selected sort option persists in local device storage across app sessions.
 
 | FC-ID | Scenario | System Action | User-Facing Message | Error Code |
 |-------|----------|--------------|--------------------|-----------:|
-| FC-02-01 | `sellable` endpoint returns 404 | Show empty state | "No holdings yet. Place your first buy order." | — |
+| FC-02-01 | `profit-loss` endpoint returns empty `openPositions` array or 404 | Show empty state | "No holdings yet. Place your first buy order." | — |
 | FC-02-02 | `avg_buy_price` is 0 in API response | Do not divide by zero; show unrealized P&L amount only; display P&L% as "N/A" | — | DATA_422 |
 | FC-02-03 | Market data feed returns stale price (> 5 min old) | Show stale price with warning indicator (clock icon) | "Price may be delayed" | MKT_408 |
 
@@ -197,11 +203,19 @@ The Portfolio Value Chart displays the historical trajectory of the user's total
 
 | Label | Range | API Endpoint | Data Granularity |
 |-------|-------|-------------|-----------------|
-| 1D | Current trading day | `GET /api/v1/virtual/equity/account/accumulative-profit-loss?range=1D` | 5-minute intervals |
-| 1W | Last 7 calendar days | `GET /api/v1/virtual/equity/account/accumulative-profit-loss?range=1W` | 1-hour intervals |
+| 1D | Current trading day | `GET /api/v1/virtual/equity/accounts/accumulative-profit-loss` (params: `fromDate=today`, `toDate=today`) | 5-minute intervals |
+| 1W | Last 7 calendar days | `GET /api/v1/virtual/equity/accounts/accumulative-profit-loss` (params: `fromDate=7d ago`, `toDate=today`) | 1-hour intervals |
 | 1M | Last 30 calendar days | `GET /api/v1/virtual/accounts/one-month-normalized-nav` | Daily closing values |
-| 3M | Last 90 calendar days | `GET /api/v1/virtual/equity/account/accumulative-profit-loss?range=3M` | Daily closing values |
-| 1Y | Last 365 calendar days | `GET /api/v1/virtual/equity/account/accumulative-profit-loss?range=1Y` | Weekly values |
+| 3M | Last 90 calendar days | `GET /api/v1/virtual/equity/accounts/accumulative-profit-loss` (params: `fromDate=90d ago`, `toDate=today`) | Daily closing values |
+| 1Y | Last 365 calendar days | `GET /api/v1/virtual/equity/accounts/accumulative-profit-loss` (params: `fromDate=365d ago`, `toDate=today`) | Weekly values |
+
+**VN-Index Benchmark Overlay (optional toggle):**
+
+The chart supports an optional "So sánh với VN-Index" toggle. When enabled:
+- API: `GET /api/v1/virtual/equity/vn-index-return` — returns VN-Index return values for 1W, 1M, 3M, YTD periods.
+- Renders a secondary dashed line in fog (#ADAAAA) representing VN-Index performance normalized to the same baseline (0% return at chart start).
+- Purpose: helps user see whether their strategy is outperforming or underperforming the market index.
+- Label: "VN-Index" annotation at the end of the secondary line.
 
 Default range on first load: 1M. Selected range persists in AsyncStorage key `portfolio_chart_range`.
 
@@ -287,7 +301,17 @@ Accessible via filter icon top-right. Filters are combinable (AND logic):
 
 Active filters are shown as dismissible chips below the search bar. "Clear All" removes all active filters.
 
-**Pagination:** Infinite scroll. Page size: 20 trades per fetch. API: `GET /api/v1/virtual/equity/account/realized-profit-loss/history?limit=20&offset={n}&{filter_params}`.
+**Pagination:** Infinite scroll. Page size: 20 trades per fetch.
+
+Two complementary endpoints serve this screen:
+
+| Endpoint | Purpose | When to use |
+|----------|---------|-------------|
+| `GET /api/v1/virtual/equity/accounts/realized-profit-loss/history` | P&L-focused history — each record includes `realizedPnL` per trade, settlement date, avg buy price at sell | Primary source for Trade History screen (P&L per trade row) |
+| `GET /api/v1/virtual/profile/trading-history` | Transaction-focused history — complete list of executed trades including BUY fills (which have no realized P&L) | Supplement: use to show BUY trades in Trade History; merge with realized-profit-loss/history results |
+
+Params for `realized-profit-loss/history`: `subAccount`, `fromDate`, `toDate`, `page` (1-based), `size` (max 100, default 20).
+Params for `profile/trading-history`: `subAccount`, `fromDate`, `toDate`, `page`, `size`.
 
 **Input:**
 - No required user input for initial display.
@@ -362,8 +386,19 @@ In the dashboard, the first 3 open orders are shown with a "See All (N)" link to
 - On failure: snackbar error "Could not cancel order. Please try again." Row remains.
 
 **Input:**
-- API: `GET /api/v1/virtual/equity/orders/history?status=PENDING,QUEUED_AFTER_HOURS,SUSPENDED`
-- Cancel action: orderId (from row data)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/v1/virtual/equity/orders/history` | Standard orders (LO, MARKET, ATO, ATC) — filter to active states: PENDING, QUEUED_AFTER_HOURS, SUSPENDED |
+| `GET /api/v1/virtual/equity/stop-orders/history` | Stop and STOP_LIMIT orders in active state — separate endpoint, must be fetched in parallel and merged with standard orders |
+
+Params: `subAccount`, `fromDate`, `toDate`, `page`, `size`.
+
+Cancel endpoints:
+- Single standard order: `DELETE /api/v1/virtual/equity/orders/{orderId}`
+- Single stop order: `DELETE /api/v1/virtual/equity/stop-orders/{orderId}`
+- Bulk standard orders: `POST /api/v1/virtual/equity/orders/cancellations` with `{ orderIds: [...] }`
+- Bulk stop orders: `DELETE /api/v1/virtual/equity/stop-orders/bulk` (array of stop order IDs)
 
 **Output:**
 - Rendered list of open order rows with live TTL countdowns.
@@ -434,8 +469,13 @@ The order placement flow is triggered from: (a) a stock detail screen "Buy" / "S
 | STOP | `POST /api/v1/virtual/equity/stop-orders` | Required (stop only) | Triggers when stop price hit, then places market order |
 
 **Real-Time Buy Power / Sell Power Display:**
-- For BUY orders: `GET /api/v1/virtual/equity/account/buyable` — shows "Max buyable: N shares at current price" updated on quantity field blur.
-- For SELL orders: `GET /api/v1/virtual/equity/account/sellable` — shows "Available to sell: N shares" for the selected ticker.
+
+| Action | API Call | Required Params | Display |
+|--------|---------|----------------|---------|
+| BUY — max quantity | `GET /api/v1/virtual/equity/accounts/buyable` | `stockCode` (required), `orderPrice` (optional — uses current price if omitted) | "Mua tối đa: N cổ phần tại giá X VND" — shown below quantity field; updates when user changes the price field |
+| SELL — max quantity | `GET /api/v1/virtual/equity/accounts/sellable` | `stockCode` (required) | "Có thể bán: N cổ phần" — shown below quantity field; static per order session |
+
+Both endpoints require `stockCode` (the ticker being ordered). Call these only after ticker is known (pre-filled from entry point). Do NOT call on screen mount without a ticker — the API will return 400.
 
 **Simulated Fee Preview:**
 Before submission, the form shows:
@@ -673,39 +713,61 @@ The P&L Analytics screen (`PnLAnalyticsScreen`) provides a detailed breakdown of
 
 **Screen Sections:**
 
-**Section A — Realized P&L Summary (top cards):**
-| Card Label | Value Source | API |
-|-----------|-------------|-----|
-| Total Lifetime Realized P&L | `GET /api/v1/virtual/equity/account/realized-profit-loss` | Realized P&L endpoint |
-| This Month | Same endpoint, filtered `period=CURRENT_MONTH` | Same |
-| This Year | Same endpoint, filtered `period=CURRENT_YEAR` | Same |
+**Section A — Periodic P&L Summary (top cards):**
+| Card | Value Source | API | Params |
+|------|-------------|-----|--------|
+| Tuần này (1W) | `GET /api/v1/virtual/periodic-profit-loss` | Periodic P&L | Returns 1W, 1M, 3M, YTD in one call |
+| Tháng này (1M) | Same response | Same | — |
+| 3 tháng (3M) | Same response | Same | — |
+| Từ đầu năm (YTD) | Same response | Same | — |
 
-Each card shows: amount (Space Grotesk Bold, color-coded per BR-05) and percentage change from baseline (500M VND).
+Each card shows: P&L amount + % change (color-coded per BR-05).
 
-**Section B — Total P&L (Unrealized + Realized):**
-- `GET /api/v1/virtual/equity/account/profit-loss` → shows `total_pnl`, `unrealized_pnl`, `realized_pnl` in a 3-column summary row.
+> **`GET /api/v1/virtual/periodic-profit-loss`** returns profit/loss summarized over standard periods (1W, 1M, 3M, YTD) in a single response — use this instead of filtering `realized-profit-loss` by period.
 
-**Section C — Daily P&L Bar Chart:**
-- API: `GET /api/v1/virtual/equity/account/daily-profit-loss?days=30`
-- Bar chart showing last 30 days of daily P&L.
-- Bars above zero: positive color (#10B981).
-- Bars below zero: negative color (#EF4444).
-- Bars at exactly zero: fog (#ADAAAA).
-- X-axis: date labels (DD MMM).
-- Y-axis: VND amount.
-- Tap on a bar: tooltip showing exact date, P&L amount, and % change for that day.
+**Section B — Total P&L Snapshot (Unrealized + Realized):**
+- API: `GET /api/v1/virtual/equity/accounts/profit-loss`
+- Shows `total_pnl`, `unrealized_pnl`, `realized_pnl`, `nav`, `cashBalance` in a summary row.
 
-**Section D — Cumulative P&L Line Chart:**
-- API: `GET /api/v1/virtual/equity/account/accumulative-profit-loss?range=ALL`
-- Line chart showing running total of realized P&L since account creation.
-- Crosshair tooltip on scrub: date, cumulative realized P&L amount.
-- Baseline at 0 (not 500M — this is P&L delta, not portfolio value).
+**Section C — Realized P&L Lifetime Total:**
+- API: `GET /api/v1/virtual/equity/accounts/realized-profit-loss` (params: `subAccount`)
+- Single figure: total realized P&L across all time. Color-coded. Tappable → expands trade-level breakdown.
 
-**Section E — Following P&L Comparison (if user follows >= 1 account):**
-- API: `GET /api/v1/virtual/equity/account/following-profit-loss`
-- Bar chart comparing user's realized P&L % vs. each followed user's realized P&L %.
-- Max 5 followed accounts shown; "See More" if > 5.
-- Followed users shown by display name (anonymized to "Trader #XXXX" if privacy mode is on).
+**Section D — Daily P&L Bar Chart (last 30 days):**
+- API: `GET /api/v1/virtual/equity/accounts/daily-profit-loss` (params: `fromDate`, `toDate`, `page`, `size`)
+- Bar chart: 30 days, one bar per trading day.
+- Bars above zero → positive (#10B981); below zero → negative (#EF4444); zero → fog (#ADAAAA).
+- Tap on bar → tooltip: exact date, P&L amount, % change.
+
+**Section E — Cumulative P&L Line Chart:**
+- API: `GET /api/v1/virtual/equity/accounts/accumulative-profit-loss` (params: `fromDate`, `toDate`)
+- Cumulative realized P&L since account creation; baseline at 0 (delta, not portfolio value).
+- Crosshair tooltip on scrub: date, cumulative P&L.
+
+**Section F — VN-Index Benchmark Comparison:**
+- API: `GET /api/v1/virtual/equity/vn-index-return`
+- Returns VN-Index returns for 1W, 1M, 3M, YTD.
+- Renders as a comparison row: "Danh mục của bạn: +X.XX% vs VN-Index: +Y.YY%" for each period.
+- Green if portfolio outperforms index; red if underperforms; gray if equal.
+
+**Section G — Portfolio Ranking vs Index:**
+- API: `GET /api/v1/virtual/index/rank`
+- Shows user's rank among all virtual portfolios benchmarked against the specified index.
+- Display: "Xếp hạng: #N / M nhà đầu tư ảo" — paginated leaderboard subset.
+
+**Section H — Leaderboard Context:**
+- API: `GET /api/v1/virtual/leaderboard/investing/user-ranking`
+- Shows user's current rank on the virtual trading leaderboard (ranked by normalized NAV performance).
+- Tappable → navigates to full leaderboard screen.
+
+**Section I — Following P&L Comparison (only if user follows ≥ 1 account):**
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/v1/virtual/equity/accounts/following-profit-loss` | P&L summary for each followed user |
+| `GET /api/v1/virtual/equity/accounts/following-accumulative-pl` | Cumulative P&L for overlay comparison on chart |
+| `GET /api/v1/virtual/equity/accounts/following-daily-profit-loss` | Daily P&L for followed users (for bar chart comparison) |
+
+Bar chart comparing user's realized P&L % vs. each followed user's P&L %. Max 5 followed accounts; "See More" if > 5.
 
 **Input:**
 - Period filter for realized P&L summary: CURRENT_MONTH, CURRENT_YEAR (passed as query param).
@@ -823,6 +885,80 @@ Locale detection: use device locale (`Intl` API / React Native `NativeModules.I1
 
 ---
 
+### FR-PORT-11: Corporate Actions, Trading Restrictions & Price Alerts
+
+**Actor:** F0 Trader (passive recipient of system-driven notifications)
+
+**Description:**
+Three supporting APIs provide context that affects how holdings and orders are displayed and whether certain order placements should be blocked or warned.
+
+---
+
+**11.1 — Corporate Action Events**
+
+API: `GET /api/v1/virtual/equity/event/by-stock?stockCode={ticker}`
+
+Returns pending and historical corporate action events (stock splits, dividends, rights issues) for a given ticker that affect virtual account positions.
+
+When to call: when user opens `HoldingDetailScreen` for a specific holding, or when polling detects a holding whose quantity has changed unexpectedly since last poll.
+
+Display rules:
+- If a pending corporate action exists for a holding: show an amber info banner on `HoldingDetailScreen`: "Sự kiện doanh nghiệp đang chờ xử lý: [loại sự kiện]. Số lượng cổ phần và giá có thể thay đổi."
+- After a split event is applied (quantity adjusted): show a one-time snackbar "Số lượng cổ phần [TICKER] đã được điều chỉnh do [tách cổ phiếu / phát hành quyền]."
+
+---
+
+**11.2 — Trading Restriction List**
+
+API: `GET /api/v1/virtual/equity/limited-stock`
+
+Returns a list of stock codes that have trading restrictions in the virtual trading engine (e.g., due to pending corporate action processing).
+
+When to call: on Portfolio Dashboard mount and after each polling tick. Cache the list for 60 seconds — do not re-fetch on every 15s polling tick (the list changes infrequently).
+
+Display rules:
+- If a holding's ticker appears in the restricted list: show a plasma badge "Hạn chế" next to the ticker on the Holdings List row and on `HoldingDetailScreen`.
+- If user attempts to place an order for a restricted ticker: block the order form with a banner: "Cổ phiếu này hiện đang bị hạn chế giao dịch ảo. Vui lòng thử lại sau."
+- Restricted tickers remain in the holdings list (read-only); unrealized P&L continues to display using the last known price.
+
+---
+
+**11.3 — Ceiling / Floor Price Notifications**
+
+API: `GET /api/v1/virtual/hit-the-ceiling-or-floor-price`
+
+Returns notifications for stocks in the user's virtual portfolio that have hit their daily price ceiling (tăng trần) or floor (giảm sàn) during the current trading session.
+
+When to call: during each 15-second dashboard polling tick. Only trigger notifications for stocks the user currently holds.
+
+Display rules:
+- Ceiling hit: show a lime badge "Trần" on the affected holding row in the Holdings List.
+- Floor hit: show a negative (#EF4444) badge "Sàn" on the affected holding row.
+- Both badges disappear at end of trading session (14:45 ICT) or on app relaunch next trading day.
+- Do NOT show push notifications for ceiling/floor on holdings the user does not own.
+
+---
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-11-01 | A stock in user's holdings has a pending stock split event | User opens HoldingDetailScreen for that stock | Amber banner visible: "Sự kiện doanh nghiệp đang chờ xử lý: Tách cổ phiếu. Số lượng cổ phần và giá có thể thay đổi." |
+| AC-11-02 | A stock the user holds is in the limited-stock list | User views Holdings List | "Hạn chế" plasma badge appears on that holding row |
+| AC-11-03 | User attempts to place a buy/sell order for a restricted ticker | Order form opens | Order form blocked with banner "Cổ phiếu này hiện đang bị hạn chế giao dịch ảo." |
+| AC-11-04 | A stock in user's holdings hits daily ceiling during trading hours | Next 15s poll returns ceiling data | "Trần" lime badge appears on that holding's row |
+| AC-11-05 | A stock in user's holdings hits daily floor | Next 15s poll returns floor data | "Sàn" red (#EF4444) badge appears on that holding's row |
+
+**Failed Cases:**
+
+| FC-ID | Scenario | System Action | User-Facing Message |
+|-------|----------|--------------|---------------------|
+| FC-11-01 | `event/by-stock` returns 404 (no events) | No banner shown; normal display | — |
+| FC-11-02 | `limited-stock` API returns 500 | Assume no restrictions this poll; retry next tick; no false restriction badges shown | — |
+| FC-11-03 | `hit-the-ceiling-or-floor-price` returns 500 | Skip notification this tick; no ceiling/floor badges shown; retry next poll | — |
+
+---
+
 ## 3. Business Rules
 
 | ID | Rule | Violation Behavior |
@@ -895,7 +1031,7 @@ Locale detection: use device locale (`Intl` API / React Native `NativeModules.I1
 
 | Requirement | Detail |
 |-------------|--------|
-| Authentication | All `/api/v1/virtual/` API calls require a valid JWT Bearer token in the Authorization header. Expired tokens trigger force logout. |
+| Authentication | All `/api/v1/virtual/` API calls require a valid JWT token. **Header format: `Authorization: jwt <accessToken>`** (NOT `Bearer` — API v1.5.0 uses `jwt` prefix; using `Bearer` returns HTTP 401). Expired tokens trigger force logout and redirect to login screen. |
 | Order idempotency | Client generates UUID v4 `X-Idempotency-Key` for every order placement and modification request. Key is stored in device memory for 10 seconds post-submission. |
 | No real-money exposure | No payment gateway integrations, no VND fiat transfer APIs, no real brokerage account linking may be present in any code path reachable from the virtual trading module. |
 | Data scope | Virtual account data is scoped per authenticated user. Cross-account data access (other than opt-in following P&L) must be rejected at API level. |
