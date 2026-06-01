@@ -8,6 +8,14 @@
 **Linked SRD:** SRD-order-engine-v2.3.md
 **Status:** Authoritative — supersedes FRD.md v2.2 §Paper Trading, FRD-module-B-v2.3.md (all sections), and BRD-addendum-v2.3.md (paper trading BR additions)
 
+> **Companion Documents for Order Management (v2.5 additions):**
+> The following FRDs extend the Paper Trading Engine with screens and flows not covered in this document:
+> - **FRD-18** (`18-order-history-orderbook.md`): Order History screen + Orderbook widget
+> - **FRD-19** (`19-order-management.md`): Edit Order + Cancel Order dialogs and flows
+> - **FRD-20** (`20-order-placement-v2.md`): Full Order Placement V2 screen (all order types: LO, MP, ATO, ATC, STOP_LIMIT, STOP)
+> - **SRD** (`srd/18-order-history-orderbook.md`, `srd/19-order-management.md`, `srd/20-order-placement-v2.md`): System requirements for the above
+> **Updated:** 2026-05-29
+
 > **Purpose of this document:** This document is the complete, standalone specification for the Paave Paper Trading Engine. No real money is ever exchanged. All trades are simulated using real-time (VN) or reference (KR/Global) market data. A developer reading this document must be able to implement every rule, validation, state machine, and edge case without referencing any other file. A QA engineer must be able to write complete test cases from this document alone.
 
 ---
@@ -680,6 +688,8 @@ The "Tiền ảo / 가상 자금 / Virtual Funds" label is a legal clarity requi
 | Tick size — 10,000 ≤ price < 50,000 VND | 50 VND | |
 | Tick size — price < 10,000 VND | 10 VND | |
 | Supported order types | MARKET, LO (Limit Order), ATO (At-the-Opening), ATC (At-the-Closing) | |
+
+> **V2.5 Extension:** STOP and STOP_LIMIT order types are now supported via FRD-20 (Order Placement V2) and SRD-20 (Order Placement System Requirements). STOP trigger mechanics are defined in SRD-20. This document (FRD-10) remains authoritative for LO, MP, ATO, ATC order types and all core invariants.
 
 **HOSE Trading Session Windows (all times ICT = UTC+7):**
 

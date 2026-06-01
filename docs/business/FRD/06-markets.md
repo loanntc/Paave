@@ -1,6 +1,14 @@
 # FRD-06: Markets Screen
 
-Version: 2.4 | Date: 2026-04-21 | Linked BRD: brd-paave-v2.2.md | Author: Paave Product Team
+Version: 2.4 | Date: 2026-04-21 | Linked BRD: BRD.md v2.4 | Author: Paave Product Team
+
+---
+
+> **Partial Supersession Notice (v2.4 -> v2.5):**
+> FR-36 (Markets Screen Layout) and FR-37 (Vietnam Market Tab — top 5 lists only) are superseded by **FRD-17 (Market Board v2)** which adds: full price board with all stocks, Watchlist tab, Holdings tab, and real-time WebSocket updates.
+> - FR-38 (Korea tab), FR-39 (Global tab), FR-40 (Search), FR-41 (Market Hours): unchanged — still authoritative in this document.
+> - For the new Market Board feature, read FRD-17 first. This document remains authoritative for Korea/Global tabs.
+> **Updated:** 2026-05-29
 
 ---
 

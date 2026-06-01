@@ -1,9 +1,10 @@
 # F0 Learning Path — Interaction Rules & Edge Case Handling
-**Version:** 1.0 | **Date:** 2026-05-28 | **Feature:** F0 Learning Path (Module F-LEARN)
+**Version:** 2.0 | **Date:** 2026-05-29 | **Feature:** F0 Learning Path (Module F-LEARN)
+**Architecture:** Frontend-only · AsyncStorage · No rewards
 
 > **Format:** `[Trigger] → [System Response]`
 > **Reference:** Full motion specs in `DESIGN-F0-LEARN-03-ui-spec.md §5`
-> **FRD:** `docs/business/frd/module-f0-learning.md`
+> **Business requirements:** `docs/business/f0-learning/01-requirements.md`
 
 ---
 
@@ -13,10 +14,12 @@
 
 ```
 Trigger:   User taps "Bắt đầu Module 1" on Welcome Modal
-Response:  welcome_modal_shown = true (already set at modal render)
+Response:  f0_welcome_modal_shown = true (ALREADY written to AsyncStorage at modal render)
            Modal dismisses (fade out, 300ms)
            Navigate to L1.1 Card 1 (Concept card)
-           Session progress record created for L1.1 (card_index = 0)
+           f0_lesson_1_1_card_index = 0 written to AsyncStorage
+           f0_lesson_1_1_state = IN_PROGRESS written to AsyncStorage
+           f0_module_1_state = IN_PROGRESS written to AsyncStorage
            [Grow tab is NOT visited as intermediate step]
 ```
 
@@ -24,41 +27,43 @@ Response:  welcome_modal_shown = true (already set at modal render)
 
 ```
 Trigger:   User taps "Khám phá trước" on Welcome Modal
-Response:  welcome_modal_shown = true
+Response:  f0_welcome_modal_shown = true (ALREADY written at render)
            Modal dismisses (fade out, 300ms)
-           User lands on Home tab (no navigation)
+           User lands on Home tab (default tab, no navigation)
            Grow tab shows LearningPromptCard on next visit
+           [LearningPromptCard condition: f0_welcome_modal_shown=true AND f0_module_1_state=UNLOCKED]
 ```
 
 ### IR-03 — Welcome Modal: Tertiary Link
 
 ```
-Trigger:   User taps "Tôi đã biết chứng khoán cơ bản" (text link)
-Response:  Navigate to Placement Quiz intro screen (slideUp, 400ms)
-           welcome_modal_shown NOT set yet (set on quiz intro screen render)
+Trigger:   User taps "Tôi đã biết chứng khoán cơ bản" (plasma text link)
+Response:  f0_welcome_modal_shown = true (ALREADY written at modal render — flag is idempotent)
+           Navigate to Placement Quiz intro screen (slideUp, 400ms)
+           Back navigation AVAILABLE on intro screen
 ```
 
 ### IR-04 — Card Advance (Swipe Left or Next Tap)
 
 ```
 Trigger:   User swipes left on lesson card (threshold ≥30% card width)
-           OR taps [Tiếp theo →] chevron button
+           OR taps "Tiếp theo →" chevron button
 Response:  Current card slides left (300ms ease-decelerate)
            Next card slides in from right (300ms ease-decelerate, parallel)
            Progress bar animates to new fill % (300ms ease-standard)
            Progress dot updates state (active dot moves to next position)
-           card_index auto-saved server-side (debounced 500ms after animation)
+           f0_lesson_{n}_{m}_card_index saved to AsyncStorage (debounced 500ms after animation)
 ```
 
 ### IR-05 — Card Back (Swipe Right or Back Tap)
 
 ```
 Trigger:   User swipes right on lesson card (threshold ≥30% card width)
-           OR taps [← Trước] chevron button
+           OR taps back chevron button
 Response:  Current card slides right (300ms ease-decelerate)
            Previous card slides in from left (300ms ease-decelerate, parallel)
            Progress bar + dots update to reflect previous position
-           [No card_index decrement — auto-save only moves forward]
+           [No card_index decrement — async save only moves forward]
 ```
 
 ### IR-06 — Swipe Right on Card 1 (First Card Boundary)
@@ -73,7 +78,7 @@ Response:  Card bounces right 8px → returns to original position (200ms ease-s
 ### IR-07 — Quiz: Correct Answer Selected
 
 ```
-Trigger:   User taps a quiz option that is the correct answer
+Trigger:   User taps the correct quiz option (evaluated locally vs. hardcoded answer key)
 Response:  Option fills quiz-correct-bg (150ms ease-standard)
            Positive border 1.5px appears on option
            Lucide check-circle icon fades in at option right (150ms)
@@ -85,14 +90,14 @@ Response:  Option fills quiz-correct-bg (150ms ease-standard)
 ### IR-08 — Quiz: Wrong Answer Selected (Attempts 1 and 2)
 
 ```
-Trigger:   User taps a quiz option that is NOT the correct answer (attempt ≤2)
+Trigger:   User taps a quiz option that is NOT the correct answer (attempt ≤ 2)
 Response:  Option fills quiz-wrong-bg (150ms ease-standard)
            Negative border 1.5px appears on option
            Lucide x-circle icon fades in at option right (150ms)
            Shake animation on the selected option row (300ms, keyframe)
            "Thử lại nhé!" — show feedback message below options (caption-drop, negative)
-           attempt_count incremented in session_progress.quiz_state
-           After 300ms: wrong option returns to default state (options re-enabled for retry)
+           attempt_count incremented in component state (not saved to AsyncStorage)
+           After 300ms: wrong option returns to default state; all options re-enabled
            [User can tap any option again immediately]
 ```
 
@@ -103,8 +108,8 @@ Trigger:   User taps a wrong answer for the 3rd consecutive time
 Response:  Same wrong-answer feedback as IR-08 (quiz-wrong-bg, shake)
            After 300ms: HintCard slides in from right (300ms ease-decelerate)
            HintCard overlays QuizCard, displaying lesson-specific hint text
-           hint_shown = true in session_progress.quiz_state
-           [User MUST interact with hint card before retrying — "Hiểu rồi" required]
+           [User MUST tap "Hiểu rồi" before retrying — back not available on HintCard]
+           [No attempt limit is enforced after hint shown — unlimited retries continue]
 ```
 
 ### IR-10 — Hint Card: Dismiss
@@ -114,250 +119,288 @@ Trigger:   User taps "Hiểu rồi, thử lại →" on HintCard
 Response:  HintCard slides out to right (300ms ease-accelerate)
            QuizCard revealed beneath (no new animation needed)
            All options reset to default state
-           User may now attempt the quiz again (no attempt limit after hint shown)
+           User may attempt quiz again (no limit enforced)
 ```
 
-### IR-11 — CTA Card: "Try It Now" Primary Tap
+### IR-11 — CTA Card: Primary Action Tap
 
 ```
-Trigger:   User taps "Thử ngay trong danh mục ảo →" on Card 5 (CTA Card)
-Response:  "Try It Now" bottom sheet slides up (400ms ease-decelerate)
-           Sheet: ink-800 surface, radius-4xl top, 60% viewport height
-           Contains task prompt + GlassmorphicSecurityInfo disclaimer
-           Lesson completion NOT triggered yet (triggered on sheet action or dismiss)
+Trigger:   User taps "Thực hành ngay →" on Card 5 (CTA Card)
+Response:  Navigate to relevant in-app section (deep link specified per lesson in content)
+           Examples:
+             L1.3 → navigate to Trade tab, search for "VNM"
+             L2.1 → navigate to stock detail for "FPT", scroll to Phân tích tab
+             L3.3 → navigate to Portfolio tab watchlist
+           Lesson completion triggered immediately on CTA tap
+           f0_lesson_{n}_{m}_state = COMPLETE written to AsyncStorage
+           If this was Lesson N < 5: f0_lesson_{n}_{m+1}_state = UNLOCKED
+           If this was Lesson 5: f0_module_{n}_state = LESSONS_COMPLETE
 ```
 
-### IR-12 — "Try It Now" Sheet: Navigate to Paper Trading
+### IR-12 — CTA Card: Secondary Action ("Tiếp tục →")
 
 ```
-Trigger:   User taps "Đi đến danh mục ảo →" on Try It Now bottom sheet
-Response:  Sheet dismisses (slideDown 300ms)
-           Lesson completion triggered (XP +25 awarded, idempotent)
-           Navigate to Portfolio tab (paper trading UI)
-           XPToast appears (+25 XP, 300ms fadeUp, 2500ms auto-dismiss)
+Trigger:   User taps "Tiếp tục →" on Card 5 (CTA Card) — skips in-app action
+Response:  Lesson completion triggered (idempotent — same as IR-11)
+           f0_lesson_{n}_{m}_state = COMPLETE written to AsyncStorage
+           If lesson N < 5: navigate to next lesson (L{n}.{m+1} Card 1)
+           If lesson 5: module completion banner slides up from bottom (see IR-15)
+           User returns to Grow tab after 300ms delay
 ```
 
-### IR-13 — "Try It Now" Sheet: Dismiss / Skip
+### IR-13 — Lesson Completion: Lesson < 5 in Module
 
 ```
-Trigger:   User taps "Để sau" link on Try It Now bottom sheet
-           OR swipes down on sheet handle
-Response:  Sheet dismisses (slideDown 300ms)
-           Lesson completion triggered immediately (XP +25 awarded, idempotent)
-           User returns to Lesson Viewer at Card 5 momentarily
-           Then auto-navigates back to Grow tab (300ms delay) with next lesson prompt
+Trigger:   Lesson N (N < 5) state transitions to COMPLETE (from IR-11 or IR-12)
+Response:  Next lesson unlocks: f0_lesson_{n}_{m+1}_state = UNLOCKED
+           ModuleCard progress bar updates on Grow tab
+           "Bài học tiếp theo đã mở khóa!" snackbar (body-md, lime, 2s auto-dismiss, bottom)
+           [No XP toast — rewards removed in V2]
 ```
 
-### IR-14 — Lesson Completion: Lesson < 5 in Module
+### IR-14 — Lesson Completion: Lesson 5 (Final Lesson in Module)
 
 ```
-Trigger:   Lesson N (N < 5) completes
-Response:  XPToast appears (fadeUp 300ms, "+25 XP", 2500ms auto-dismiss)
-           lesson_completions record created (idempotent)
-           User returns to Grow tab
-           Next lesson in module transitions to UNLOCKED state (visual pulse on card, 600ms)
+Trigger:   Lesson 5 of module N transitions to COMPLETE (from IR-11 or IR-12)
+Response:  f0_module_{n}_state = LESSONS_COMPLETE written to AsyncStorage
+           Module completion banner slides up from bottom (300ms ease-decelerate):
+             "Bạn đã học xong [Module Name]! Làm bài kiểm tra →"
+             (lime border, ink-800 bg, KineticButton lime)
+           [Module does NOT move to COMPLETE until MKC is passed — state stays LESSONS_COMPLETE]
+           [No XP toast — rewards removed in V2]
 ```
 
-### IR-15 — Lesson Completion: Lesson 5 (Final Lesson in Module)
-
-```
-Trigger:   Lesson 5 of a module completes
-Response:  XPToast appears ("+25 XP", 2500ms auto-dismiss)
-           Module completion banner slides up from bottom (2000ms after toast enters):
-           "Bạn đã học xong [Module Name]! Làm bài kiểm tra →" (lime border, ink-800 bg)
-           lesson_completions record created; module status remains IN_PROGRESS
-           [Module does NOT move to COMPLETE until MKC is passed]
-```
-
-### IR-16 — Module Card Tap: LOCKED State
+### IR-15 — Module Card Tap: LOCKED State
 
 ```
 Trigger:   User taps a LOCKED ModuleCard on Learning Path Home
-Response:  Tooltip fades in from card center (200ms ease-decelerate)
-           Copy: "Hoàn thành [Module N] để mở khóa"
+Response:  Tooltip fades in above card (200ms ease-decelerate)
+           Copy: "Hoàn thành Module [N-1] để mở khóa"
            Tooltip auto-hides after 2500ms (fade out 200ms)
-           No navigation; no bottom sheet
+           No navigation; no bottom sheet; no action
+```
+
+### IR-16 — Module Card Tap: LESSONS_COMPLETE State
+
+```
+Trigger:   User taps ModuleCard in LESSONS_COMPLETE state (all lessons done, MKC not yet passed)
+Response:  Navigate to MKC for that module
+           MKC opens at Q1; forward-only navigation; back chevron HIDDEN
 ```
 
 ### IR-17 — MKC: Submit (Nộp bài)
 
 ```
 Trigger:   User taps "Nộp bài" on Question 5 of MKC
-Response:  Button enters loading state (spinner replaces label, 150ms)
-           Results sent to server (API call)
-           Loading max: 3s before timeout error shown
-           On result:
-             [≥3/5 correct] → navigate to MKC Pass Results screen (slideUp)
-             [<3/5 correct] → navigate to MKC Fail Results screen (slideUp)
-                              + 60s cooldown begins immediately
+Response:  Button briefly enters submitted state (150ms visual feedback)
+           Score evaluated CLIENT-SIDE against hardcoded answer key in app bundle
+           [NO server API call — evaluation is synchronous]
+           [Score ≥ 3/5 — PASS] → navigate to MKC Pass screen (slideUp, see IR-18)
+           [Score < 3/5 — FAIL] → navigate to MKC Fail screen (slideUp)
+                                   f0_mkc_{n}_cooldown_start = Date.now()
+                                   60s client-side countdown begins
 ```
 
-### IR-18 — MKC Retry (After Cooldown)
+### IR-18 — MKC Pass: Module Complete
 
 ```
-Trigger:   User taps "Thử lại ngay →" on MKC Fail Results screen (cooldown elapsed)
-Response:  Navigate back to MKC screen (fresh question set, same pool, randomized order)
-           Progress bar resets to 0
-           Cooldown timer resets (new 60s cooldown starts after THIS attempt's submission)
+Trigger:   MKC score ≥ 3/5
+Response:  f0_mkc_{n}_state = PASSED
+           f0_module_{n}_state = COMPLETE
+           If n < 4: f0_module_{n+1}_state = UNLOCKED
+           Pass screen renders:
+             AmbientBackground: lime orbs
+             "Module N Hoàn Thành!" (display-md, lime)
+             Score "X/5" (display-sm, lime)
+             If n < 4: CTA "Bắt đầu Module N+1 →" (lime)
+             If n = 4: CTA "Xem kết quả học →" (lime) → Flow G (Learning Complete)
+           [No badge, no XP — rewards removed in V2]
 ```
 
-### IR-19 — Module Completion Reward: Badge Reveal
+### IR-19 — MKC Retry (After Cooldown)
 
 ```
-Trigger:   User arrives at Module Completion Reward screen (from MKC pass)
-Response:  AmbientBackground activates (lime + plasma orbs, animate-pulse-glow)
-           Confetti burst (300 particles, lime + plasma, 1500ms, one-shot)
-           BadgeCard scales in (0 → 1.05 → 1.0, 300ms ease-spring)
-           XP chips fade up in sequence: lesson XP (0ms delay), then bonus XP (150ms delay)
-           [If level-up advance condition met] Level banner slides up (400ms ease-decelerate)
+Trigger:   User taps "Thử lại ngay →" on MKC Fail screen (cooldown elapsed)
+Response:  Navigate to MKC screen (same module, questions re-randomized from hardcoded pool)
+           Progress bar resets to 0 (Câu 1/5)
+           New 60s cooldown will start only AFTER this attempt's submission if failed again
+           Previous f0_mkc_{n}_cooldown_start is still in AsyncStorage (overwritten only on next fail)
 ```
 
-### IR-20 — Grow Tab: Sub-nav Pill Switch
+### IR-20 — Grow Tab: Load State from AsyncStorage
 
 ```
-Trigger:   User taps a sub-nav pill (e.g., "Khám phá", "Kỹ năng")
-Response:  Content area cross-fades (300ms ease-standard)
-           Active pill: lime-soft text + 2px lime underline
-           Inactive pills: fog-muted text, no underline
-           [Per ux-flows.md navigation rules]
+Trigger:   User navigates to Grow tab
+Response:  Read all f0_module_{1-4}_state and f0_lesson_{1-4}_{1-5}_state from AsyncStorage
+           Show skeleton loaders (100ms, to avoid flash on fast reads)
+           Render ModuleCards with correct variant based on read state
+           [No API call — all data is local]
+           Error fallback: if AsyncStorage read fails → show M1 UNLOCKED, rest LOCKED
 ```
 
-### IR-21 — Placement Quiz: Back Navigation Blocked (IR-40)
+### IR-21 — Placement Quiz: Back Navigation Blocked
 
 ```
-Trigger:   Q1 of Placement Quiz renders on screen
+Trigger:   Q1 of Placement Quiz renders on screen (user tapped "Bắt đầu" on intro card)
 Response:  System back gesture (iOS swipe-from-left, Android back button) DISABLED
            Back chevron in header: HIDDEN for entire quiz duration (Q1 through Q5)
            [User cannot return to Welcome Modal or intro screen during quiz]
-           [This is enforced at navigation level, not card level]
+           [Enforced at navigation stack level — intro screen is popped on Q1 navigate]
 ```
 
 ### IR-22 — Placement Quiz: Submission
 
 ```
 Trigger:   User taps "Nộp bài" on Placement Quiz Q5
-Response:  Loading state on button (150ms)
-           Score evaluated server-side
-           [≥4/5 correct] → Placement Pass screen (slideUp)
-                             M1 marked complete server-side (no badge/XP)
-           [<4/5 correct] → Placement Fail screen (slideUp)
-           [No retry option exists — one-shot quiz]
+Response:  Score evaluated CLIENT-SIDE (hardcoded answer key in bundle)
+           [NO server API call — evaluation is synchronous]
+           f0_placement_quiz_completed = true written to AsyncStorage
+           f0_placement_quiz_passed = (score >= 4) written to AsyncStorage
+           [≥ 4/5 correct — PASS]:
+             f0_module_1_state = COMPLETE
+             f0_module_2_state = UNLOCKED
+             Navigate to Placement Pass screen (slideUp, AmbientBackground lime)
+             CTA "Bắt đầu Module 2 →" → L2.1 Card 1
+             [No M1 badge — rewards removed in V2]
+           [< 4/5 correct — FAIL]:
+             Navigate to Placement Fail screen (slideUp, AmbientBackground plasma)
+             CTA "Bắt đầu Module 1 →" → L1.1 Card 1
+           [No retry option — one-shot quiz]
 ```
 
-### IR-23 — M2 Bonus Cash Modal: View Portfolio CTA
+### IR-23 — Learning Path Complete: Trigger
 
 ```
-Trigger:   User taps "Xem danh mục ảo →" on Bonus Cash Modal
-Response:  Bottom sheet dismisses (slideDown 300ms)
-           Navigate to Tab 4 (Portfolio) with bonus cash wallet visible
-           Bonus cash ledger entry: ledger_source = "module_2_completion"
-           TTL indicator shows "7 ngày còn lại"
+Trigger:   f0_module_4_state transitions to COMPLETE (M4 MKC passed)
+Response:  f0_learning_path_complete = true written to AsyncStorage
+           Navigate to Learning Complete screen (slideUp, AmbientBackground lime + plasma)
+           Screen shows:
+             "Chúc mừng! 🎓"
+             "Bạn đã hoàn thành toàn bộ chương trình học!"
+             Stats: "4 modules · 20 bài học · Sẵn sàng đầu tư"
+             CTA: "Bắt đầu đầu tư →" (KineticButton lime)
 ```
 
-### IR-24 — Daily Missions (Locked): Start Module 1 CTA
+### IR-24 — Post-Learning Age Gate Check
 
 ```
-Trigger:   User taps "Bắt đầu Module 1 →" on Daily Missions locked unlock banner
-Response:  Navigate to Learning Path Home (Grow Tab)
-           LearningPromptCard or Module 1 "Bắt đầu" CTA is highlighted
-           [User enters learning flow from here]
+Trigger:   User taps "Bắt đầu đầu tư →" on Learning Complete screen
+Response:  Read user DOB from local profile AsyncStorage
+           Calculate age: floor((Date.now() - DOB_timestamp) / (365.25 * 24 * 3600 * 1000))
+           f0_age_gate_shown = true written to AsyncStorage
+           [Age ≥ 18]:
+             Navigate to Trade tab directly
+             Show tooltip: "Sẵn sàng đặt lệnh đầu tiên! 💪" (lime, auto-dismiss 2500ms)
+           [Age < 18 OR DOB missing/invalid]:
+             Navigate to Home tab
+             AgeGateBottomSheet slides up (400ms)
+             Show specific date when user turns 18 (if DOB available)
+             [DOB missing]: use no-date variant, add "Cập nhật Hồ sơ" text link
+```
+
+### IR-25 — Module Unlock: Next Module Becomes Available
+
+```
+Trigger:   f0_module_{n}_state transitions to COMPLETE
+Response:  f0_module_{n+1}_state = UNLOCKED written to AsyncStorage (if n < 4)
+           On Grow tab: ModuleCard for M{n+1} transitions LOCKED → UNLOCKED
+           Border pulses lime once (600ms ease-spring)
+           "MODULE N+1 MỞ KHÓA!" snackbar (lime, body-md, 2.5s, bottom of screen)
+           [Triggered even if user is not on Grow tab — visual shown on next Grow tab visit]
 ```
 
 ---
 
 ## 2. Edge Case UI Handling
 
-### EC-01 — Network Unavailable on First Launch
+### EC-01 — No Network on First Launch
 
 ```
-Edge Case:      User opens app for the first time; network is unavailable
-Detection:      Server flag check for welcome_modal_shown returns timeout/error
-User sees:      Home tab loads normally; Welcome Modal is NOT shown
-                No error message shown to user
-System does:    Queues welcome_modal_shown flag verification for retry on reconnect
-Recovery path:  On next app launch with network: flag confirmed false → Modal fires normally
-UI indicator:   None (silent failure; do not show "offline" banner on first launch)
+Edge Case:      User opens app for the first time with no network connection
+Detection:      AsyncStorage read of f0_welcome_modal_shown returns false (local, always available)
+                BUT app requires network for Lottie asset download
+User sees:      Welcome Modal shows with static PNG fallback (Lottie not loaded)
+                All 3 CTAs are active immediately (not gated on Lottie)
+System does:    Reads f0_welcome_modal_shown from AsyncStorage (local, no network needed)
+                Writes f0_welcome_modal_shown = true at modal render (local write, no network)
+Recovery path:  User can proceed with all 3 CTAs normally. Lottie loads on next online launch.
+UI indicator:   None. Modal functions fully offline.
 ```
 
-### EC-02 — Card Content Load Failure
+### EC-02 — App Force-Kill Mid-Lesson (Before Card Save)
 
 ```
-Edge Case:      Lesson card body content or image fails to load (CMS/CDN error)
-User sees:      Placeholder card with centered error:
-                  - Lucide `image-off` icon (32px, fog-muted)
-                  - "Không tải được nội dung" (body-md, fog-muted)
-                  - "Thử lại?" KineticButton ghost
-System does:    Retries content fetch 3× with 500ms back-off; shows placeholder after 3rd failure
-Recovery path:  Tap "Thử lại?" → immediate retry → on success: card loads normally
-                If retry fails: offer "Bỏ qua bài này tạm thời" option (skips card, no XP penalty)
-```
-
-### EC-03 — App Force-Kill Mid-Lesson (Before Card Save)
-
-```
-Edge Case:      User exits the app abruptly between card advance and save completion
+Edge Case:      User exits the app abruptly between card advance and AsyncStorage save
+                (AsyncStorage write is debounced 500ms — save may not have completed)
 User sees:      On relaunch: lesson resumes at last SUCCESSFULLY saved card_index
-                Toast: "Tiếp tục từ vị trí bạn bỏ dở" (body-md, fog) — 2s auto-dismiss
-System does:    Reads session_progress.card_index from server on lesson open
-Recovery path:  User continues normally from last saved card
-                [Card 4 attempt count is session-scoped; resets to 0 on relaunch]
+                No toast — silent resume (user expects to be at last card they saw)
+System does:    Reads f0_lesson_{n}_{m}_card_index from AsyncStorage on lesson open
+                Renders at saved index (may be 1 card behind actual last-seen card)
+Recovery path:  User swipes forward to return to their position (at most 1 card behind)
+                [Card 4 attempt count resets to 0 on relaunch — session-scoped state]
 ```
 
-### EC-04 — MKC Loading Timeout
+### EC-03 — Placement Quiz Force-Kill Before Submission
 
 ```
-Edge Case:      MKC submission response takes >3 seconds (API timeout)
-User sees:      Button remains in loading state for 3s
-                Then: error toast slides up from bottom:
-                  "Không thể kết nối. Thử lại sau vài giây."
-                  (body-md, negative, ink-800 bg, radius-xl, 3s auto-dismiss)
-                  Retry button: "Thử lại" within the toast (ghost, small)
-System does:    Request cancelled after 3s timeout; no partial score saved
-Recovery path:  User taps "Thử lại" in toast → submission retried (no cooldown for network error)
-                OR: User exits MKC; returns later; no cooldown penalty for network failure
+Edge Case:      User starts Placement Quiz (past intro screen) but force-kills before "Nộp bài"
+Detection:      f0_placement_quiz_completed = false; f0_welcome_modal_shown = true
+User sees:      On relaunch: Welcome Modal does NOT fire again (f0_welcome_modal_shown = true)
+                User lands on Home tab normally
+                M1 shows UNLOCKED in Grow tab
+                No Placement Quiz entry point exists
+System does:    Quiz answers are NOT saved to AsyncStorage (no partial save by design)
+                f0_welcome_modal_shown was already written at modal render (before quiz)
+Recovery path:  No recovery path — one-shot opportunity is effectively lost on force-kill
+                [This is acceptable by design — progress fully resets on reinstall if desired]
 ```
 
-### EC-05 — Module Unlock Mid-Session (Trade Count Met)
+### EC-04 — AsyncStorage Read Failure on Grow Tab
 
 ```
-Edge Case:      User places ≥3 paper trades while the Learning Path Home is on-screen
-                (Module 3 prerequisite met in real-time)
-User sees:      Module 3 card transitions from LOCKED to UNLOCKED
-                Transition: border pulses lime once (600ms ease-spring)
-                "MODULE 3 MỞ KHÓA!" micro-toast (2.5s, lime, bottom of screen)
-System does:    Module unlock evaluation triggered on trade event via WebSocket/push
-Recovery path:  N/A — this is a positive unlock state; no error path
+Edge Case:      AsyncStorage.multiGet fails on Grow tab mount (very rare; OS-level error)
+User sees:      Skeleton loaders shown briefly, then fallback state renders:
+                M1 ModuleCard: UNLOCKED state
+                M2, M3, M4: LOCKED state
+                No error message shown (silent degraded state)
+System does:    Logs error to crash reporter
+                Renders deterministic fallback (M1 UNLOCKED, others LOCKED)
+Recovery path:  Pull-to-refresh on Grow tab retries AsyncStorage read
+                If read succeeds: correct state restores immediately
 ```
 
-### EC-06 — Placement Quiz Force-Kill Before Submission
+### EC-05 — Missing or Invalid DOB for Age Check
 
 ```
-Edge Case:      User starts Placement Quiz but force-kills app before submitting all 5 answers
-User sees:      On relaunch: Welcome Modal fires again (welcome_modal_shown = false still)
-                No partial quiz score persisted
-System does:    Placement Quiz state is NOT saved server-side until final submission
-Recovery path:  User can retake the Placement Quiz via the tertiary CTA on Welcome Modal
-                This is by design (one-shot quiz, but no server-side partial save)
+Edge Case:      User completes learning path but DOB is absent or unparseable in local profile
+Detection:      DOB field is null, empty, or not a valid date
+User sees:      "Bắt đầu đầu tư →" CTA tap → AgeGateBottomSheet (no-date variant)
+                "Cập nhật ngày sinh trong Hồ sơ để mở tính năng giao dịch."
+                CTA "Xem thị trường →" still available
+System does:    Treats missing DOB as under-18 (safe default — never accidentally grant trade access)
+                f0_age_gate_shown = true written to AsyncStorage
+Recovery path:  User updates DOB in Profile tab → navigates to Trade tab manually
+                [No re-trigger of learning complete screen — user must navigate directly to Trade]
 ```
 
-### EC-07 — M2 Bonus Cash Expiry Warning
+### EC-06 — MKC App Backgrounded During Cooldown
 
 ```
-Edge Case:      24 hours remain before M2 bonus cash force-liquidation
-User sees:      Push notification (if enabled): "Tiền thưởng ảo hết hạn trong 24 giờ"
-                In Portfolio tab: expiry banner on bonus cash wallet entry (negative bg, ⚠ icon)
-                "Còn 24 giờ" countdown chip on portfolio bonus cash row
-System does:    Scheduled notification sent 24h before T+7 expiry
-                Force-liquidation executes at T+7 00:00 VNST regardless of user action
-Recovery path:  User prompted to use the funds before expiry
-                After force-liquidation: bonus cash ledger entry shows "ĐÃ THANH LÝ" label (fog-muted)
-                Portfolio shows 0 VND in bonus cash slot
+Edge Case:      User fails MKC, cooldown starts, app is backgrounded or killed
+User sees:      On relaunch + navigate to MKC results:
+                Cooldown timer shows correct REMAINING time (not reset to 60s)
+                If cooldown already elapsed: "Thử lại ngay →" shown immediately
+System does:    Reads f0_mkc_{n}_cooldown_start from AsyncStorage
+                Calculates remaining: Math.max(0, (cooldown_start + 60000 - Date.now()) / 1000)
+                Renders MKCCooldownBanner with correct secondsRemaining
+Recovery path:  Normal retry flow resumes from correct remaining time
+                [Client-side timer — device time manipulation can bypass; accepted V1 risk]
 ```
 
 ---
 
 *Owner: Product Design + Frontend Dev*
-*FRD reference: `docs/business/frd/module-f0-learning.md`*
+*Business requirements: `docs/business/f0-learning/01-requirements.md`*
 *QA test cases: `DESIGN-F0-LEARN-06-qa-cases.md`*
 
 ---
@@ -367,21 +410,19 @@ Recovery path:  User prompted to use the funds before expiry
 **Business Layer**
 | Document | Path |
 |----------|------|
-| FRD: F0 Learning Path | `docs/business/frd/module-f0-learning.md` |
-| UX Flows (Business) | `docs/business/frd/module-f0-learning-ux-flows.md` |
-| Gamification FRD | `docs/business/frd/module-c-gamification-extended.md` |
+| F0 Learning Path V2 | `docs/business/f0-learning/00-index.md` |
+| Functional Requirements | `docs/business/f0-learning/01-requirements.md` |
+| Local Storage Data Model | `docs/business/f0-learning/03-data-model.md` |
+| Flow: Welcome Modal | `docs/business/f0-learning/flow-a-welcome-modal.md` |
+| Flow: MKC | `docs/business/f0-learning/flow-e-mkc.md` |
+| Flow: Placement Quiz | `docs/business/f0-learning/flow-f-placement-quiz.md` |
+| Flow: Learning Complete | `docs/business/f0-learning/flow-g-learning-complete.md` |
 
 **Design Layer**
 | Document | Path |
 |----------|------|
 | Design Alignment + Tokens | `docs/design/DESIGN-F0-LEARN-00-alignment.md` |
-| UX Flows (Design Detail) | `docs/design/DESIGN-F0-LEARN-01-ux-flows.md` |
 | Screen Wireframes | `docs/design/DESIGN-F0-LEARN-02-wireframes.md` |
 | UI Specification | `docs/design/DESIGN-F0-LEARN-03-ui-spec.md` |
 | Component Specs | `docs/design/DESIGN-F0-LEARN-04-component-spec.md` |
 | QA Test Cases | `docs/design/DESIGN-F0-LEARN-06-qa-cases.md` |
-
-**Engineering Layer**
-| Document | Path |
-|----------|------|
-| Dev/QA Handoff Spec | `docs/design/DEV-QA-SPEC-F0-Learning-Path.md` |

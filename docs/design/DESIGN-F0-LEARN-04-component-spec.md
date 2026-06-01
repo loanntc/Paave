@@ -1,5 +1,6 @@
 # F0 Learning Path — Component Specifications
-**Version:** 1.0 | **Date:** 2026-05-28 | **Feature:** F0 Learning Path (Module F-LEARN)
+**Version:** 2.0 | **Date:** 2026-05-29 | **Feature:** F0 Learning Path (Module F-LEARN)
+**Architecture:** Frontend-only · AsyncStorage · No rewards
 
 > **Rule:** Follow `docs/design/design-system.md §13` (Component Reuse Workflow).
 > All tokens reference `docs/design/design-system.md` and `DESIGN-F0-LEARN-03-ui-spec.md §1.2`.
@@ -17,8 +18,7 @@ Do NOT duplicate or create local copies.
 | `KineticButton` | `lime` | All primary CTAs (one per viewport) |
 | `KineticButton` | `ghost` | Skip / cancel / secondary actions |
 | `KineticButton` | `plasma` | Hint Card "Hiểu rồi" only |
-| `AmbientBackground` | default | Welcome Modal, Placement Results, Reward Screen |
-| `GlassmorphicSecurityInfo` | default | Bonus Cash Modal paper trading disclaimer |
+| `AmbientBackground` | default | Welcome Modal, Placement Results, MKC Pass, Learning Complete |
 | `ChangePill` | `positive` | Example Card stock data row |
 | `PaaveWordmark` | `sm` | Learning Path Home top-nav |
 
@@ -34,7 +34,7 @@ Do NOT duplicate or create local copies.
 ### LearningPromptCard
 
 - **Figma frame:** `F0-Learning / LearningPromptCard`
-- **Used on:** Learning Path Home (Grow Tab) — conditional, shown when welcome modal was dismissed
+- **Used on:** Learning Path Home (Grow Tab) — conditional, shown when welcome modal was dismissed via "Khám phá trước"
 - **Variants:** (none — single layout)
 - **Props:** `lessonId: string`, `lessonTitle: string`, `lessonNumber: string`
 - **States:** default | pressed (`scale-[0.98]`)
@@ -46,7 +46,7 @@ Do NOT duplicate or create local copies.
   - Right: "Bắt đầu →" (`caption-drop`, lime) + `chevron-right` icon (16px, lime)
 - **Surface:** `ink-800`, `radius-xl` (24px), `edge` border 1px
 - **Tokens used:** `ink-800`, `ink-700`, `radius-xl`, `edge`, `lime-soft`, `fog`, `fog-muted`, `lime`, `body-md`, `caption-pulse`, `caption-drop`, `space-3`
-- **Notes:** Visible only when `welcome_modal_shown = true` AND no active lesson session in progress at another entry point. Hidden once user starts a lesson.
+- **Notes:** Visible only when `f0_welcome_modal_shown = true` AND `f0_module_1_state = UNLOCKED` (not started). Hidden once M1 reaches IN_PROGRESS or higher.
 
 ---
 
@@ -56,32 +56,39 @@ Do NOT duplicate or create local copies.
 - **Used on:** Learning Path Home (Grow Tab) — ×4 instances (M1–M4)
 - **Variants:**
   - `locked` — greyed, padlock icon, prerequisite copy, no CTA
-  - `unlocked` — full color, "Bắt đầu" CTA
-  - `in-progress` — lime left-accent border, progress bar, "Tiếp tục" CTA
-  - `complete` — positive border, 100% progress bar + checkmark, "Ôn lại" ghost CTA
-- **Props:** `moduleNumber: 1|2|3|4`, `title: string`, `lessonCount: number`, `completedCount: number`, `xpReward: number`, `state: 'locked'|'unlocked'|'in-progress'|'complete'`, `nextLessonTitle?: string`, `prerequisiteText?: string`
+  - `unlocked` — full color, "Bắt đầu →" CTA
+  - `in-progress` — lime left-accent border, progress bar, "Tiếp tục →" CTA
+  - `lessons-complete` — all lessons done, 100% lesson bar, "Làm bài kiểm tra →" lime CTA
+  - `complete` — positive border, checkmark, "Ôn lại →" ghost CTA
+- **Props:** `moduleNumber: 1|2|3|4`, `title: string`, `lessonCount: number`, `completedCount: number`, `state: 'locked'|'unlocked'|'in-progress'|'lessons-complete'|'complete'`, `nextLessonTitle?: string`, `prerequisiteText?: string`
 - **States:** default | pressed (`scale-[0.98]`) | locked (non-interactive)
-- **Size:** 342px width × variable height (min 140px)
+- **Size:** 342px width × variable height (min 120px)
 - **Padding:** 20px all sides
 - **Surface:** `ink-800`, `radius-2xl` (32px)
 - **Border:**
   - `locked`: `edge` 1px
   - `unlocked`: `edge` 1px
-  - `in-progress`: `lime` 1.5px left-accent only (left-border only via box-shadow or border-left)
+  - `in-progress`: `lime` 1.5px left-accent only
+  - `lessons-complete`: `lime` 1.5px left-accent + lime glow
   - `complete`: `positive` 1px
-- **Layout (unlocked / in-progress / complete):**
+- **Layout (unlocked / in-progress / lessons-complete / complete):**
   - Row 1: "MODULE N" eyebrow tag (`caption-pulse`, lime, `module-tag-bg` chip) + state badge (right)
   - Row 2: Module title (`display-sm` 24px, lime-soft)
-  - Row 3: Lesson count ("N/5 bài học" or "5/5 ✓", `body-md`, fog)
-  - Row 4: Progress bar (4px height, `progress-track`, `progress-fill`, `radius-full`) — in-progress/complete only
-  - Row 5: XP badge (`+NNN XP` chip, `xp-pill-bg`, `lime`) + CTA button (right-aligned)
+  - Row 3: Lesson count ("N/5 bài học" or "5/5 bài ✓", `body-md`, fog)
+  - Row 4: Progress bar (4px height, `progress-track`, `progress-fill`, `radius-full`) — in-progress/lessons-complete/complete only
+  - Row 5: CTA button (right-aligned)
+    - `unlocked`: KineticButton lime "Bắt đầu →"
+    - `in-progress`: KineticButton lime "Tiếp tục →"
+    - `lessons-complete`: KineticButton lime "Làm bài kiểm tra →"
+    - `complete`: KineticButton ghost "Ôn lại →"
 - **Layout (locked):**
   - Title + prerequisite text + padlock icon (fog-muted, center-right)
   - Overlay: `locked-surface` (opacity-40) on entire surface
-- **Tokens used:** `ink-800`, `radius-2xl`, `lime-soft`, `lime`, `fog`, `fog-muted`, `positive`, `edge`, `display-sm`, `body-md`, `caption-pulse`, `xp-pill-bg`, `progress-track`, `progress-fill`, `module-tag-bg`, `locked-surface`
+- **Tokens used:** `ink-800`, `radius-2xl`, `lime-soft`, `lime`, `fog`, `fog-muted`, `positive`, `edge`, `display-sm`, `body-md`, `caption-pulse`, `progress-track`, `progress-fill`, `module-tag-bg`, `locked-surface`
 - **Notes:**
-  - Only ONE KineticButton `lime` can be visible per viewport — if multiple modules are in-progress/unlocked, only the topmost shows the lime button; others use ghost.
-  - Locked card tap: shows tooltip (see `DESIGN-F0-LEARN-05-interactions.md` IR-08).
+  - Only ONE KineticButton `lime` can be visible per viewport — if multiple modules show lime CTAs, only the topmost uses lime; others use ghost.
+  - Locked card tap: shows tooltip (see `DESIGN-F0-LEARN-05-interactions.md` IR-16).
+  - State data is read from AsyncStorage (`f0_module_{n}_state`) — no API call.
 
 ---
 
@@ -102,7 +109,7 @@ Do NOT duplicate or create local copies.
   - future: `ink-600`
 - **Label (quiz variant):** "Câu N/5" — `caption-pulse`, fog, right-aligned
 - **Tokens used:** `progress-track`, `progress-fill`, `lime`, `fog-muted`, `ink-600`, `caption-pulse`, `radius-full`
-- **Notes:** Animate bar width on each card advance (300ms `ease-standard`). Do not animate on lesson resume (set to saved position instantly).
+- **Notes:** Animate bar width on each card advance (300ms `ease-standard`). Do not animate on lesson resume (set to saved position instantly, no transition).
 
 ---
 
@@ -114,7 +121,7 @@ Do NOT duplicate or create local copies.
   - `concept` — neutral lime-soft headline, visual zone, key term highlight
   - `example` — positive (#10B981) tag, market data row (uses `ChangePill`)
   - `myth-buster` — two-tone: myth surface (myth-wrong-bg) + truth surface (myth-truth-bg)
-  - `cta` — lime tag, task prompt, XP preview chip, two CTAs
+  - `cta` — lime tag, lesson CTA prompts, two action buttons
 - **Props:** `variant: 'concept'|'example'|'myth-buster'|'cta'`, `tag: string`, `headline: string`, `body: string`, `visualAsset?: ImageSource`, `keyTerm?: { term: string, definition: string }` (concept only), `marketData?: StockDataRow` (example only), `mythText?: string`, `truthText?: string` (myth-buster only), `taskCopy?: string` (cta only)
 - **States:** default (no interactive states — scroll only)
 - **Size:** 342px width × variable height
@@ -128,9 +135,13 @@ Do NOT duplicate or create local copies.
 - **Myth-buster surfaces:**
   - Myth: `myth-wrong-bg`, prefix "🚫 Sai lầm phổ biến:" (`negative`)
   - Truth: `myth-truth-bg`, prefix "✓ Sự thật:" (`positive`)
-- **CTA variant specifics:** task icon (40px, Lucide, lime-soft), XP preview chip (`+25 XP`, `xp-pill-bg`, `lime`)
-- **Tokens used:** `ink-800`, `radius-xl`, `edge`, `lime-soft`, `fog`, `positive`, `plasma`, `negative`, `xp-pill-bg`, `lime`, all content typography tokens
-- **Notes:** Content is CMS-driven. Fallback for missing `visualAsset`: centered Lucide icon (48px, lime-soft) + topic label. Card is scrollable if body exceeds ~300px (rare case).
+- **CTA variant specifics:**
+  - Task icon (40px, Lucide, lime-soft)
+  - Task copy (`body-lg`, fog): specific in-app action the user can take (e.g., "Tìm FPT trong ô tìm kiếm Paave")
+  - Primary CTA: KineticButton lime "Thực hành ngay →" (deep-links to relevant app section)
+  - Secondary CTA: KineticButton ghost "Tiếp tục →" (advance without in-app action)
+- **Tokens used:** `ink-800`, `radius-xl`, `edge`, `lime-soft`, `fog`, `positive`, `plasma`, `negative`, `lime`, all content typography tokens
+- **Notes:** Content is hardcoded in app bundle. Fallback for missing `visualAsset`: centered Lucide icon (48px, lime-soft) + topic label. Card is scrollable if body exceeds ~300px (rare case).
 
 ---
 
@@ -149,7 +160,7 @@ Do NOT duplicate or create local copies.
 - **Options:** 4× `QuizOption` component, gap `space-3`
 - **Attempt counter:** shown below options after 1st wrong — "Lần thử: N" — `caption-pulse`, `fog-muted`
 - **Tokens used:** `ink-800`, `radius-xl`, `edge`, `lime-soft`, `fog-muted`, `body-lg`, `caption-pulse`, `space-3`
-- **Notes:** In `lesson` variant, "Tiếp theo" button activates only after `answered-correct`. In `mkc` variant, "Tiếp theo" activates after any selection (no reveal until full submit).
+- **Notes:** In `lesson` variant, "Tiếp theo" button activates only after `answered-correct`. In `mkc` variant, "Tiếp theo" activates after any selection (no reveal until full submit). All evaluation is local (correct answer hardcoded in app bundle).
 
 ---
 
@@ -193,55 +204,12 @@ Do NOT duplicate or create local copies.
 
 ---
 
-### XPToast
-
-- **Figma frame:** `F0-Learning / XPToast`
-- **Used on:** Lesson completion (floating overlay)
-- **Variants:** (none — single layout, single XP amount)
-- **Props:** `amount: number` (always 25 for lesson completion)
-- **States:** enter (fadeUp 300ms) | visible (2500ms auto-dismiss) | exit (fadeOut 200ms)
-- **Size:** 280px width × 80px height, centered-x, bottom 112px
-- **Surface:** `ink-800`, `radius-xl` (24px), `shadow-glow-lime`
-- **Padding:** 16px horizontal, 0 vertical (flexbox centered)
-- **Layout:** horizontal flex, gap `space-3`
-  - Left: Lucide `zap`, 20px, `lime`
-  - Center: "+25 XP" (`display-sm` 24px, 700, Space Grotesk, `lime`) + "Bài học hoàn thành!" (`body-md`, `fog`)
-  - Right: 2-particle confetti burst SVG (lime, 500ms, auto-hide after burst)
-- **Tokens used:** `ink-800`, `radius-xl`, `shadow-glow-lime`, `lime`, `fog`, `display-sm`, `body-md`, `space-3`
-- **Notes:** aria-live="assertive" for screen reader. If module completion is triggered immediately after, show XPToast first (300ms), then module completion banner appears after toast is mid-dismiss (2000ms after toast enter).
-
----
-
-### BadgeCard
-
-- **Figma frame:** `F0-Learning / BadgeCard`
-- **Used on:** Module Completion Reward Screen, My Badges section (Grow Tab sub-nav 4)
-- **Variants:**
-  - `reward` — large 140×140px, animation on reveal, centered on screen
-  - `gallery` — smaller 80×80px, static, used in My Badges grid
-- **Props:** `badgeId: string`, `name: string`, `icon: ImageSource`, `rarity: 'common'|'uncommon'|'rare'|'epic'`, `variant: 'reward'|'gallery'`
-- **States:** default | pressed (scale 1→1.03, 150ms spring) | locked (opacity-50, padlock overlay)
-- **Size:**
-  - `reward`: 140×140px container + badge name label below
-  - `gallery`: 80×80px container + name label below
-- **Surface:** `badge-surface` (`ink-700`), `radius-2xl` (32px for reward) / `radius-xl` (24px for gallery)
-- **Border:** `rarity-[level]` color, width per rarity (Common 1px, Uncommon 2px, Rare 3px, Epic 3px)
-- **Glow (Uncommon+):** box-shadow `0 0 20px rgba([rarity-rgb], 0.20)`
-- **Icon:** Badge SVG centered, 72px (reward) / 40px (gallery)
-- **Symbol:** Rarity symbol below icon — Common: none, Uncommon: ✦, Rare: ★, Epic: ⚡ — `caption-pulse`, rarity color
-- **Name label:** `body-md` (14px, 600, Space Grotesk), `fog`, margin-top 8px, centered
-- **Reveal animation (reward variant):** scale 0 → 1.05 → 1.0, 300ms `ease-spring`
-- **Tokens used:** `badge-surface`, `rarity-common/uncommon/rare/epic`, `radius-2xl`, `body-md`, `fog`, `caption-pulse`
-- **Notes:** Rarity glow RGB values: uncommon=52,211,153; rare=96,165,250; epic=245,158,11.
-
----
-
 ### MKCQuestionCard
 
 - **Figma frame:** `F0-Learning / MKCQuestionCard`
-- **Used on:** Module Knowledge Check (MKC) screen — identical to QuizCard `mkc` variant. Use QuizCard with `variant="mkc"` instead of a separate component. — This entry is retained as a Figma frame alias only.
+- **Used on:** Module Knowledge Check (MKC) screen — alias for QuizCard `mkc` variant.
 - **Reference:** Use `QuizCard` with `variant="mkc"`.
-- **Notes:** MKC renders the same question card as in-lesson quiz but without per-option reveal. No hint card in MKC. See `QuizCard` above.
+- **Notes:** MKC renders the same question card as in-lesson quiz but without per-option reveal. No hint card in MKC. All scoring is local (hardcoded answers in bundle).
 
 ---
 
@@ -261,33 +229,14 @@ Do NOT duplicate or create local copies.
   - Q text: `body-lg` (18px, 500, Manrope), `lime-soft`
   - 4× QuizOption rows (state: `default` / `selected` only — no correct/wrong reveal during quiz)
 - **Tokens used:** `ink-800`, `radius-2xl`, `lime-soft`, `fog`, `body-lg`, `body-md`, `display-sm`, `space-3`
-- **Notes:** Back navigation is blocked from Q1 onward (IR-40). Back chevron hidden in Lesson Viewer header when Placement Quiz is active. This is enforced at the navigation level, not the card level.
-
----
-
-### BonusCashModal
-
-- **Figma frame:** `F0-Learning / BonusCashModal`
-- **Used on:** Module 2 Completion flow (FR-LEARN-10)
-- **Variants:** (none — single layout, full-height bottom sheet)
-- **Props:** `amountVND: number` (50000000), `expiryDays: number` (7)
-- **States:** enter (slideUp 400ms) | visible | exit (slideDown 300ms)
-- **Size:** Full-width, max-height 90% viewport, `ink-800`, `radius-4xl` top-corners
-- **Handle:** 4×36px bar, `ink-600`, `radius-full`, 12px from top, centered
-- **Sections (top to bottom):**
-  1. Amount Hero: Lucide `wallet` 56px (`lime`) + "50,000,000 ₫" (`display-md`, `lime`, tabular) + "Tiền thưởng ảo" chip
-  2. Detail rows: 3 rows with icons (📅, ⚠, 🔒) + body text (`body-md`, `fog`)
-  3. `GlassmorphicSecurityInfo` component (reused) — "Danh mục ảo 100% an toàn"
-  4. CTAs: "Xem danh mục ảo →" (KineticButton lime) + "Tiếp tục học Module 3" (ghost)
-- **Tokens used:** `ink-800`, `radius-4xl`, `ink-600`, `radius-full`, `lime`, `display-md`, `body-md`, `fog`, `negative`, `fog-muted`
-- **Notes:** GlassmorphicSecurityInfo used unmodified (see `components.md`). Amount uses Space Grotesk tabular `"tnum" 1` (VND formatting: `50.000.000 ₫`).
+- **Notes:** Back navigation is blocked from Q1 onward (IR-21). Back chevron hidden when Placement Quiz is active. Enforced at navigation level, not card level. One-shot: `f0_placement_quiz_completed` flag written to AsyncStorage on submit.
 
 ---
 
 ### MKCCooldownBanner
 
 - **Figma frame:** `F0-Learning / MKCCooldownBanner`
-- **Used on:** MKC Results — Fail screen (FR-LEARN-18)
+- **Used on:** MKC Results — Fail screen (FR-LEARN-07)
 - **Variants:** `counting` | `ready`
 - **Props:** `secondsRemaining: number`
 - **States:**
@@ -300,7 +249,67 @@ Do NOT duplicate or create local copies.
   - `ready`: "Sẵn sàng rồi!" (`body-md`, `lime-soft`) + "Thử lại ngay →" (KineticButton lime, enabled)
 - **Transition:** surface transitions from `cooldown-bg` → `xp-pill-bg` over 500ms when timer hits 0
 - **Tokens used:** `cooldown-bg`, `xp-pill-bg`, `negative`, `lime-soft`, `fog`, `display-sm`, `body-md`, `radius-xl`
-- **Notes:** Live countdown updated every second via timer. Timer display format: "00:47" (MM:SS). aria-live="polite" for screen reader accessibility.
+- **Notes:**
+  - Timer is CLIENT-SIDE only. `f0_mkc_{n}_cooldown_start` (Unix ms timestamp) is stored in AsyncStorage. `secondsRemaining = Math.max(0, (cooldown_start + 60000 - Date.now()) / 1000)`.
+  - On app relaunch mid-cooldown: timer resumes from correct remaining time (not resets to 60s).
+  - Live countdown updated every second via setInterval. Timer display format: "00:47" (MM:SS).
+  - aria-live="polite" for screen reader accessibility.
+
+---
+
+### LearningCompleteCard
+
+- **Figma frame:** `F0-Learning / LearningCompleteCard`
+- **Used on:** Learning Complete screen (Flow G) — shown after M4 MKC pass
+- **Variants:** (none — single layout, full-screen)
+- **Props:** `moduleCount: number` (4), `lessonCount: number` (20), `onCTA: () => void`
+- **States:** default | cta-loading (brief loading state on CTA tap while age check runs)
+- **Size:** Full-screen surface, centered content zone
+- **Surface:** Full-screen `AmbientBackground` (lime orbs dominant, mixed plasma)
+- **Padding:** 48px top safe area, 24px horizontal, 32px bottom
+- **Layout (centered column):**
+  - Celebration icon: 64px graduation emoji or Lucide `award` lime, margin-bottom 24px
+  - Headline: "Chúc mừng! 🎓" — `display-md` (32px, 700, Space Grotesk), `lime`
+  - Sub-headline: "Bạn đã hoàn thành toàn bộ chương trình học!" — `display-sm` (24px), `lime-soft`
+  - Stats row: "4 modules · 20 bài học · Sẵn sàng đầu tư" — `body-md`, `fog`, margin-top 8px
+  - Spacer: flex-1
+  - Body copy: "Bạn đã trang bị đủ kiến thức nền tảng. Đã đến lúc bắt đầu hành trình đầu tư thực sự." — `body-lg`, `fog`, margin-bottom 32px
+  - CTA: KineticButton lime, full-width, "Bắt đầu đầu tư →"
+- **Tokens used:** `lime`, `lime-soft`, `fog`, `display-md`, `display-sm`, `body-lg`, `body-md`
+- **Notes:** AmbientBackground is at the page level, not inside this card. CTA tap triggers client-side DOB age check from local profile store — no loading state expected (synchronous). The brief `cta-loading` state handles the rare case where DOB read is slow.
+
+---
+
+### AgeGateBottomSheet
+
+- **Figma frame:** `F0-Learning / AgeGateBottomSheet`
+- **Used on:** Learning Complete screen (Flow G) — shown if user age < 18
+- **Variants:**
+  - `with-date` — shows specific date when user turns 18
+  - `no-date` — generic message (when DOB is missing or invalid)
+- **Props:** `turnsEighteenDate?: string` (formatted date, e.g., "15/03/2027"), `onViewMarket: () => void`, `onGoHome: () => void`
+- **States:** enter (slideUp 400ms ease-decelerate) | visible | exit (slideDown 300ms)
+- **Size:** Full-width, 60% viewport height, `ink-800`, `radius-4xl` top-corners (32px)
+- **Handle:** 4×36px bar, `ink-600`, `radius-full`, 12px from top, centered
+- **Layout (top to bottom):**
+  1. Handle bar
+  2. Icon: Lucide `clock` or `calendar`, 40px, `fog-muted`, centered, margin-top 24px
+  3. Headline: "Bạn chưa đủ tuổi giao dịch" — `display-sm` (24px), `lime-soft`, centered
+  4. Body (`body-lg`, `fog`, margin 16px 0):
+     - "Theo quy định, bạn cần đủ 18 tuổi để đặt lệnh chứng khoán thật."
+     - If `with-date`: "Bạn có thể bắt đầu giao dịch từ [date]" (`body-lg`, lime-soft, bold)
+     - If `no-date`: "Cập nhật ngày sinh trong Hồ sơ để mở tính năng giao dịch."
+  5. Divider: `edge` 1px, margin 16px 0
+  6. Secondary copy: "Trong thời gian chờ, bạn có thể theo dõi thị trường và đọc tin tức tại đây." — `body-md`, `fog-muted`
+  7. CTAs (gap `space-3`):
+     - Primary: KineticButton lime full-width "Xem thị trường →" → dismiss + navigate Market tab
+     - Secondary: KineticButton ghost full-width "Về trang chủ" → dismiss only
+- **Tokens used:** `ink-800`, `radius-4xl`, `ink-600`, `radius-full`, `lime-soft`, `fog`, `fog-muted`, `edge`, `display-sm`, `body-lg`, `body-md`, `space-3`
+- **Notes:**
+  - Shown ONLY when age check fails (< 18). Never shown if age ≥ 18.
+  - `f0_age_gate_shown = true` written to AsyncStorage before sheet renders.
+  - Sheet is dismissible by swipe-down (sheet returns to Home tab without Market navigation).
+  - If DOB is missing: use `no-date` variant; add "Hồ sơ →" text link next to secondary copy.
 
 ---
 
@@ -314,14 +323,18 @@ Do NOT duplicate or create local copies.
 [ ] State matrices verified against DESIGN-F0-LEARN-03-ui-spec.md §3
 [ ] Touch targets: all interactive elements ≥ 44×44px
 [ ] All copy is specified (labels, error messages, empty states, placeholders)
-[ ] GlassmorphicSecurityInfo used unmodified in Bonus Cash Modal
 [ ] One KineticButton `lime` per viewport maximum (enforced per screen)
+[ ] ModuleCard `lessons-complete` variant tested with MKC entry CTA
+[ ] AgeGateBottomSheet: both variants (with-date / no-date) designed
+[ ] LearningCompleteCard: AmbientBackground at page level, not inside card
+[ ] MKCCooldownBanner: timer resume logic verified (not resetting to 60s on relaunch)
 ```
 
 ---
 
 *Owner: Visual Design + Frontend Dev | Review: UX Design + BA*
 *After Figma approval: update `docs/design/components.md` with all entries above*
+*V2 changes: removed XPToast, BadgeCard, BonusCashModal; added LearningCompleteCard, AgeGateBottomSheet; added ModuleCard `lessons-complete` variant; removed XP prop from ModuleCard; updated ContentCard cta variant*
 
 ---
 
@@ -330,9 +343,10 @@ Do NOT duplicate or create local copies.
 **Business Layer**
 | Document | Path |
 |----------|------|
-| FRD: F0 Learning Path | `docs/business/frd/module-f0-learning.md` |
-| UX Flows (Business) | `docs/business/frd/module-f0-learning-ux-flows.md` |
-| Gamification FRD | `docs/business/frd/module-c-gamification-extended.md` |
+| F0 Learning Path V2 (authoritative) | `docs/business/f0-learning/00-index.md` |
+| Functional Requirements | `docs/business/f0-learning/01-requirements.md` |
+| Learning Content | `docs/business/f0-learning/02-content.md` |
+| Completion + Trading Flow | `docs/business/f0-learning/04-completion-trading.md` |
 
 **Design Layer**
 | Document | Path |
@@ -349,3 +363,4 @@ Do NOT duplicate or create local copies.
 |----------|------|
 | Dev/QA Handoff Spec | `docs/design/DEV-QA-SPEC-F0-Learning-Path.md` |
 | Component Registry | `docs/design/components.md` |
+| Local Data Model | `docs/business/f0-learning/03-data-model.md` |
