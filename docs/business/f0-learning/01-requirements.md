@@ -44,7 +44,7 @@ The following are explicitly excluded from this version:
 |---|---|
 | XP / experience points system | Removed entirely from V2 architecture |
 | Badge or achievement system | Removed entirely from V2 architecture |
-| Bonus cash rewards | Removed entirely from V2 architecture |
+| Bonus cash rewards | Removed from V2 (frontend-only). **Re-scoped as V3 feature with backend support** — see `docs/business/f0-learning/05-virtual-capital-rewards.md` |
 | Server-side progress persistence | No cloud backup in V1; progress resets on reinstall |
 | KYC (Know Your Customer) flow | Separate future flow; post-learning age gate is navigation only |
 | CMS or remote content management | All questions and content are hardcoded in the app bundle |

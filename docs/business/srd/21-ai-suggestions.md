@@ -1,6 +1,6 @@
 # SRD-21: AI Suggestions — Daily Signal Generation Pipeline & API
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** 2026-06-01
 **Author:** Business Analysis Team
 **Linked FRD:** FRD-21 (`frd/21-ai-suggestions.md`)
@@ -25,7 +25,11 @@
 7. [Token Budget](#7-token-budget)
 8. [Cost Monitoring](#8-cost-monitoring)
 9. [Non-Functional Requirements](#9-non-functional-requirements)
-10. [Related Documents](#10-related-documents)
+10. [AI Language Requirements (System Enforcement)](#10-ai-language-requirements-system-enforcement)
+11. [Monitoring Requirements](#11-monitoring-requirements)
+12. [Accuracy Tracking System](#12-accuracy-tracking-system)
+13. [Prompt Configuration Management](#13-prompt-configuration-management)
+14. [Related Documents](#14-related-documents)
 
 ---
 
@@ -667,10 +671,262 @@ The `pipeline_runs` table supports a daily cost dashboard:
 
 ---
 
-## 10. Related Documents
+## 10. AI Language Requirements (System Enforcement)
+
+### 10.1 Prompt Language Rules
+
+The pipeline prompt (§6.3) must enforce observational-only language. These rules are system-level constraints, not suggestions.
+
+| Language category | Permitted? | Enforcement layer |
+|---|---|---|
+| State observation ("đang trong vùng quá bán") | ✅ | Prompt instruction |
+| Threshold crossing ("vượt MA50 phiên thứ 2") | ✅ | Prompt instruction |
+| Divergence description ("phân kỳ âm RSI") | ✅ | Prompt instruction |
+| Imperative ("mua ngay", "bán ngay") | ❌ | Prohibited phrase filter |
+| Guarantee ("chắc chắn", "đảm bảo") | ❌ | Prohibited phrase filter |
+| Recommendation ("nên đầu tư", "khuyến nghị") | ❌ | Prohibited phrase filter |
+| Forward certainty ("giá sẽ đạt [value]") | ❌ | Prohibited phrase filter |
+
+### 10.2 Signal Type Selection Prompt Rules
+
+The following logic is encoded into the pipeline prompt and evaluated by the model:
+
+```
+BUY_OPPORTUNITY conditions (any one sufficient):
+  - RSI_14 < 30 AND today_volume > avg_volume_30d × 1.3 AND price near support level
+  - Price crosses above SMA50 AND today_volume > avg_volume_30d × 1.5
+  - PE_ratio < sector_median_PE × 0.8 AND pct_change_5d > 0
+
+SELL_CAUTION conditions (any one sufficient):
+  - RSI_14 > 70 AND today_volume < avg_volume_30d × 0.8
+  - Negative RSI divergence detected AND foreign_sell_vol > foreign_buy_vol for ≥ 3 sessions
+  - Price crosses below SMA50 AND today_volume > avg_volume_30d × 1.3
+
+WATCH (default — use when none of the above conditions met):
+  - confidence_raw should be 40–60 for WATCH signals
+  - If data insufficient (< 30 bars): WATCH with confidence_raw 30–50
+```
+
+### 10.3 Prompt Update Process
+
+When monitoring (§11) indicates quality degradation or recurring filter failures, the prompt must be updated without a code deploy:
+
+**Phase 1 (pre-migration): update in code**
+1. Open `/scripts/ai-suggestions/run-pipeline.ts`
+2. Edit the `buildPrompt()` function
+3. Test with `DRY_RUN=true SYMBOL_OVERRIDE="VCB FPT"` to verify JSON output
+4. PR review required (1 approval); deploy via normal CI
+5. Time to live: 1–3 hours (depends on review queue)
+
+**Phase 2 (post-migration 0010): update via Supabase config**
+1. Open Supabase Dashboard → Table Editor → `ai_pipeline_config`
+2. Edit row where `config_key = 'suggestion_prompt_template'`
+3. Save → change takes effect on next scheduled run at 18:45 ICT
+4. Time to live: immediate for next pipeline run (no deploy needed)
+5. Keep audit trail: add a note in `config_value` change history
+
+**Triggers for prompt review:**
+
+| Condition | Priority | Who initiates |
+|---|---|---|
+| Filter reject rate > 10% for 3 consecutive days | P1 | BA / Tech Lead |
+| Rolling 90-day directional accuracy < 50% | P1 | Tech Lead after accuracy review |
+| 80%+ of signals are WATCH for 7+ days | P2 | BA weekly review |
+| User support tickets about signal quality | P2 | Product Owner |
+| New market regime (prolonged bear market) | P2 | Product Owner |
+
+---
+
+## 11. Monitoring Requirements
+
+### 11.1 Daily Operational Check (5 minutes)
+
+Run the following query in Supabase SQL Editor each morning (or automate as a Slack digest):
+
+```sql
+SELECT
+  run_date,
+  symbols_published,           -- target: 18-20; alert if < 15
+  symbols_skipped,             -- target: 0-2; alert if > 5
+  estimated_cost_usd,          -- target: < $1.00; alert if > $2.00
+  ROUND(duration_seconds / 60.0, 1) AS duration_min,  -- target: < 5 min
+  error_message                -- null = success; any text = investigate
+FROM ai_suggestion_runs
+ORDER BY run_date DESC
+LIMIT 7;
+```
+
+**Escalation rules:**
+
+| Metric | Normal | Warning | Critical action |
+|---|---|---|---|
+| `symbols_published` | 18–20 | 15–17 | < 15 → re-run manually via GitHub Actions |
+| `symbols_skipped` | 0–2 | 3–5 | > 5 → review filter_log; update prohibited phrase list |
+| `estimated_cost_usd` | < $1.00 | $1.00–$2.00 | > $2.00 → check for model upgrade anomaly; reduce MAX_SYMBOLS if needed |
+| `error_message` | null | — | Any text → read pipeline logs in GitHub Actions artifact |
+| Pipeline not run by 20:00 ICT | — | — | Missing run → trigger manually; check GitHub Actions health |
+
+### 11.2 Weekly Quality Review (30 minutes, every Monday)
+
+```sql
+-- 1. Content filter patterns (which phrases are being blocked?)
+SELECT filter_type, matched_text, COUNT(*) AS hits
+FROM ai_suggestion_filter_log
+WHERE run_date >= CURRENT_DATE - 7
+GROUP BY filter_type, matched_text
+ORDER BY hits DESC;
+
+-- 2. Signal distribution (are we too conservative / too bullish?)
+SELECT
+  signal_type,
+  COUNT(*) AS total,
+  ROUND(AVG(confidence_pct), 1) AS avg_confidence,
+  MIN(confidence_pct) AS min_conf,
+  MAX(confidence_pct) AS max_conf
+FROM ai_suggestions
+WHERE generated_at >= NOW() - INTERVAL '7 days'
+  AND is_published = true
+GROUP BY signal_type;
+
+-- 3. Model usage (Haiku vs Sonnet ratio — for cost insight)
+SELECT model_used, COUNT(*) AS count, ROUND(AVG(generation_ms), 0) AS avg_ms
+FROM ai_suggestions
+WHERE generated_at >= NOW() - INTERVAL '7 days'
+GROUP BY model_used;
+```
+
+**Healthy signal distribution target (rolling 7 days):**
+
+| signal_type | Target % | Alert if |
+|---|---|---|
+| BUY_OPPORTUNITY | 20–50% | < 10% or > 70% |
+| WATCH | 30–60% | > 80% (too conservative) |
+| SELL_CAUTION | 10–40% | < 5% (recency bias) |
+
+### 11.3 Monthly Quality Audit (2 hours, first Monday of month)
+
+**Accuracy check (after first 30 days post-launch):**
+
+```sql
+-- Direction accuracy for BUY_OPPORTUNITY at T+10
+SELECT
+  ROUND(100.0 * SUM(CASE WHEN direction_correct THEN 1 ELSE 0 END) / COUNT(*), 1) AS accuracy_pct,
+  COUNT(*) AS total_evaluated
+FROM ai_suggestion_outcomes
+WHERE evaluation_date = (
+  SELECT generated_at::date + 10
+  FROM ai_suggestions s
+  WHERE s.id = suggestion_id
+  LIMIT 1
+)
+AND suggestion_id IN (
+  SELECT id FROM ai_suggestions WHERE signal_type = 'BUY_OPPORTUNITY'
+);
+```
+
+**Monthly audit checklist:**
+- [ ] Direction accuracy ≥ 55% for both BUY_OPPORTUNITY and SELL_CAUTION at T+10
+- [ ] Filter reject rate < 10% per run (rolling 30-day avg)
+- [ ] Cost per symbol < $0.10 average (rolling 30-day)
+- [ ] Sector diversity: no single sector > 50% of all published signals
+- [ ] No user support tickets about misleading signals
+- [ ] Prohibited phrase blocklist reviewed; new patterns added if needed
+
+---
+
+## 12. Accuracy Tracking System
+
+### 12.1 `ai_suggestion_outcomes` Table (Migration 0010)
+
+```sql
+create table public.ai_suggestion_outcomes (
+  id              bigserial primary key,
+  suggestion_id   bigint not null references public.ai_suggestions(id) on delete cascade,
+  evaluation_window_days int not null,    -- 10 or 30
+  evaluation_date date not null,
+  price_at_eval   numeric(20,4),
+  actual_return_pct numeric(10,2),        -- positive = price went up; negative = down
+  direction_correct boolean,              -- null = WATCH (not evaluated)
+  evaluated_at    timestamptz not null default now(),
+  unique (suggestion_id, evaluation_window_days)
+);
+
+create index idx_outcomes_suggestion on public.ai_suggestion_outcomes (suggestion_id);
+create index idx_outcomes_date on public.ai_suggestion_outcomes (evaluation_date desc);
+```
+
+### 12.2 Accuracy Evaluation Job
+
+A separate GitHub Actions job runs daily (09:00 ICT, after market open):
+
+1. Query all `ai_suggestions` where `generated_at::date = CURRENT_DATE - 10` AND `signal_type IN ('BUY_OPPORTUNITY', 'SELL_CAUTION')`
+2. For each matching suggestion: fetch current `last_price` from `symbol_quotes_latest`
+3. Compute `actual_return_pct = (last_price - price_current) / price_current * 100`
+4. Compute `direction_correct`:
+   - BUY_OPPORTUNITY: `direction_correct = actual_return_pct >= 0`
+   - SELL_CAUTION: `direction_correct = actual_return_pct <= 0`
+5. Upsert into `ai_suggestion_outcomes` with `evaluation_window_days = 10`
+6. Repeat for T+30 evaluation window
+
+### 12.3 Quality Degradation Response
+
+| Rolling 90-day accuracy | Response |
+|---|---|
+| ≥ 55% | No action required |
+| 50–54% | Warning; schedule prompt review within 2 weeks |
+| 45–49% | P1 — prompt review required before next week's pipeline run |
+| < 45% | P0 — suspend directional signals (only WATCH) until prompt is reviewed and re-validated |
+
+When suspending directional signals: pipeline runs but all signals forced to WATCH with confidence 40–55. Restored when a backtest on 30 days of paper suggestions shows accuracy ≥ 55%.
+
+---
+
+## 13. Prompt Configuration Management
+
+### 13.1 `ai_pipeline_config` Table (Migration 0010)
+
+```sql
+create table public.ai_pipeline_config (
+  config_key      text primary key,
+  config_value    text not null,
+  description     text,
+  updated_by      text,             -- admin user ID
+  updated_at      timestamptz not null default now(),
+  previous_value  text              -- for rollback
+);
+
+-- Seed initial prompt template key
+insert into ai_pipeline_config (config_key, description) values
+  ('suggestion_prompt_template', 'System prompt for AI suggestion generation. Edit to update without code deploy.'),
+  ('max_symbols_per_run', '20'),
+  ('sonnet_upgrade_threshold', '70'),
+  ('confidence_cap', '85'),
+  ('prohibited_phrases', '["chắc chắn","đảm bảo lãi","không rủi ro","100%","bảo đảm","mua đi","bán ngay","nên đầu tư vào","chắc chắn tăng"]');
+```
+
+### 13.2 Pipeline Config Read Flow
+
+At pipeline startup:
+1. Read all rows from `ai_pipeline_config`
+2. If `suggestion_prompt_template` is null or empty: fall back to hardcoded prompt in `run-pipeline.ts`
+3. If `prohibited_phrases` config exists: use it; otherwise use hardcoded list
+4. Log which config source was used: `"config_source": "db"` or `"config_source": "hardcoded"`
+
+### 13.3 Rollback Procedure
+
+If a prompt update produces bad output:
+1. In Supabase: copy current `config_value` to `previous_value`, then set `config_value` to the previous known-good prompt
+2. Run manual pipeline: GitHub Actions → ai-suggestions.yml → Run workflow (dry_run=false)
+3. Verify new output in `ai_suggestions` table before setting `is_published = true`
+4. Rollback time target: < 30 minutes from detection to new signals live
+
+---
+
+## 14. Related Documents
 
 | Document | Location | Relationship |
 |----------|----------|-------------|
+| BRD-21: AI Suggestions | `docs/business/brd/21-ai-suggestions.md` | Business requirements and objectives this SRD implements |
 | FRD-21: AI Suggestions | `docs/business/frd/21-ai-suggestions.md` | Functional requirements that this SRD implements |
 | FRD-09: Age Gate & Feature Tier | `docs/business/frd/09-age-gate.md` | LEARN_MODE / FULL_ACCESS definitions; tier check is client-side |
 | FRD-12: AI Insights | `docs/business/frd/12-ai-insights.md` | Adjacent AI feature; post-trade explanation (per-event LLM call, not batch) |
@@ -681,4 +937,4 @@ The `pipeline_runs` table supports a daily cost dashboard:
 ---
 
 *End of SRD-21: AI Suggestions — Daily Signal Generation Pipeline & API*
-*Version 1.0 — 2026-06-01. Authoritative for V1 pipeline and read API.*
+*Version 1.1 — 2026-06-01. Adds §10 AI Language Requirements, §11 Monitoring Requirements, §12 Accuracy Tracking System, §13 Prompt Configuration Management.*
