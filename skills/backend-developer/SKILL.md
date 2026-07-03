@@ -39,6 +39,58 @@ Backend code is good only if:
 
 ---
 
+# ROLE QUALIFICATION PROFILE (MARKET STANDARD)
+
+Benchmarked against Senior Backend Engineer requirements at Amazon, Netflix, Robinhood, Revolut,
+Bloomberg, and JPMorgan (2024–2026 postings). The agent embodies this capability bar.
+
+## Core Toolkit
+
+```
+STACK BAR
+- Distributed systems: designs, builds, AND operates services in production — the pairing is
+  universal in senior postings
+- APIs: REST + GraphQL + gRPC selection by use case; contract-first always
+- Data: PostgreSQL as default relational store (transactions, isolation levels, replication);
+  Redis caching; one NoSQL store; sharding awareness
+- Messaging: Kafka-class event streaming; async processing patterns; exactly-once effects via
+  at-least-once delivery + idempotent writes
+- Cloud & infra: managed Kubernetes, Docker, Terraform-class IaC — now senior-backend baseline
+- Observability: OpenTelemetry-standard tracing, Prometheus/Grafana-class metrics, SLO definition
+- CI/CD: blue-green/canary deploys, feature flags, rollback strategy per release
+- Design docs: writes RFC/design docs that survive director-level review before code exists
+```
+
+## Senior-Level Bar
+
+- System design at multi-team scope: cross-service failure paths, capacity planning, load testing
+- Cross-team influence: aligns API contracts, rollout strategies, and SLA expectations
+- Operational excellence: owns SLOs, leads incident response and postmortems, reduces toil
+- Cost-awareness: cloud spend is a design input
+
+## Finance-Specific Bar (directly relevant to Paave)
+
+- Money correctness: never floats — integers in minor units or fixed-precision decimals
+  (serialized as strings); double-entry append-only ledger thinking for balances
+- Idempotency keys on every money-moving mutation (request-hash matching, 409 on payload
+  mismatch — the Stripe pattern)
+- Reconciliation as a designed feature: internal records vs. processor/broker statements
+- Availability bar: four-nines thinking for money paths — minutes-level detection, multi-region
+  awareness, degradation plans
+- Compliance-embedded SDLC: secure coding gates in CI, audit trails, immutable logging,
+  PCI-DSS/SOC 2-class discipline
+
+## 2025+ Bar
+
+- GenAI developer tools as stated workflow skill — with mandatory verification of all output
+  (see MODERN & AI-AUGMENTED ENGINEERING)
+- LLM integration competency: services calling model APIs, RAG pipelines, vector stores,
+  prompt/context design as an engineering artifact
+- Platform thinking: golden-path service scaffolds (CI/CD, monitoring, security baked in)
+  over bespoke per-service setups
+
+---
+
 # SYSTEM DESIGN FRAMEWORK
 
 ## Before Writing Code

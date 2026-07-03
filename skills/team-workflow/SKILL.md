@@ -5,8 +5,8 @@ description: >
   workflow. Trigger this skill whenever a user mentions: coordinating the team, running a feature
   end-to-end, understanding who does what and when, the delivery process, "take this from idea to
   release", or any request that spans multiple roles. Routes work to: project-manager,
-  business-analyst, frontend-developer, backend-developer, qa, and code-reviewer — plus consulted
-  specialists sba-data-analyst (data dictionaries, error registries, API contracts) and
+  business-analyst, product-designer, frontend-developer, backend-developer, qa, and code-reviewer —
+  plus consulted specialists sba-data-analyst (data dictionaries, error registries, API contracts) and
   trading-system-architect (trading domain, VN-market compliance) when their domain is touched.
 ---
 
@@ -54,6 +54,7 @@ description: >
 |------|-------|---------------------|
 | 📋 PM | `project-manager` | Multi-project planning, risk management (RAID log), cross-team facilitation |
 | 🔍 BA | `business-analyst` | Value-driven requirements, full case coverage (happy / fail / edge) |
+| ✏️ Designer | `product-designer` | End-to-end design: discovery, flows, hi-fi UI, usability, handoff, build QA |
 | 🎨 FE | `frontend-developer` | UI/UX implementation, design collaboration, CI gate before PR |
 | 🏗️ BE | `backend-developer` | System design, API contracts, all tests pass before PR |
 | 🧪 QA | `qa` | Test cases from BA docs, gap detection, defect reporting |
@@ -223,6 +224,9 @@ ambiguity advances without PM sign-off. These are hard gates, not suggestions.
 
 ```
 ACTIONS
+  Designer (parallel with BA): produces the flow maps, screen designs, and handoff package —
+    all states designed, usability-validated for significant flows, copy matched to the BA's
+    exact error strings (see product-designer skill)
   BA: Produces the final document package:
         Section 1 — BRD (Business Requirement Document)
           - Problem statement
@@ -489,16 +493,16 @@ EXIT GATE
 
 # WORKFLOW SUMMARY TABLE
 
-| Stage | Stage name | PM | BA | FE | BE | QA | Reviewer |
-|-------|-----------|----|----|----|----|----|----|
-| 1 | Requirement | **A/R** | C | I | I | I | I |
-| 2 | Analyse Requirement | C | **A/R** | C | C | C | I |
-| 3 | Review ↔ Update | C | **A/R** (updates) | R (reviews) | R (reviews) | **R** (reviews) | I |
-| 4 | Make Document | A (approves) | **A/R** | I | I | R (starts test cases) | I |
-| 5 | Develop | C | C | **A/R** | **A/R** | R (test cases) | I |
-| 6 | Review Code ↔ Fix | I | I | R (fixes) | R (fixes) | I | **A/R** |
-| 7 | Test ↔ Fix Bugs | C | I | R (fixes) | R (fixes) | **A/R** | R (re-reviews fixes) |
-| 8 | Complete | **A/R** | C | I | C | C | I |
+| Stage | Stage name | PM | BA | Designer | FE | BE | QA | Reviewer |
+|-------|-----------|----|----|----------|----|----|----|----|
+| 1 | Requirement | **A/R** | C | I | I | I | I | I |
+| 2 | Analyse Requirement | C | **A/R** | C (user evidence) | C | C | C | I |
+| 3 | Review ↔ Update | C | **A/R** (updates) | R (reviews UX completeness) | R (reviews) | R (reviews) | **R** (reviews) | I |
+| 4 | Make Document | A (approves) | **A/R** | **R** (flows + screen designs, parallel) | I | I | R (starts test cases) | I |
+| 5 | Develop | C | C | R (supports FE, build QA) | **A/R** | **A/R** | R (test cases) | I |
+| 6 | Review Code ↔ Fix | I | I | I | R (fixes) | R (fixes) | I | **A/R** |
+| 7 | Test ↔ Fix Bugs | C | I | R (validates visual fixes) | R (fixes) | R (fixes) | **A/R** | R (re-reviews fixes) |
+| 8 | Complete | **A/R** | C | C (metric vs prediction) | I | C | C | I |
 
 *R = Responsible, A = Accountable, C = Consulted, I = Informed*
 
