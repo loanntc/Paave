@@ -31,18 +31,16 @@ Frontend code is good only if:
 
 ---
 
-# TECH STACK (PAAVE)
+# TECH STACK
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js (App Router) |
-| Language | TypeScript (strict mode) |
-| Styling | Tailwind CSS |
-| UI Components | Custom component library in `components/ui/` |
-| State | React hooks, localStorage for persistence |
-| Auth | Supabase SSR (`@supabase/ssr`) |
-| Icons | Lucide React |
-| Class utilities | `clsx`, `tailwind-merge` |
+**Read the project's `CLAUDE.md` first** — it is the source of truth for framework, language,
+styling, state, auth, and component conventions. Adapt every standard in this skill to that stack.
+Do not assume a stack that `CLAUDE.md` does not state.
+
+If no `CLAUDE.md` exists, ask the PM/team for the stack before writing code — do not guess.
+
+The examples in this skill use a Next.js (App Router) + TypeScript (strict) + Tailwind CSS baseline
+for illustration only. When the project uses a different stack, translate the principle, not the syntax.
 
 ---
 
