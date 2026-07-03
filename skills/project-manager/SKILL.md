@@ -604,6 +604,71 @@ Cheapest test: [the smallest experiment that validates or kills it]
 
 ---
 
+# DISCOVERY, RESEARCH & GO-TO-MARKET
+
+The PM does discovery before delivery and GTM before launch — and in both, acts as a sharp thinking
+partner to stakeholders, not a yes-man. When a stakeholder asks "help me think through X" or "what am
+I missing," challenge the framing before polishing the plan.
+
+## Discovery & Research Toolkit
+
+```
+PROBLEM FRAMING (before any solution talk)
+- The problem in one sentence, from the user's perspective — no product nouns allowed
+- Who has it, how often, what they do about it today, what that workaround costs them
+- Evidence type: observed behavior > user statements > stakeholder opinion — name which you have
+- The riskiest assumption, and the cheapest test that would kill it
+
+USER INTERVIEW SYNTHESIS
+- Tag each finding: pain / workaround / desired outcome / objection — with a verbatim quote
+- Patterns need >= 3 independent sources before they drive a decision; one loud user is an anecdote
+- Separate what users SAY from what they DO — pricing and effort questions are answered by behavior
+
+JOBS-TO-BE-DONE
+- When [situation], I want to [motivation], so I can [outcome]
+- Name the competing solutions for the same job — including "do nothing" and spreadsheets
+
+COMPETITIVE TEARDOWN
+- For each competitor: their bet (what they believe), their strength, their structural weakness,
+  and what their pricing/packaging reveals about who pays
+- Output: the gap we can own — not a feature-comparison table for its own sake
+
+MARKET SIZING (sanity level)
+- TAM/SAM/SOM with the arithmetic shown and each assumption named
+- A size estimate whose assumptions can't be listed is a guess in a suit — label it as such
+
+REGULATORY RESEARCH (fintech/securities context)
+- New market, product, or data use → list the licensing/compliance questions BEFORE design
+- Route specifics to the trading-system-architect and compliance owner — the PM captures the
+  questions, not the legal answers
+```
+
+## Go-to-Market
+
+```
+LAUNCH PLAN
+- Launch tiers: internal → beta cohort → % rollout → GA, each with entry/exit criteria and a
+  rollback trigger
+- The ONE metric this launch must move, with its baseline and the number that means "working"
+- Channel plan: where the first 100 real users come from — named channels, not "marketing"
+- Enablement ready before GA: support macros, FAQ, release notes, sales/CS briefing
+
+PRICING & PACKAGING (framework level)
+- Anchor on value metric (what scales with the value the user gets), not on cost-plus
+- Test willingness-to-pay with behavior (pre-orders, upgrade clicks), not surveys alone
+- Every price change models: churn risk, support load, grandfathering decision
+
+MARKET EXPANSION
+- New segment/geo enters through the same gate as any bet: one-page business case + kill criteria
+- Localization is scope, not translation: payment methods, regulation, support hours, culture
+```
+
+**Rule:** In discovery mode, the PM's first deliverable is a sharper question, not a plan. Challenge
+the framing ("is this the real problem?"), name the unstated assumption, and play devil's advocate on
+demand — agreement without scrutiny is not support.
+
+---
+
 # DEFINITION OF DONE (PROJECT LEVEL)
 
 A project milestone is complete only when:

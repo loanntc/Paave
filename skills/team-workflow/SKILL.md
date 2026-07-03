@@ -5,7 +5,9 @@ description: >
   workflow. Trigger this skill whenever a user mentions: coordinating the team, running a feature
   end-to-end, understanding who does what and when, the delivery process, "take this from idea to
   release", or any request that spans multiple roles. Routes work to: project-manager,
-  business-analyst, frontend-developer, backend-developer, qa, and code-reviewer.
+  business-analyst, frontend-developer, backend-developer, qa, and code-reviewer — plus consulted
+  specialists sba-data-analyst (data dictionaries, error registries, API contracts) and
+  trading-system-architect (trading domain, VN-market compliance) when their domain is touched.
 ---
 
 # THE WORKFLOW
@@ -58,6 +60,13 @@ description: >
 | 👁️ Reviewer | `code-reviewer` | Security, correctness, architecture — merge gate |
 
 PM is **always active** across every stage — monitoring risk, unblocking, and tracking progress.
+
+**Consulted specialist roles** (deployed when their domain is touched, not on every feature):
+
+| Role | Skill | When deployed |
+|------|-------|---------------|
+| 🗄️ SBA / Data Analyst | `sba-data-analyst` | Stage 4–5: any feature introducing new entities, fields, enums, error codes, or API contracts — produces the data dictionary, error registry, and enum specs the developers and QA build against |
+| 📈 Trading System Architect | `trading-system-architect` | Stage 5–6: any change touching order flow, money movement, market data, settlement, or VN-market compliance (HOSE/HNX/SSC) — consulted on design, blocker authority on trading-domain review findings |
 
 ---
 

@@ -446,6 +446,64 @@ Every row must be complete. A blank cell means the document is incomplete.
 
 ---
 
+# DOCUMENT MODES & PROJECT PROFILES
+
+Beyond the full BRD+FRD+SRD package, this skill produces **exactly the document type requested —
+nothing more**. A user asking for one Screen Spec gets one Screen Spec, not a full package.
+
+## Supported Document Types
+
+| Document | Contents | Primary audience |
+|----------|----------|------------------|
+| BRD | Problem, objectives, KPIs, scope, stakeholders | Business / PM |
+| FRD | FRs, business rules, acceptance criteria, edge cases | Dev / QA |
+| SRD | System flows, validation tables, API contracts, error handling | Dev / QA |
+| BE Module Overview | Module purpose, entities, APIs exposed/consumed, business rules, dependencies | Backend |
+| FE/UI Module Overview | Screens in module, navigation map, shared components, state ownership (mobile/web or admin variant) | Frontend |
+| Screen Spec | One screen: purpose, entry/exit, every element (type, states, validation, exact error text), data binding | Frontend / QA |
+| User Flow | Step-by-step actor flow with every branch, decision point, and failure path defined | All |
+
+**Rule:** Generate only what was asked for. If the requested document depends on an artifact that
+does not exist (a Screen Spec with no user flow), flag the gap in one line and proceed — do not
+silently produce the missing artifact too.
+
+## Project Profiles
+
+Documents follow the target project's own template when one exists:
+
+```
+PROFILE RESOLUTION ORDER
+1. If the project has a documented template (in docs/ or CLAUDE.md), mirror its structure exactly —
+   headings, numbering, terminology
+2. If existing documents of the same type exist in the repo, match their structure (e.g. Paave's
+   docs/business/ FRD conventions)
+3. Otherwise use this skill's default structures
+
+If the target project is not stated and more than one candidate exists — ask which project
+before generating.
+```
+
+## Update Mode & Evolution Log
+
+When asked to update an existing document rather than create one:
+
+```
+UPDATE MODE RULES
+- Edit in place — do not regenerate the whole document (regeneration loses manual edits)
+- Preserve existing numbering: new FRs continue the sequence, deprecated ones are marked, never renumbered
+- Append one entry to the document's evolution log:
+
+  ## Evolution Log
+  | Version | Date | Change | Reason | Author |
+  |---------|------|--------|--------|--------|
+  | 1.1 | [date] | Added FR-12..FR-14 (price alerts) | Sprint 8 scope addition | BA |
+
+- If the document has no evolution log yet, add the section with the current change as its first entry
+- A change that contradicts an existing requirement is flagged explicitly — never silently overwritten
+```
+
+---
+
 # ANTI-AMBIGUITY RULES
 
 These apply to all agents and all sections. Lead BA enforces at synthesis.
