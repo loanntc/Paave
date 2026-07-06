@@ -15,11 +15,12 @@ handles real funds. KR and Global market data are reference-only in V1.
 
 ## Current state (v1 → v2.0)
 
-- `app/`, `components/`, `lib/` — the **v1 Next.js web prototype** (frozen; no new feature work)
-- **v2.0 is a native mobile app** (React Native + Expo) — the active initiative.
-  Kickoff package: `docs/v2-native/` (brief, ADR, architecture, roadmap, design foundations, test strategy)
-- Planned monorepo shape: `apps/mobile`, `apps/web`, `packages/{tokens,types,core}` — see
-  `docs/v2-native/02-mobile-architecture.md`
+- `app/`, `components/`, `lib/` — the **v1 Next.js web prototype** (React — frozen; no new feature work)
+- **v2.0 is a native iOS app (Swift/SwiftUI), iOS first** — the active initiative. No React Native.
+  Android is a post-GA native-Kotlin decision. Kickoff package: `docs/v2-native/` (brief, ADR,
+  architecture, roadmap, design foundations, test strategy)
+- Planned monorepo shape: `apps/ios`, `apps/web`, `packages/{contracts,tokens,types}` — see
+  `docs/v2-native/02-mobile-architecture.md`. API contracts are OpenAPI-first (Swift + TS clients generated)
 
 ## Source-of-truth documents
 
@@ -37,9 +38,10 @@ handles real funds. KR and Global market data are reference-only in V1.
 **Web prototype (frozen):** Next.js (App Router), TypeScript strict, Tailwind, Supabase SSR
 (`@supabase/ssr`), Lucide icons, `clsx` + `tailwind-merge`.
 
-**Mobile v2.0 (active):** React Native + Expo (EAS), TypeScript strict, Expo Router, TanStack Query,
-Zustand (minimal), react-native-skia charts, Reanimated 3, i18next, Supabase (auth/Postgres/realtime),
-Sentry. Full ADR: `docs/v2-native/01-tech-stack-decision.md`.
+**iOS v2.0 (active):** Swift 5.10+ / SwiftUI, iOS 16+, MVVM + Swift Concurrency, SwiftPM feature
+modules, Swift Charts, supabase-swift, `Decimal` for all money (never `Double`), String Catalogs
+(VN/EN/KR), Keychain, Swift Testing + XCUITest, fastlane → TestFlight.
+Full ADR: `docs/v2-native/01-tech-stack-decision.md`.
 
 ## Hard rules (apply to ALL code)
 

@@ -19,13 +19,17 @@ silent reinterpretation.
 ```
 GOAL: kill the two biggest unknowns; stand up the build skeleton
 - Spike R-01: VN market data vendor matrix (cost, latency, licensing, sandbox) → recommendation
-- Spike R-02: Zalo OAuth end-to-end on device build → go/no-go for M1 scope
-- Monorepo restructure (apps/mobile, packages/tokens|types|core)
-- Expo app scaffold + CI (lint, type-check, test, build) + EAS pipeline + Sentry
-- Token export pipeline: design-system.md tokens → packages/tokens → native theme
+- Spike R-02: Zalo iOS SDK OAuth end-to-end on a device build → go/no-go for M1 scope
+- Monorepo restructure (apps/ios, apps/web, packages/contracts|tokens|types)
+- Xcode project scaffold + SwiftPM feature modules + CI (SwiftLint/SwiftFormat, build, test)
+  + fastlane → TestFlight pipeline (or Xcode Cloud — decided in M0) + crash reporting
+- Contracts: OpenAPI spec bootstrapped; Swift + TS clients generating in CI
+- Token export pipeline: design tokens JSON → Swift constants/asset catalog + Tailwind config
+- Designer: reconcile screen-specs v1.0 (V1 palette) with design-system v2.0 Kinetic Drop tokens
+  (docs update pending per product owner — structure prepared now)
 - SBA: data dictionary + error registry started for engine entities (orders, positions, balances)
-EXIT GATE: data-vendor recommendation accepted; CI green on scaffold; tokens render in a
-           sample screen; store accounts + signing working (internal build on both platforms)
+EXIT GATE: data-vendor recommendation accepted; CI green on scaffold; Kinetic tokens render in a
+           sample SwiftUI screen; Apple Developer account + signing + TestFlight internal build working
 ```
 
 ### M1 — Auth, Onboarding & Gates (4 weeks)
@@ -38,7 +42,7 @@ SCOPE (FRD): FR-01..FR-08.2 (onboarding incl. industrial prefs + investment goal
              (*Zalo contingent on M0 spike — fallback per R-02)
 TEAM FLOW: BA mobile-delta pass → Designer flows+screens (all states) → FE build →
            review → QA suite from FRD acceptance criteria
-EXIT GATE: new user completes signup→age-gate→personalization→home on both platforms;
+EXIT GATE: new user completes signup→age-gate→personalization→home on iOS (TestFlight);
            all 4 auth methods (or approved fallback set) pass QA incl. account-linking FR-05.5;
            i18n switching live; crash-free ≥ 99.5% in internal beta
 ```
@@ -87,14 +91,17 @@ EXIT GATE: AI card renders for every closed trade with correct data; social feed
 ```
 - Full regression + device matrix + accessibility audit (WCAG AA equivalent for mobile)
 - Performance budget verification against 02-mobile-architecture.md table
-- Store submission package: screenshots, age rating, finance-app disclosures, privacy labels
-  (pre-review checklist per R-03)
-- Beta cohort (TestFlight/Play internal → closed beta) with success-metric dashboards live
+- App Store submission package: screenshots, age rating, finance-app disclosures, privacy
+  manifest + labels (pre-review checklist per R-03)
+- Beta cohort (TestFlight internal → external beta) with success-metric dashboards live
 EXIT GATE: PM Definition of Done (project level) + stakeholder sign-off; store approval
 ```
 
 ## Post-GA (committed direction, not GA scope)
 
+- **Android app go/no-go** (native Kotlin per ADR-001 rev 2) — decision gated on iOS validation;
+  note: the primary persona includes mid-tier Android users, so this decision has a market-coverage
+  clock on it (see brief R-08)
 - Module I Brokerage Partner Integration (V1.x path per FRD)
 - AI Insights P1 (weekly health check, nudges), leaderboard v2, deferred social surfaces
 

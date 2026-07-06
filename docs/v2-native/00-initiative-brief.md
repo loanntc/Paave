@@ -27,8 +27,8 @@ using the V2.0 "Kinetic Drop" design system, with the existing Supabase backend 
 | Habit | D7 retention | ≥ 35% |
 | Core engagement | Paper trades per weekly-active user | ≥ 3/week |
 | Quality | Crash-free sessions | ≥ 99.7% |
-| Performance | Cold start → interactive home | ≤ 2.5s on mid-tier Android |
-| Store | App Store + Play Store rating | ≥ 4.5 |
+| Performance | Cold start → interactive home | ≤ 1.8s on iPhone 12 |
+| Store | App Store rating | ≥ 4.5 |
 
 ## Constraints
 
@@ -59,8 +59,9 @@ using the V2.0 "Kinetic Drop" design system, with the existing Supabase backend 
 | R-01 | VN real-time market data feed (HOSE/HNX) — licensing, cost, and latency unknown | H | H | 9 | PM + Trading Architect | Spike in M0: source options (SSI FastConnect, DNSE, TCBS APIs, vendor feeds), cost sheet, sandbox access before M1 commit |
 | R-02 | Zalo OAuth — less-documented provider, App review friction | M | H | 6 | BE | M0 spike: end-to-end Zalo OAuth on device builds; fallback plan = launch VN with email+Google+Apple, fast-follow Zalo |
 | R-03 | Apple App Store review: finance app + simulated trading + minors | M | H | 6 | PM | Pre-review checklist: age gate prominent, paper-trading disclaimers, no real-money implication in store copy; legal review of screenshots |
-| R-04 | Team is web-first; native tooling learning curve (builds, store pipelines) | M | M | 4 | FE Lead | Expo managed workflow (see ADR); EAS build/deploy; one engineer owns store pipeline early |
-| R-05 | Real-time chart performance on mid-tier Android devices | M | M | 4 | FE | Performance budget from day 1 (see architecture doc); Skia-based charting; device-matrix testing every sprint |
+| R-04 | Team is TypeScript/React-first; **Swift/SwiftUI is a new competency** (per ADR-001 rev 2) | H | M | 6 | iOS Lead | ios-developer skill added to agent team; M1 biased toward simpler screens during ramp; SwiftUI pairing with FE dev for design-system fidelity; external Swift review for M2 engine UI |
+| R-05 | Real-time chart performance under live tick streams | L | M | 3 | iOS | Performance budget from day 1 (see architecture doc); Swift Charts first, custom renderer only if measured need; Instruments profiling per milestone |
+| R-08 | **iOS-first defers mid-tier Android users — a large share of the VN Gen-Z primary persona** | H | M | 6 | PM + Owner | Accepted trade-off (owner decision); Android go/no-go clock starts at GA; web prototype remains reachable for Android users in the interim; measure Android demand signals (waitlist) from launch |
 | R-06 | Paper-trading engine correctness (fills, P&L) erodes trust if wrong | L | H | 6 | Trading Architect | Engine rules from SRD-order-engine-v2.3; decimal-exact money tests; QA reconciliation suite |
 | R-07 | Push notification opt-in rates gate the retention model | M | M | 4 | Designer + PM | Pre-permission primer screens; contextual ask after first trade, not at launch |
 
@@ -98,6 +99,8 @@ GA  Hardening & Launch        (2 wk)  — perf, accessibility, store submission,
 
 | # | Decision | Status |
 |---|----------|--------|
-| 1 | Tech stack: React Native + Expo (see ADR 01) | PROPOSED — needs stakeholder confirmation |
-| 2 | Web prototype freezes at v1; no parallel feature work | PROPOSED |
-| 3 | Monorepo: mobile app joins this repo under `apps/` (see architecture) | PROPOSED |
+| 1 | Tech stack: **Swift/SwiftUI native iOS first; web stays React; no React Native** (ADR-001 rev 2) | **DECIDED — product owner, 2026-07-06** |
+| 2 | Android: native Kotlin, go/no-go decision post-GA (market-coverage clock per R-08) | DECIDED (direction) |
+| 3 | Web prototype freezes at v1; no parallel feature work | PROPOSED |
+| 4 | Monorepo: iOS app joins this repo under `apps/ios` (see architecture) | PROPOSED |
+| 5 | Design source: screen-specs v1.0 re-skinned on Kinetic Drop v2.0 tokens; owner updates docs, structure prepared now | IN PROGRESS |

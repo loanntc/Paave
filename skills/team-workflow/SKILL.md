@@ -55,7 +55,8 @@ description: >
 | 📋 PM | `project-manager` | Multi-project planning, risk management (RAID log), cross-team facilitation |
 | 🔍 BA | `business-analyst` | Value-driven requirements, full case coverage (happy / fail / edge) |
 | ✏️ Designer | `product-designer` | End-to-end design: discovery, flows, hi-fi UI, usability, handoff, build QA |
-| 🎨 FE | `frontend-developer` | UI/UX implementation, design collaboration, CI gate before PR |
+| 🎨 FE | `frontend-developer` | Web UI/UX implementation (React), design collaboration, CI gate before PR |
+| 📱 iOS | `ios-developer` | Native iOS (Swift/SwiftUI), HIG + Kinetic fidelity, TestFlight delivery — same stage roles as FE for mobile work |
 | 🏗️ BE | `backend-developer` | System design, API contracts, all tests pass before PR |
 | 🧪 QA | `qa` | Test cases from BA docs, gap detection, defect reporting |
 | 👁️ Reviewer | `code-reviewer` | Security, correctness, architecture — merge gate |

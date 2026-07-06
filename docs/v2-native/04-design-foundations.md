@@ -5,36 +5,55 @@
 
 ---
 
-## 1. Token Migration (web → native)
+## 0. Design Source Reconciliation (do this FIRST — pending doc updates)
+
+Two design documents exist at different versions:
+- `docs/design/screen-specs.md` **v1.0** — 2,830 lines, all V1 screens fully specified on an
+  iPhone 14 Pro canvas (393×852) with exact values — but using the **V1 navy/blue palette**
+  (`bg-card #1F2937`, `border-focus #3B82F6`)
+- `docs/design/design-system.md` **v2.0 "Kinetic Drop"** — the current token source
+  (ink/lime/plasma) with a Figma link
+
+**Designer's first task (M0):** re-skin the screen-specs on Kinetic Drop tokens — layout,
+spacing, and flows carry over as-is (the canvas is already iPhone-native); only the palette,
+type, and motion layers change. The product owner will update the documents; this prep
+establishes the structure so updated specs drop into place per milestone.
+
+## 1. Token Migration (design system → code)
 
 All Kinetic Drop tokens (ink scale, lime, plasma, fog, semantic, edge) move to
 `packages/tokens` as platform-neutral JSON, generated into:
-- native theme objects (RN) — colors, spacing, radii, type scale
+- **Swift constants + asset catalog colors** (iOS app — `DesignSystem` SwiftPM module)
 - the existing Tailwind config (web prototype) — so the two never drift
 
 ```
 RULES
-- Zero raw hex/px in any mobile component — tokens only (FE skill token rule applies)
-- Space Grotesk (display/numerals, tabular-nums) + Manrope (body) shipped as embedded fonts;
-  system-font fallback defined for load failure
+- Zero raw hex/pt in any SwiftUI view — DesignSystem tokens only (token rule applies)
+- Space Grotesk (display/numerals, tabular-nums via monospacedDigit) + Manrope (body) as
+  embedded fonts registered in Info.plist; Dynamic Type mapping defined per text style
 - positive/negative P&L colors NEVER communicate by color alone — always paired with sign/arrow
   (colorblind-safe rule)
 - Dark-first: ink-900 canvas is the default and only v2.0 theme; light theme is out of scope
+  (app declares dark appearance; no automatic light-mode inversion)
 ```
 
-## 2. Native Pattern Adaptations
+## 2. Native Pattern Adaptations (web spec → SwiftUI)
 
-| Web pattern (v1 prototype) | Native pattern (v2.0) |
+| Web/spec pattern | iOS-native pattern (v2.0) |
 |---|---|
-| Bottom nav bar component | Native tab bar (expo-router tabs) with Kinetic styling; haptic on tab switch |
-| Page transitions | Platform-native stack transitions; shared-element for stock card → detail |
+| Bottom nav bar component | SwiftUI TabView with Kinetic styling; haptic (UIImpactFeedbackGenerator) on tab switch |
+| Page transitions | NavigationStack push/pop; matchedGeometryEffect for stock card → detail |
 | Hover states | Pressed states (scale + glow per Kinetic motion); no hover anywhere |
-| Toast/banner | Snackbar bottom-safe-area aware; critical errors as dialogs |
-| OTP input (web) | Native OTP with SMS autofill (iOS one-time-code / Android SMS Retriever) |
-| Glow orbs (CSS blur) | Pre-rendered/Skia gradients — no runtime blur on mid-tier Android (perf budget) |
+| Toast/banner | Bottom-safe-area-aware banner; critical errors as native alerts/sheets |
+| OTP input (web) | Native OTP field with `.oneTimeCode` textContentType (SMS autofill) |
+| Glow orbs (CSS blur) | Pre-rendered gradient assets or SwiftUI Canvas — runtime blur budgeted per screen |
+| px values in screen-specs | Read as pt 1:1 (spec canvas is @3x logical points already) |
 
-**Motion language:** Kinetic Drop pulse/glow implemented in Reanimated; every animation has a
-reduced-motion variant; motion never blocks input (interruptible).
+**Motion language:** Kinetic Drop pulse/glow via SwiftUI animations (spring-based, interruptible);
+every animation respects Reduce Motion; motion never blocks input.
+
+**HIG compliance:** navigation, gestures, and sheets follow Apple Human Interface Guidelines —
+Kinetic Drop styles surfaces, never fights platform behavior (App Review risk R-03).
 
 ## 3. Screen Inventory (from FRD — designer's build order)
 

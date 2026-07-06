@@ -8,15 +8,16 @@
 ## 1. Test Pyramid (mobile)
 
 ```
-        Maestro E2E            ~15 critical journeys (signup→trade→portfolio, per milestone)
+        XCUITest E2E           ~15 critical journeys (signup→trade→portfolio, per milestone)
       ─────────────────
-     Integration / API         engine API contract tests (every documented response),
-                               Supabase RLS tests (cross-user access MUST fail)
+     Integration / API         engine API contract tests against the OpenAPI spec (every
+                               documented response), Supabase RLS tests (cross-user MUST fail)
     ─────────────────────
-   Component (RN Testing Lib)  every screen: all states render; interactions fire correct events
+   View/snapshot tests         every screen: all states render (snapshot per state incl.
+                               VN/EN/KR + Dynamic Type XL); ViewModel interaction tests
   ───────────────────────────
- Unit (Jest)                   packages/core = 100% coverage target (money math, P&L,
-                               order validation) — this layer is the trust foundation
+ Unit (Swift Testing)          PaaveCore = 100% coverage target (Decimal money math, P&L,
+                               formatters, validation) — this layer is the trust foundation
 ```
 
 ## 2. What's Different from Web (mobile-specific coverage)
@@ -28,8 +29,8 @@
 | Network | Airplane mode on every money surface: stale badges shown, no phantom orders (idempotency verified) |
 | OAuth | Each provider on real devices; account-linking FR-05.5 matrix (email↔Google↔Apple↔Zalo) |
 | Deep links | Notification → correct screen with auth state respected |
-| OTA updates | Update-mid-session behavior; rollback path |
-| Devices | Matrix: iPhone SE/15, Pixel 6a-class mid-tier Android (primary persona device), small-screen 320pt equivalent |
+| Devices | Matrix: iPhone SE (small screen + slowest chip), iPhone 12 (oldest broad target), current iPhone; iOS 16/17/18 |
+| Dynamic Type | Money surfaces verified at XL text size — no truncated amounts, ever |
 | Locales | VN default + EN + KR: layout breakage, financial terminology, number/currency formats |
 
 ## 3. Paper Trading Engine Suite (from trading-architect test matrix)
@@ -54,9 +55,9 @@
 
 ## 5. Tooling & Process
 
-- Jest + RN Testing Library in CI on every PR (per developer pre-PR gates)
-- Maestro flows run on EAS builds nightly + before each milestone exit
-- Crash triage: Sentry issues ≥ [High] filed as bugs within 24h with device/session context
+- Swift Testing + snapshot tests in CI (macOS runners) on every PR (per developer pre-PR gates)
+- XCUITest journeys run on simulator in CI nightly + on TestFlight builds before milestone exits
+- Crash triage: crash-reporter issues ≥ [High] filed as bugs within 24h with device/session context
 - Test data: seeded Supabase test project; engine scenarios scripted (BE provides seeds per
   collaboration protocol)
 - QA writes test cases from FRD acceptance criteria at each milestone START (Stage 2 of

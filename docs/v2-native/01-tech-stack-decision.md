@@ -1,67 +1,73 @@
-# ADR-001 — Native App Tech Stack: React Native + Expo
+# ADR-001 — Native App Tech Stack: Swift/SwiftUI, iOS First
 
-> Owner: FE Lead + Trading System Architect · Status: PROPOSED (recommended) · Date: 2026-07-06
+> Owner: FE Lead + Trading System Architect · Status: ACCEPTED (per product owner direction) · Date: 2026-07-06 (rev 2)
+> Supersedes: rev 1 (React Native + Expo proposal — rejected by product owner)
 
 ## Decision
 
-Build Paave v2.0 as a **React Native app using Expo (managed workflow + EAS)**, TypeScript strict,
-targeting iOS 16+ and Android 8+ (API 26).
+1. Build Paave v2.0 as a **native iOS app in Swift + SwiftUI**, iOS first.
+2. The **web app stays React** (existing Next.js codebase) — no React Native anywhere.
+3. Android is a **post-GA decision**: native Kotlin when iOS validates the product (tracked as a
+   deferred one-way-door decision — no code shared with iOS by design, so nothing blocks it).
 
 ## Context
 
-- The product spec (FRD v2.x) requires: real-time price streaming, interactive charts, push
-  notifications, OAuth (Google/Apple/Zalo), VN/EN/KR i18n, offline-tolerant portfolio views, and
-  store distribution to a Gen-Z VN audience (predominantly mid-tier Android + recent iPhones).
-- The team's entire frontend capability is TypeScript + React (per team skills and existing
-  Next.js codebase). The design system is token-based and maps cleanly to a React Native theme.
-- Speed to market matters more than per-platform fidelity for v2.0.
+- Product owner direction: iOS-first native quality; the existing design
+  (`docs/design/screen-specs.md`) is already specified on an iPhone 14 Pro canvas (393×852)
+  with exact layout values — it maps 1:1 to a native iOS build.
+- The FRD requires real-time streaming, charts, push, OAuth (Apple/Google/Zalo), VN/EN/KR i18n.
+- iOS gets the strongest native support for the trust-critical surfaces: Sign in with Apple,
+  Keychain, App Attest, SMS OTP autofill, HIG-native confirmation patterns.
 
-## Options Considered
-
-| Option | Pros | Cons | Verdict |
-|--------|------|------|---------|
-| **React Native + Expo (chosen)** | Team skills transfer 1:1 (TS/React); one codebase for iOS+Android; Expo EAS handles builds/signing/OTA updates; mature fintech precedent (Coinbase, Shopify, partial Robinhood); shared types with backend; Skia charting available | JS-bridge perf ceilings (mitigated by New Architecture/Fabric + Reanimated + Skia); some native modules need config plugins | **RECOMMENDED** |
-| Flutter | Excellent chart/animation perf; single codebase | Discards 100% of team's React/TS skill base; Dart hiring pool in VN smaller; design-token pipeline redone | Rejected — team-fit cost too high |
-| Native Swift + Kotlin | Maximum fidelity and performance | Two codebases, two skill sets the team lacks; ~2x cost and timeline | Rejected for v2.0 — revisit only if RN hits a measured perf wall |
-| PWA / web wrapper | Cheapest | Push/perf/store-presence limitations kill the retention model; fails the FRD's mobile-native requirements | Rejected |
-
-## Core Stack (locked once ADR is accepted)
+## Core Stack (locked)
 
 | Layer | Choice | Notes |
 |-------|--------|-------|
-| Framework | React Native (New Architecture) + **Expo SDK** (managed + EAS Build/Submit/Update) | OTA updates for non-native fixes |
-| Language | TypeScript strict — no `any` (per frontend-developer skill) | Shared types package with backend |
-| Navigation | **Expo Router** (file-based) | Mirrors Next.js App Router mental model the team knows |
-| Server state | **TanStack Query** | Caching, retry, offline-tolerant reads |
-| Client state | Zustand (minimal) | Only for genuinely client-local state |
-| Real-time | WebSocket client → market-data gateway; Supabase Realtime for social/portfolio events | See architecture doc |
-| Charts | **react-native-skia** based charting (victory-native-xl) | 60fps target on mid-tier Android; canvas-level control |
-| Animation/haptics | Reanimated 3 + expo-haptics | Kinetic Drop motion language |
-| Styling/tokens | Token-first theme (see design foundations); NativeWind acceptable if team prefers Tailwind ergonomics | Tokens are the contract, not the styling lib |
-| Auth | Supabase Auth + expo-auth-session (Google/Apple); Zalo via native SDK config plugin | Apple Sign-In mandatory on iOS when social login exists |
-| Push | Expo Notifications → FCM/APNs | Pre-permission primer pattern |
-| i18n | i18next + ICU messages; VN default, EN/KR | Module G; locale-appropriate financial terms |
-| Storage | expo-secure-store (tokens), MMKV (cache) | No secrets in AsyncStorage |
-| Testing | Jest + React Native Testing Library (unit/comp); **Maestro** (E2E flows); device cloud for matrix | Per QA strategy doc |
-| Observability | Sentry (crashes + performance), analytics per Data spec | Crash-free ≥ 99.7% target |
-| CI/CD | GitHub Actions: lint, type-check, test, build; EAS Build per PR-merged; TestFlight/Internal track per milestone | CI gate per team skills — no PR without green |
+| Language | **Swift 5.10+**, strict concurrency | Swift 6 mode adopted when tooling stabilizes |
+| UI | **SwiftUI** (UIKit interop where needed: charts, complex gestures) | Deployment target **iOS 16** |
+| Architecture | **MVVM + Swift Concurrency (async/await, AsyncSequence)** | Feature-modular via Swift Package Manager; TCA rejected for team learning-curve cost |
+| Navigation | NavigationStack + router per feature module | Deep links for notifications |
+| Networking | URLSession + async/await; **URLSessionWebSocketTask** for market data | Typed client generated from OpenAPI (see contracts below) |
+| Backend | Existing Supabase (auth/Postgres/realtime) via **supabase-swift**; trading engine API per architecture doc | Server-authoritative engine unchanged |
+| Money | **Foundation `Decimal`** everywhere; amounts cross the wire as strings | No `Double` on money — enforced by lint rule + review checklist |
+| Charts | Swift Charts for v2.0 line/area; custom Canvas/Metal renderer only if candlestick perf demands it (measured first) | 60fps ProMotion-aware |
+| Auth | Sign in with Apple (native), GoogleSignIn SDK, Zalo iOS SDK, email/password via Supabase | Apple Sign-In is mandatory on iOS given social login exists |
+| Push | APNs via UNUserNotificationCenter; pre-permission primer pattern | Rich notifications for price alerts |
+| i18n | **String Catalogs** (VN default, EN, KR); ICU plurals; locale-aware currency/number formatting | Module G |
+| Storage | Keychain (tokens), SwiftData/CoreData for offline cache | No secrets in UserDefaults |
+| Design tokens | `packages/tokens` JSON → generated Swift constants + asset catalog (see design foundations) | Zero raw hex/pt in views |
+| Testing | **Swift Testing** (unit), XCTest where needed, **XCUITest** (E2E flows), snapshot tests for screen states | Per test strategy doc |
+| Observability | Sentry (crash + performance) or Crashlytics — pick in M0 spike; OSLog structured logging | Crash-free ≥ 99.7% target |
+| CI/CD | GitHub Actions (lint via SwiftLint/SwiftFormat, build, test) + **fastlane → TestFlight**; Xcode Cloud evaluated in M0 | CI gate before PR per team rules |
 
-## Money & Data Correctness (non-negotiable, from backend/trading skills)
+## Shared Contracts (how web/React, iOS/Swift, and backend stay in sync)
 
-- All money/quantity values cross the wire as **strings or integer minor units**; parsed to
-  decimal-safe utilities on device — **no JS float arithmetic on money** anywhere in the app.
-- Prices carry source + timestamp; staleness is rendered visibly (per design foundations).
+Swift cannot consume TypeScript types. The contract layer becomes language-neutral:
+
+```
+packages/contracts/           # OpenAPI 3.1 spec — THE source of truth for the API
+  ├── openapi.yaml            # authored/reviewed by SBA + BE (contract-first, unchanged rule)
+  ├── → generates TS client   # for web (apps/web) and any Node tooling
+  └── → generates Swift client# via swift-openapi-generator into the iOS app
+packages/tokens/              # design tokens JSON → Tailwind config (web) + Swift constants (iOS)
+```
+
+Enum values, error codes (registry), and field semantics live in the OpenAPI spec + SBA data
+dictionary — never duplicated by hand in either client.
 
 ## Consequences
 
-- Existing `components/ui` web components are NOT ported directly — patterns and tokens are
-  reused, implementations are rebuilt native (see design foundations).
-- The repo becomes a monorepo (see architecture doc) so mobile, web prototype, and shared
-  packages (types, tokens, business logic) live together.
-- One engineer owns the store/EAS pipeline from M0 to de-risk the team's native-tooling gap (R-04).
+- **Team capability gap (now the top delivery risk):** the team is TypeScript/React; Swift/SwiftUI
+  is a new competency. Mitigations: add an iOS developer capability to the agent team
+  (`ios-developer` skill), bias M1 toward simpler screens while ramping, pair iOS work with the
+  existing FE developer for design-system fidelity. RAID R-04 rewritten accordingly.
+- Business logic is NOT shared with the web app — engine and rules stay server-side (already the
+  architecture), so the duplication surface is thin UI logic only.
+- Android timeline decouples: no compromise on iOS to keep parity with a framework.
+- The existing `screen-specs.md` px canvas converts to pt (1:1 at @3x design scale) — the specs
+  are directly buildable.
 
 ## Reversal Cost
 
-Two-way door for the first two milestones (auth/onboarding screens are portable patterns);
-becomes one-way after M2 when the trading engine UI and chart stack are deep. Decision review
-checkpoint: end of M1.
+One-way door for the iOS codebase once M2 (trading core) is built in SwiftUI. The React-web and
+server-side-engine decisions are unaffected either way. Review checkpoint: end of M1 (as before).
