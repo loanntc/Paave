@@ -1,0 +1,34 @@
+# SwiftLint — Paave iOS. CI fails on any violation (warnings included).
+included:
+  - Paave
+  - Packages
+excluded:
+  - Packages/*/Tests
+  - Packages/DesignSystem/Sources/DesignSystem/Generated # generated from tokens.json
+
+opt_in_rules:
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - empty_count
+  - closure_spacing
+  - redundant_nil_coalescing
+
+force_unwrapping: error
+implicitly_unwrapped_optional: error
+line_length:
+  warning: 120
+  error: 160
+  ignores_comments: true
+
+custom_rules:
+  no_double_on_money:
+    name: "Money is never a Double"
+    regex: '(?i)\b(Double|Float|CGFloat)\b[^\n]*\b(amount|price|balance|quantity|pnl|fee|cost|total)\b'
+    message: "Use Decimal (PaaveCore.Money) for monetary values — Double/Float on money is a defect. (CLAUDE.md hard rule)"
+    severity: error
+  no_raw_hex_color:
+    name: "Design tokens only"
+    regex: 'Color\(\s*(red:|hex|#colorLiteral)'
+    excluded: ".*/Generated/.*"
+    message: "No raw colors in views — use DesignSystem InkColor tokens. (CLAUDE.md hard rule)"
+    severity: error

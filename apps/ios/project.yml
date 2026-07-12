@@ -1,0 +1,56 @@
+# XcodeGen project definition — generates Paave.xcodeproj.
+# On a Mac:  brew install xcodegen && cd apps/ios && xcodegen generate && open Paave.xcodeproj
+name: Paave
+options:
+  bundleIdPrefix: vn.paave
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+  xcodeVersion: "16.0"
+
+packages:
+  DesignSystem:
+    path: Packages/DesignSystem
+  PaaveCore:
+    path: Packages/PaaveCore
+  PaaveAPI:
+    path: Packages/PaaveAPI
+
+targets:
+  Paave:
+    type: application
+    platform: iOS
+    sources:
+      - path: Paave
+    dependencies:
+      - package: DesignSystem
+      - package: PaaveCore
+      - package: PaaveAPI
+    info:
+      path: Paave/Info.plist
+      properties:
+        CFBundleDisplayName: Paave
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Dark
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        MARKETING_VERSION: 2.0.0
+        CURRENT_PROJECT_VERSION: 1
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        ENABLE_USER_SCRIPT_SANDBOXING: true
+        SWIFT_STRICT_CONCURRENCY: complete
+
+schemes:
+  Paave:
+    build:
+      targets:
+        Paave: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release

@@ -1,0 +1,77 @@
+openapi: 3.1.0
+info:
+  title: Paave API
+  version: 0.1.0
+  description: >
+    Source of truth for the Paave API. Owned by SBA + Backend (contract-first).
+    Generates the Swift client (swift-openapi-generator, apps/ios) and TS client (apps/web).
+    Money rule: all monetary/quantity values are strings (decimal-exact) — never JSON numbers.
+    Error rule: every non-2xx response uses ErrorBody with a code from the error registry.
+servers:
+  - url: https://api.paave.vn/api/v1
+    description: Production (placeholder)
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Liveness probe
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, timestamp]
+                properties:
+                  status: { type: string, enum: [ok] }
+                  timestamp: { type: string, format: date-time }
+  /quotes/{symbol}:
+    get:
+      operationId: getQuote
+      summary: Latest quote for a symbol (M2 — shape reserved, gateway pending R-01 vendor spike)
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema: { type: string, pattern: "^[A-Z0-9]{1,10}$" }
+      responses:
+        "200":
+          description: Latest quote with mandatory provenance
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Quote" }
+        "404":
+          description: Unknown symbol
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorBody" }
+components:
+  schemas:
+    ErrorBody:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: SCREAMING_SNAKE code from the SBA error registry (e.g. MKT-003 → MARKET_DATA_UNAVAILABLE)
+        message:
+          type: string
+          description: Exact user-displayable string from the registry
+    Quote:
+      type: object
+      required: [symbol, price, currency, source, exchangeTimestamp, receivedTimestamp, market]
+      properties:
+        symbol: { type: string }
+        price:
+          type: string
+          description: Decimal-exact price as string — NEVER a JSON number
+          pattern: "^-?[0-9]+(\\.[0-9]+)?$"
+        currency: { type: string, enum: [VND, KRW, USD] }
+        source: { type: string, description: Feed/vendor identifier }
+        exchangeTimestamp: { type: string, format: date-time }
+        receivedTimestamp: { type: string, format: date-time }
+        market:
+          type: string
+          enum: [PRIMARY, REFERENCE]
+          description: REFERENCE data must be labeled in every UI surface (FRD market rules)

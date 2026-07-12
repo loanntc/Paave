@@ -1,0 +1,38 @@
+name: CI — Web (frozen v1 prototype)
+
+on:
+  pull_request:
+    paths-ignore:
+      - "apps/ios/**"
+      - "docs/**"
+      - "skills/**"
+      - "packages/tokens/**"
+      - "packages/contracts/**"
+  push:
+    branches: [main]
+    paths-ignore:
+      - "apps/ios/**"
+      - "docs/**"
+      - "skills/**"
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type-check
+        run: npx tsc --noEmit
+      - name: Build
+        env:
+          # Public placeholders keep the frozen prototype building in CI without real secrets.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
+        run: npm run build

@@ -1,0 +1,51 @@
+name: CI — iOS
+
+on:
+  pull_request:
+    paths:
+      - "apps/ios/**"
+      - "packages/tokens/**"
+      - "packages/contracts/**"
+      - ".github/workflows/ci-ios.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/ios/**"
+      - "packages/tokens/**"
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify generated tokens are in sync with tokens.json
+        run: |
+          node packages/tokens/generate.mjs
+          git diff --exit-code apps/ios/Packages/DesignSystem/Sources/DesignSystem/Generated \
+            || { echo "::error::Generated tokens out of date — run node packages/tokens/generate.mjs and commit"; exit 1; }
+
+      - name: SwiftLint
+        run: |
+          brew install swiftlint
+          cd apps/ios && swiftlint --strict
+
+      - name: PaaveCore tests (money trust layer)
+        run: swift test --package-path apps/ios/Packages/PaaveCore
+
+      - name: Build app (simulator, no signing)
+        run: |
+          brew install xcodegen
+          cd apps/ios
+          xcodegen generate
+          xcodebuild build \
+            -project Paave.xcodeproj \
+            -scheme Paave \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO | xcbeautify || \
+          xcodebuild build \
+            -project Paave.xcodeproj \
+            -scheme Paave \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO

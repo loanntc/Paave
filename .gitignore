@@ -38,3 +38,12 @@ yarn-error.log*
 
 # claude code
 .claude/
+
+# iOS (apps/ios) — project is generated from project.yml
+apps/ios/Paave.xcodeproj/
+apps/ios/**/xcuserdata/
+apps/ios/**/.build/
+apps/ios/**/DerivedData/
+apps/ios/fastlane/report.xml
+apps/ios/fastlane/*.ipa
+apps/ios/fastlane/*.dSYM.zip

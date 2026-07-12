@@ -1,0 +1,24 @@
+# fastlane — Paave iOS delivery pipeline (M0 skeleton).
+# Prereqs on the Mac/CI: Apple Developer account, App Store Connect API key (see README).
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Run package tests (PaaveCore money layer is the trust foundation)"
+  lane :test do
+    sh("cd ../Packages/PaaveCore && swift test")
+  end
+
+  desc "Build and upload an internal TestFlight build"
+  lane :beta do
+    setup_ci if ENV["CI"]
+    sh("cd .. && xcodegen generate")
+    # Signing: configure match or App Store Connect API key before first run — see README.
+    build_app(
+      project: "Paave.xcodeproj",
+      scheme: "Paave",
+      export_method: "app-store"
+    )
+    upload_to_testflight(skip_waiting_for_build_processing: true)
+  end
+end

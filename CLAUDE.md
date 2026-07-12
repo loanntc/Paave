@@ -58,8 +58,9 @@ Full ADR: `docs/v2-native/01-tech-stack-decision.md`.
 - **Responsible engagement:** gamification rewards learning, never trade frequency; no urgency
   nudges toward trades. If a pattern boosts engagement by degrading decision quality, it's rejected.
 
-## Commands (web prototype)
+## Commands
 
+**Web prototype (repo root):**
 ```bash
 npm run dev        # local dev
 npm run lint       # must be clean before PR
@@ -67,7 +68,20 @@ npx tsc --noEmit   # type-check
 npm run build      # must succeed before PR
 ```
 
-(Mobile app commands land with the M0 scaffold — see roadmap.)
+**iOS app (`apps/ios/` — needs a Mac with Xcode 16+):**
+```bash
+brew install xcodegen swiftlint          # one-time
+cd apps/ios && xcodegen generate         # creates Paave.xcodeproj (git-ignored)
+swiftlint --strict                       # lint incl. custom money/token rules
+swift test --package-path Packages/PaaveCore   # money-layer tests
+node ../../packages/tokens/generate.mjs  # regen tokens after editing packages/tokens/tokens.json
+```
+
+**Design tokens:** `packages/tokens/tokens.json` is the source of truth → generator emits
+Swift constants (`apps/ios/.../Generated/`, committed). CI fails if they drift out of sync.
+
+**API contracts:** `packages/contracts/openapi.yaml` is contract-first source of truth —
+money values are strings, every error uses the registry envelope.
 
 ## Agent team
 
