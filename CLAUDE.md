@@ -18,6 +18,8 @@ Read and follow all rules before writing code, running commands, or making decis
 - **Agent behavior** — `.claude/rules/agents.md`
 - **Performance** — `.claude/rules/performance.md`
 
+Master rule index with cross-file rule codes (S-1, C-1, T-1, G-1, A-1, P-1…) — `.claude/business-rules.md`
+
 ## Agents
 
 Specialized agents live in `.claude/agents/`. Use them for the right task:

@@ -1,6 +1,8 @@
 # Team Workflow — Paave Multi-Role Agent System
 
-## Agent Roster
+## Core SDLC Roles
+
+These seven own the phases in the lifecycle below. Full 16-agent roster (including specialists like `architect`, `security-reviewer`, `ux-designer`, `tdd-guide`, `planner`, `refactor-cleaner`, `build-error-resolver`, `researcher`, `e2e-runner` who are consulted within phases as needed) — see `CLAUDE.md` → `## Agents`.
 
 | Agent | File | Primary Trigger |
 |-------|------|----------------|
