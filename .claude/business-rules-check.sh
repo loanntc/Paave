@@ -41,8 +41,14 @@ if echo "$command" | grep -qE 'git\s+commit\s+.*--no-verify'; then
   BLOCKED="[G-2] Skipping pre-commit hooks (--no-verify) is prohibited without explicit approval. See .claude/rules/git-workflow.md §5."
 fi
 
-# A-2: Agents may not commit or push to main or develop
-if echo "$command" | grep -qE 'git\s+(push|commit).*(main|develop)'; then
+# A-2: Agents may not commit or push to main or develop.
+# Match the target branch as its own token (origin main, HEAD:main, +main, refs/heads/main),
+# not any substring, so a commit message containing "domain" or "remain" is not blocked.
+# Commits and bare pushes are blocked when the current branch itself is main or develop.
+current_branch="$(git branch --show-current 2>/dev/null)"
+if echo "$command" | grep -qE 'git\s+push\b.*\s\+?([^[:space:]]+:)?(refs/heads/)?(main|develop)(\s|$)' \
+  || { [[ "$current_branch" == "main" || "$current_branch" == "develop" ]] \
+    && echo "$command" | grep -qE 'git\s+(commit|push)\b'; }; then
   BLOCKED="[A-2] Agents may not commit or push directly to main or develop. Use a feature branch + PR. See .claude/rules/agents.md §1."
 fi
 
