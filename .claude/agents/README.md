@@ -1,12 +1,17 @@
 # Team Agents
 
-Sub-agents the orchestrator (main Claude) can delegate to. Each runs with a limited scope, freeing context for the main agent.
+Sub-agents the orchestrator (main Claude) can delegate to. Phases and handoffs: [WORKFLOW.md](WORKFLOW.md). Each runs with a limited scope, freeing context for the main agent.
 
 ## The Team
 
 | Agent | Who uses it | What it does |
 |-------|-------------|--------------|
 | `product-owner` | PO, PM, BA | Backlog prioritization, user stories, acceptance criteria, sprint review sign-off; single voice of the customer |
+| `project-manager` | PM, all roles | Plans sprints, runs phase gates, owns the risk register, unblocks teams across projects |
+| `business-analyst` | BA, PO, QA | BRD/FRD/SRD, gap and edge-case analysis, testable acceptance criteria |
+| `frontend-developer` | FE | UI implementation from the FRD, design-dev alignment, CI before PR |
+| `backend-developer` | BE | APIs, data model, server logic and tests from the SRD |
+| `qa-engineer` | QA | Test plans from FRD/SRD, bug reports, release sign-off |
 | `planner` | All devs, PM | Mini design doc + PR slice strategy per engineering handbook §2 |
 | `architect` | Tech Lead | ADR format + data model + API contracts; escalates to `security-reviewer` |
 | `ba-spec-writer` | BA | BRD/FRD/SRD package; Korean/Vietnamese doc support; backed by `business-analyst` skill |
@@ -34,7 +39,7 @@ Agents run in the background by default — set `run_in_background: true` for pa
 | Hook | Event | What it does |
 |------|-------|-------------|
 | `bash-audit-log.sh` | PreToolUse (Bash) | Logs every command to `~/.claude/audit.log` with timestamp + session + cwd |
-| `business-rules-check.sh` | PreToolUse (Bash) | Reads `~/.claude/business-rules.md`; blocks high-risk commands with relevant rule |
+| `business-rules-check.sh` | PreToolUse (Bash) | Reads `.claude/business-rules.md` (falls back to `~/.claude/business-rules.md`); blocks high-risk commands with the relevant rule. Tests: `bash .claude/tests/business-rules-check.test.sh` |
 | `stop-hook-git-check.sh` | Stop | Blocks session end if there are uncommitted or unpushed changes |
 
 Audit log: `~/.claude/audit.log` — readable by both humans and agents to review command history.
