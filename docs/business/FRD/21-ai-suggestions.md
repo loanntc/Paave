@@ -1,10 +1,10 @@
 # FRD-21: AI Suggestions (Gợi ý hôm nay)
 ## Paave — Vietnam Gen Z Paper-Trading & Social Investing App
 
-**Version:** 1.0
+**Version:** 1.1
 **Date:** 2026-06-01
 **Author:** Business Analysis Team
-**Linked BRD:** BRD.md §BO-03 (AI Learning Companion), §BO-02 (Safety & Regulatory Compliance)
+**Linked BRD:** BRD-21-ai-suggestions.md, BRD.md §BO-03 (AI Learning Companion), §BO-02 (Safety & Regulatory Compliance)
 **Linked SRD:** SRD-21 (`srd/21-ai-suggestions.md`)
 **Linked FRD:** FRD-09 (Age Gate & Feature Tier), FRD-12 (AI Insights), FRD-15 (Legal Disclaimers)
 **Status:** Draft — Design Confirmed from PPTX Home Screen
@@ -23,7 +23,22 @@
 2. [User Flow](#2-user-flow)
 3. [UX Screen States](#3-ux-screen-states)
 4. [Functional Requirements](#4-functional-requirements)
+   - [FR-AS-01](#fr-as-01--section-header) — Section Header
+   - [FR-AS-02](#fr-as-02--suggestion-card-rendering) — Suggestion Card Rendering
+   - [FR-AS-03](#fr-as-03--card-tap-navigation) — Card Tap Navigation
+   - [FR-AS-04](#fr-as-04--price-target-display-full_access) — Price Target Display (FULL_ACCESS)
+   - [FR-AS-05](#fr-as-05--price-target-hidden-for-learn_mode) — Price Target Hidden for LEARN_MODE
+   - [FR-AS-06](#fr-as-06--non-dismissible-disclaimer) — Non-Dismissible Disclaimer
+   - [FR-AS-07](#fr-as-07--xem-tất-cả-behaviour-v1-out-of-scope) — "Xem tất cả" Behaviour
+   - [FR-AS-08](#fr-as-08--stale-suggestions-display) — Stale Suggestions Display
+   - [FR-AS-09](#fr-as-09--empty-state) — Empty State
+   - [FR-AS-10](#fr-as-10--ai-language-compliance-requirements) — AI Language Compliance Requirements
+   - [FR-AS-11](#fr-as-11--signal-type-selection-logic-pipeline-rule) — Signal Type Selection Logic
+   - [FR-AS-12](#fr-as-12--signal-accuracy-tracking-quality-loop) — Signal Accuracy Tracking
+   - [FR-AS-13](#fr-as-13--admin-kill-switch-operational-control) — Admin Kill Switch
 5. [Business Rules](#5-business-rules)
+   - [5.1 Management Governance Framework](#51-management-governance-framework)
+   - [5.2 Red Lines](#52-red-lines-non-negotiable-feature-disabled-if-violated)
 6. [Acceptance Criteria](#6-acceptance-criteria)
 7. [Edge Cases](#7-edge-cases)
 8. [Design Requirements](#8-design-requirements)
@@ -442,6 +457,191 @@ When no published suggestions exist and no fallback (stale) data is available wi
 
 ---
 
+### FR-AS-10 — AI Language Compliance Requirements
+
+**Priority:** P0 (compliance-critical)
+
+**Actor:** Paave AI pipeline (batch job) + Client (secondary check)
+
+**Description:**
+All `analysis_text` displayed to users must use observational, non-imperative language. The language must describe technical conditions, not direct user actions.
+
+**Permitted language patterns (pipeline must only generate these):**
+
+| Pattern type | Example |
+|---|---|
+| State observation | "đang trong vùng quá bán theo RSI 14" |
+| Threshold crossing | "vượt MA50 phiên thứ 2 với breakout volume" |
+| Divergence description | "phân kỳ âm RSI · khối ngoại bán ròng 5 phiên" |
+| Support/resistance | "hỗ trợ mạnh tại [price]; volume tăng [N]%" |
+| Accumulation/distribution | "đang tích lũy trong vùng [price_range]" |
+| Consolidation | "kháng cự tại [price]; cần breakout để xác nhận xu hướng" |
+
+**Prohibited language patterns (trigger content filter rejection):**
+
+| Category | Prohibited phrases |
+|---|---|
+| Imperative buy/sell | "mua ngay", "bán ngay", "hãy mua", "nên mua", "nên bán" |
+| Guarantee language | "chắc chắn", "đảm bảo", "100%", "bảo đảm", "không rủi ro" |
+| Recommendation language | "tôi khuyến nghị", "nên đầu tư vào", "khuyến nghị mua" |
+| Forward certainty | "giá sẽ đạt", "chắc chắn tăng", "chắc chắn giảm" |
+| Personal names | Any specific analyst, broker, or fund manager name |
+
+**Input:** `analysis_text` string from pipeline
+**Output:** Rendered text on card if no prohibited pattern detected; card slot suppressed + client error logged if prohibited pattern detected
+**Precondition:** Pipeline has already run content filter; client applies secondary check as defense-in-depth
+**Postcondition:** No prohibited language ever rendered to user
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-AS-10-01 | Pipeline generates analysis_text = "đang trong vùng quá bán theo RSI 14" | Client renders card | Text rendered as-is; no filter triggered |
+| AC-AS-10-02 | Pipeline generates analysis_text containing "mua ngay" | Client secondary check runs | Card slot suppressed; client error logged: "prohibited phrase in analysis_text for [symbol]: mua ngay"; remaining ≤ 2 cards still shown |
+| AC-AS-10-03 | Pipeline generates analysis_text containing "tôi khuyến nghị" | Client secondary check runs | Card slot suppressed; client error logged with phrase and symbol |
+| AC-AS-10-04 | Pipeline generates analysis_text containing "giá sẽ đạt 150.000" | Client secondary check runs | Card slot suppressed; client error logged |
+| AC-AS-10-05 | All 3 card slots contain prohibited phrases | Client secondary check runs | All 3 card slots suppressed; section shows S-AS-03 empty state; client logs 3 separate errors |
+
+---
+
+### FR-AS-11 — Signal Type Selection Logic (Pipeline Rule)
+
+**Priority:** P1
+
+**Actor:** Paave AI pipeline
+
+**Description:**
+The pipeline prompt instructs Claude to select `signal_type` based on specific technical conditions. These rules are encoded in the pipeline prompt and evaluated by the model against the market data provided.
+
+**Selection logic (in priority order):**
+
+| Condition | signal_type | Typical confidence range |
+|---|---|---|
+| RSI < 30 AND volume today > 1.3× avg30 AND price near support | `BUY_OPPORTUNITY` | 65–85 |
+| Price breaks above MA50 with volume confirmation (> 1.5× avg) | `BUY_OPPORTUNITY` | 70–85 |
+| PE < sector median × 0.8 AND positive price momentum | `BUY_OPPORTUNITY` | 60–75 |
+| RSI > 70 AND volume declining (< 0.8× avg30) | `SELL_CAUTION` | 65–80 |
+| Negative RSI divergence AND foreign net sell ≥ 3 consecutive sessions | `SELL_CAUTION` | 70–85 |
+| Price breaks below MA50 with elevated volume | `SELL_CAUTION` | 65–80 |
+| No clear directional signal from any of the above | `WATCH` | 40–60 |
+| Data insufficient (< 30 days bars available) | `WATCH` | 30–50 |
+
+**Pipeline rules:**
+- Pipeline must bias toward `WATCH` when signal is ambiguous (`confidence_raw` < 55 for any directional signal)
+- At least 1 of every 7 days' top-3 cards must include a `SELL_CAUTION` (prevents recency bias toward bullish signals)
+- Across the 3 displayed cards, at least 2 different sectors (from `symbols.sector`) must be represented
+
+**Input:** 90-day OHLCV, fundamentals, and quote data per symbol
+**Output:** `signal_type` in pipeline structured response
+**Precondition:** Market data fetched successfully for the symbol
+**Postcondition:** `signal_type` conforms to 3-value enum; selection is justified by at least 1 technical condition
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-AS-11-01 | Symbol with RSI = 28, volume today = 1.4× avg30, price at support level | Pipeline runs | signal_type = BUY_OPPORTUNITY; confidence_pct in range 65–85 |
+| AC-AS-11-02 | Symbol with RSI = 72, volume = 0.75× avg30 | Pipeline runs | signal_type = SELL_CAUTION; confidence_pct in range 65–80 |
+| AC-AS-11-03 | Symbol with insufficient data (20 days of bars available) | Pipeline runs | signal_type = WATCH; confidence_pct in range 30–50 |
+| AC-AS-11-04 | Pipeline has produced only BUY_OPPORTUNITY and WATCH cards for 7 consecutive days | Pipeline runs on day 8 | At least 1 SELL_CAUTION card included in the top-3 for day 8 |
+| AC-AS-11-05 | Top 3 candidates by confidence all have symbols.sector = "Banking" | Pipeline applies sector diversity rule | 3rd card is replaced by the next highest-confidence symbol from a different sector |
+| AC-AS-11-06 | Symbol with confidence_raw = 50 (ambiguous directional signal) | Pipeline runs | signal_type = WATCH; not BUY_OPPORTUNITY or SELL_CAUTION |
+
+---
+
+### FR-AS-12 — Signal Accuracy Tracking (Quality Loop)
+
+**Priority:** P2
+
+**Actor:** System (automated evaluation job, runs T+10 and T+30 after each suggestion)
+
+**Description:**
+For every published suggestion, the system evaluates whether the signal direction was correct at T+10 and T+30 trading days after generation.
+
+**Evaluation logic:**
+- `BUY_OPPORTUNITY`: correct if price at T+N ≥ `price_current` at generation (positive or flat)
+- `SELL_CAUTION`: correct if price at T+N ≤ `price_current` at generation (negative or flat)
+- `WATCH`: not evaluated (neutral signal has no direction to measure)
+
+**Stored in:** `ai_suggestion_outcomes` table (to be created in migration 0010)
+
+**Fields:**
+
+| Field | Type | Description |
+|---|---|---|
+| `suggestion_id` | UUID | FK to `ai_suggestions.id` |
+| `evaluation_date` | date | Trading date T+10 or T+30 |
+| `price_at_eval` | numeric | Closing price on evaluation date |
+| `actual_return_pct` | numeric | ((price_at_eval - price_current) / price_current) × 100 |
+| `direction_correct` | boolean | True if signal direction matched outcome |
+
+**Quality thresholds (monitored, not enforced in real-time):**
+
+| Metric | Minimum threshold | Action if below |
+|---|---|---|
+| BUY_OPPORTUNITY direction accuracy (T+10) | ≥ 55% | Review prompt; adjust technical indicators used |
+| SELL_CAUTION direction accuracy (T+10) | ≥ 55% | Review prompt; adjust divergence conditions |
+| Pipeline WATCH rate over 7 days | ≤ 80% | If > 80% WATCH: adjust signal sensitivity thresholds |
+
+**Input:** Published suggestion records + daily closing price data
+**Output:** Accuracy records in `ai_suggestion_outcomes`
+**Precondition:** T+10 trading days have elapsed since suggestion generation
+**Postcondition:** `direction_correct` populated for all directional signals at T+10
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-AS-12-01 | BUY_OPPORTUNITY suggestion for FPT at price_current = 142.500; T+10 closing price = 148.000 | Evaluation job runs at T+10 | direction_correct = true; actual_return_pct = 3.86 |
+| AC-AS-12-02 | SELL_CAUTION suggestion for VIC at price_current = 95.000; T+10 closing price = 91.000 | Evaluation job runs at T+10 | direction_correct = true; actual_return_pct = -4.21 |
+| AC-AS-12-03 | WATCH suggestion for VNM | Evaluation job runs | No record written to ai_suggestion_outcomes for this suggestion |
+| AC-AS-12-04 | BUY_OPPORTUNITY suggestion; T+10 price = 140.000 (below price_current) | Evaluation job runs | direction_correct = false |
+| AC-AS-12-05 | Rolling 90-day BUY_OPPORTUNITY accuracy = 49% | Monitoring check runs | Alert generated; pipeline prompt review flagged before next run |
+
+---
+
+### FR-AS-13 — Admin Kill Switch (Operational Control)
+
+**Priority:** P0 (compliance-critical)
+
+**Actor:** Admin user (role = 'admin')
+
+**Description:**
+Admin can unpublish any suggestion card within 60 seconds of decision, without a code deploy. The kill switch is the primary compliance incident response tool.
+
+**Trigger conditions for kill switch use:**
+- Symbol suspended by exchange (đình chỉ giao dịch)
+- AI output contains incorrect or materially misleading data (detected post-publish)
+- Company in symbol universe has a significant negative event (investigation, fraud disclosure)
+- Legal or compliance team request
+
+**Mechanism:**
+- Admin calls `POST /api/admin/ai-suggestions/{id}/unpublish` with admin JWT
+- Supabase updates `is_published = false`
+- API response for affected symbol excluded from next `GET /api/ai/suggestions` call
+- Maximum propagation delay: 60 seconds (CDN cache TTL)
+
+**Reversal mechanism:**
+- Admin calls `POST /api/admin/ai-suggestions/{id}/publish` to re-enable
+- Same 60-second maximum propagation delay applies
+
+**Input:** Admin decision to unpublish + suggestion ID
+**Output:** Card removed from Home screen for all users within 60 seconds
+**Precondition:** Admin is authenticated with role = 'admin'
+**Postcondition:** `is_published = false`; card not shown to any user
+
+**Acceptance Criteria:**
+
+| # | Given | When | Then |
+|---|-------|------|------|
+| AC-AS-13-01 | FPT card is_published = true and visible on Home | Admin calls POST /api/admin/ai-suggestions/{fpt_id}/unpublish with admin JWT | HTTP 200 returned; is_published = false in DB; FPT card absent from next GET /api/ai/suggestions response |
+| AC-AS-13-02 | FPT card is_published = false | Non-admin user calls GET /api/ai/suggestions | FPT card not included in response; remaining ≤ 2 cards shown |
+| AC-AS-13-03 | FPT card is_published = false | Admin calls POST /api/admin/ai-suggestions/{fpt_id}/publish | is_published = true in DB; FPT card included in next GET /api/ai/suggestions response |
+| AC-AS-13-04 | Non-admin user (role = 'user') | Calls POST /api/admin/ai-suggestions/{id}/unpublish | HTTP 403 returned; is_published unchanged |
+| AC-AS-13-05 | FPT card is_published = false; client has cached response from 50 seconds ago | User views Home | FPT card still visible from cache; disappears within 60 seconds on next cache refresh — this is acceptable per the 60-second SLA |
+
+---
+
 ## 5. Business Rules
 
 | Rule ID | Rule | Violation Behaviour |
@@ -456,6 +656,36 @@ When no published suggestions exist and no fallback (stale) data is available wi
 | BR-AS-08 | The section shows at most 3 cards. If > 3 published, non-expired suggestions exist, the top 3 by confidence_pct are shown. The client must not show a 4th card even if the API returns more than 3. | 4 cards shown = P1 UI bug |
 | BR-AS-09 | Stale suggestions older than 72 hours must not be shown. If the most recent `generated_at` is > 72 hours before the current ICT time, the client must show the empty state (S-AS-03). | Data older than 72h shown = P1 data freshness bug |
 | BR-AS-10 | Cards with `is_published = false` must never be shown to users. The API must filter these server-side; the client must not render any card without a confirmed `is_published = true` flag in the response. This is the kill switch mechanism for compliance incidents. | Unpublished card shown = P0 compliance bug |
+| BR-AS-11 | Of the 3 cards displayed on Home screen, at least 2 different values of `symbols.sector` must be represented across the 3 displayed symbols. Client applies this rule at render time; if the top 3 by confidence_pct all share the same sector, the 3rd card is replaced by the next available symbol from a different sector. | All 3 cards from same sector = P2 UX bug |
+| BR-AS-12 | The `analysis_text` must not refer to a specific price prediction with certainty ("giá sẽ đạt [value]"). Price targets are shown only in the structured `price_target` field with the "MỤC TIÊU AI" label. Any price prediction language inside `analysis_text` itself triggers the same prohibited phrase filter as BR-AS-04. | Price prediction in analysis_text = P0 compliance bug |
+| BR-AS-13 | Signal accuracy must be measured at T+10 trading days for all directional signals (`BUY_OPPORTUNITY` and `SELL_CAUTION`). If rolling 90-day directional accuracy drops below 50% for either signal type, the pipeline prompt must be reviewed before the next run. This is an operational rule enforced by monitoring, not a real-time client constraint. | Accuracy < 50% without prompt review = P2 quality risk |
+
+---
+
+### 5.1 Management Governance Framework
+
+The AI Suggestions feature is governed by a 3-tier control model:
+
+**Tier 1 — Automatic guardrails (always-on, no human required):**
+DB CHECK constraints + pipeline content filter + client secondary check. These run on every pipeline execution and every client render. Tier 1 cannot be disabled without a code deploy.
+
+**Tier 2 — Operational monitoring (5 minutes/day):**
+Daily check of `ai_suggestion_runs` for: `symbols_published ≥ 18`, `estimated_cost_usd < $1.50`, `error_message = null`. Weekly check of `ai_suggestion_filter_log` for recurring prohibited phrase patterns.
+
+**Tier 3 — Intervention (as needed):**
+Kill switch (FR-AS-13), pipeline re-run (manual GitHub Actions trigger), prompt update (Supabase config table after migration 0010). No code deploy required for any Tier 3 action.
+
+---
+
+### 5.2 Red Lines (non-negotiable, feature disabled if violated)
+
+The following conditions require immediate feature shutdown until resolved:
+
+1. Any user-visible text containing prohibited language (BR-AS-04) — P0 compliance incident
+2. Price target shown to LEARN_MODE user — P0 age-gate violation (see FRD-09)
+3. Disclaimer not visible while cards are displayed — P0 compliance incident
+4. `is_published = false` card shown to any user — P0 data integrity incident
+5. Rolling 90-day BUY/SELL direction accuracy < 45% — P1 quality incident; review before next pipeline run
 
 ---
 
@@ -578,16 +808,21 @@ Client-side validation applied before rendering any card.
 | Objective | FR | Business Rule | SRD Logic | Test Case |
 |-----------|----|--------------|-----------|-----------| 
 | Show daily AI signals on Home screen | FR-AS-01, FR-AS-02 | BR-AS-08 (max 3 cards) | SRD-21 §2 Pipeline + §3 API | AC-AS-01-01, AC-AS-02-01 |
-| Compliance: no investment advice | FR-AS-06 | BR-AS-05 (disclaimer), BR-AS-04 (prohibited phrases), BR-AS-07 (no guarantee language) | SRD-21 §4.2 Content filter | AC-AS-06-01..05, AC-AS-FA-01 |
+| Compliance: no investment advice | FR-AS-06, FR-AS-10 | BR-AS-05 (disclaimer), BR-AS-04 (prohibited phrases), BR-AS-07 (no guarantee language), BR-AS-12 (no price prediction in analysis_text) | SRD-21 §4.2 Content filter | AC-AS-06-01..05, AC-AS-10-01..05, AC-AS-FA-01 |
 | Confidence cap at 85% | FR-AS-02 | BR-AS-01 | SRD-21 §4.3 DB CHECK + pipeline cap | AC-AS-02-05, EC-AS-03 |
 | Signal type restricted to 3 values | FR-AS-02 | BR-AS-02 | SRD-21 §4.2 DB CHECK | AC-AS-02-02..04, EC-AS-04 |
 | Price target for FULL_ACCESS only | FR-AS-04, FR-AS-05 | BR-AS-06, BR-AS-07 | SRD-21 §3 API tier handling | AC-AS-04-01..05, AC-AS-LM-01 |
 | LEARN_MODE: hide price target | FR-AS-05 | BR-AS-06 | SRD-21 §3 client-side tier check | AC-AS-05-01..04, AC-AS-LM-01 |
-| Kill switch: admin unpublish | FR-AS-02 | BR-AS-10 | SRD-21 §5 is_published filter | EC-AS-10, AC-AS-02-09 |
+| Kill switch: admin unpublish | FR-AS-02, FR-AS-13 | BR-AS-10 | SRD-21 §5 is_published filter | EC-AS-10, AC-AS-02-09, AC-AS-13-01..05 |
 | Graceful empty state when pipeline fails | FR-AS-09 | BR-AS-09 (72h stale limit) | SRD-21 §5 error handling | AC-AS-09-01..04, EC-AS-01 |
 | Stale fallback on weekends/holidays | FR-AS-08 | BR-AS-09 | SRD-21 §5 staleness logic | AC-AS-08-01..04 |
 | Navigation to Stock Detail with AI context | FR-AS-03 | — | SRD-21 §3 nav params | AC-AS-03-01..03, AC-AS-FA-02 |
 | "Xem tất cả" V1 stub | FR-AS-07 | — | N/A (client only) | AC-AS-07-01..03 |
+| AI language compliance (observational only) | FR-AS-10 | BR-AS-04, BR-AS-12 | SRD-21 §4.2 Content filter | AC-AS-10-01..05 |
+| Pipeline signal selection logic | FR-AS-11 | BR-AS-02, BR-AS-11 | SRD-21 §2 Pipeline prompt rules | AC-AS-11-01..06 |
+| Sector diversity across 3 cards | FR-AS-11 | BR-AS-11 | SRD-21 §2 Pipeline + client render | AC-AS-11-05 |
+| Signal accuracy quality loop | FR-AS-12 | BR-AS-13 | SRD-21 §6 Evaluation job (migration 0010) | AC-AS-12-01..05 |
+| Admin operational kill switch | FR-AS-13 | BR-AS-10 | SRD-21 §5 Admin API | AC-AS-13-01..05 |
 
 ---
 
@@ -595,6 +830,7 @@ Client-side validation applied before rendering any card.
 
 | Document | Location | Relationship |
 |----------|----------|-------------|
+| BRD-21: AI Suggestions | `docs/business/brd/21-ai-suggestions.md` | Business requirements this FRD implements |
 | SRD-21: AI Suggestions System | `docs/business/srd/21-ai-suggestions.md` | System implementation spec for this FRD |
 | FRD-09: Age Gate & Feature Tier | `docs/business/frd/09-age-gate.md` | LEARN_MODE vs FULL_ACCESS definitions |
 | FRD-12: AI Insights | `docs/business/frd/12-ai-insights.md` | Adjacent AI feature; different trigger (post-trade vs daily batch) |
@@ -606,4 +842,4 @@ Client-side validation applied before rendering any card.
 ---
 
 *End of FRD-21: AI Suggestions (Gợi ý hôm nay)*
-*Version 1.0 — 2026-06-01. Authoritative for all AI Suggestions display requirements.*
+*Version 1.1 — 2026-06-01. Added FR-AS-10 (language compliance), FR-AS-11 (signal selection logic), FR-AS-12 (accuracy tracking), FR-AS-13 (admin kill switch), BR-AS-11..13, §5.1 governance framework, §5.2 red lines. Authoritative for all AI Suggestions display requirements.*
